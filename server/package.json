@@ -1,0 +1,10 @@
+{
+  "name": "server",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.js",
+    "test": "vitest run",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "node prisma/seed.js"
+  }
+}

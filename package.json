@@ -1,0 +1,9 @@
+{
+  "name": "rbu-leasing",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev"
+  }
+}
