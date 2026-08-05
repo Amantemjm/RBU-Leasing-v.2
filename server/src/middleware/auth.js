@@ -21,3 +21,5 @@ export function requireRole(...roles) {
     next();
   };
 }
+
+export const requireWrite = requireRole("ADMIN", "LEASING_OFFICER");
