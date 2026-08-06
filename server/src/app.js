@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import ownerRoutes from "./routes/ownerRoutes.js";
 import tenantRoutes from "./routes/tenantRoutes.js";
+import unitRoutes from "./routes/unitRoutes.js";
 import { errorHandler } from "./middleware/error.js";
 
 export function createApp() {
@@ -13,6 +14,7 @@ export function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/owners", ownerRoutes);
   app.use("/api/tenants", tenantRoutes);
+  app.use("/api/units", unitRoutes);
   app.use(errorHandler);
   return app;
 }
