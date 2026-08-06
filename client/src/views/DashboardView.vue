@@ -1,13 +1,7 @@
-<script setup>
-import { useAuthStore } from "../stores/auth.js";
-const auth = useAuthStore();
-</script>
-
 <template>
-  <main>
+  <section>
     <h1>Dashboard</h1>
-    <p>Signed in as {{ auth.user?.email }} ({{ auth.role }})</p>
-    <p>Metrics arrive in Plan 4.</p>
-    <button @click="auth.logout()">Log out</button>
-  </main>
+    <p>Welcome to RBU Leasing. Use the navigation to manage records.</p>
+    <p>Live metrics arrive in Plan 4.</p>
+  </section>
 </template>
