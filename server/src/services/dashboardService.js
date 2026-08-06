@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { startOfMonth, startOfNextMonth } from "../lib/dates.js";
 
 // Prisma Decimal (or null) -> Number
 function num(value) {
@@ -22,4 +23,19 @@ export async function getOccupancy() {
   const vacant = totalUnits - occupied;
   const rate = totalUnits === 0 ? 0 : occupied / totalUnits;
   return { totalUnits, occupied, vacant, rate };
+}
+
+export async function getMonthlyIncome() {
+  const activeLeases = await prisma.lease.count({ where: { status: "ACTIVE" } });
+  const agg = await prisma.lease.aggregate({
+    _sum: { monthlyRent: true },
+    where: { status: "ACTIVE" },
+  });
+  return { activeLeases, monthlyIncome: num(agg._sum.monthlyRent) };
+}
+
+export async function getNewLeasesThisMonth(now = new Date()) {
+  return prisma.lease.count({
+    where: { startDate: { gte: startOfMonth(now), lt: startOfNextMonth(now) } },
+  });
 }
