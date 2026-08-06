@@ -5,6 +5,7 @@ import ownerRoutes from "./routes/ownerRoutes.js";
 import tenantRoutes from "./routes/tenantRoutes.js";
 import unitRoutes from "./routes/unitRoutes.js";
 import leaseRoutes from "./routes/leaseRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import { errorHandler } from "./middleware/error.js";
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
   app.use("/api/tenants", tenantRoutes);
   app.use("/api/units", unitRoutes);
   app.use("/api/leases", leaseRoutes);
+  app.use("/api/payments", paymentRoutes);
   app.use(errorHandler);
   return app;
 }
