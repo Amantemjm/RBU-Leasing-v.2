@@ -25,6 +25,13 @@ describe("ResourceForm", () => {
     await w.find("form").trigger("submit.prevent");
     expect(w.emitted("submit")[0][0].name).toBe("Later");
   });
+  it("omits empty-string fields from the submitted values", async () => {
+    // ownerId is left unset (placeholder), so it must NOT be sent as ""
+    const w = mount(ResourceForm, { props: { fields, modelValue: { name: "SM" } } });
+    await w.find("form").trigger("submit.prevent");
+    expect(w.emitted("submit")[0][0]).toEqual({ name: "SM" });
+  });
+
   it("shows an error message", () => {
     const w = mount(ResourceForm, { props: { fields, error: "Bad input" } });
     expect(w.find(".error").text()).toContain("Bad input");

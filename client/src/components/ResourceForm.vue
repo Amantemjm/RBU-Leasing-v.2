@@ -19,7 +19,14 @@ seed(props.modelValue);
 watch(() => props.modelValue, seed, { deep: true });
 
 function onSubmit() {
-  emit("submit", { ...form });
+  // Omit empty-string fields (e.g. an untouched optional select on its
+  // placeholder) so they are not sent as "" — the API's enum/number schemas
+  // reject "", and omitting lets optional fields fall back to their defaults.
+  const values = {};
+  for (const [key, value] of Object.entries(form)) {
+    if (value !== "" && value !== null && value !== undefined) values[key] = value;
+  }
+  emit("submit", values);
 }
 </script>
 
