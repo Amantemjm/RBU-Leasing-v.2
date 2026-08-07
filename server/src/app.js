@@ -8,6 +8,7 @@ import leaseRoutes from "./routes/leaseRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import summaryRoutes from "./routes/summaryRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 import { errorHandler } from "./middleware/error.js";
 
 export function createApp() {
@@ -23,6 +24,7 @@ export function createApp() {
   app.use("/api/payments", paymentRoutes);
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/summary", summaryRoutes);
+  app.use("/api/reports", reportRoutes);
   app.use(errorHandler);
   return app;
 }
