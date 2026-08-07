@@ -13,14 +13,6 @@ enum Role {
   VIEWER
 }
 
-enum UnitType {
-  STUDIO
-  ONE_BR
-  TWO_BR
-  THREE_BR
-  OTHER
-}
-
 enum UnitStatus {
   VACANT
   OCCUPIED
@@ -66,7 +58,8 @@ model Unit {
   unitNumber String
   building   String?
   floor      String?
-  type       UnitType   @default(OTHER)
+  slotNo     String?
+  type       String     @default("OTHER")
   sizeSqm    Decimal?
   baseRent   Decimal
   status     UnitStatus @default(VACANT)
@@ -97,6 +90,14 @@ model Lease {
   monthlyRent Decimal
   deposit     Decimal     @default(0)
   status      LeaseStatus @default(ACTIVE)
+  advanceRent     String?
+  securityDeposit String?
+  modeOfPayment   String?
+  serviceFee      String?
+  source          String?
+  renewalPeriod   String?
+  remarks         String?
+  managedBy       String?
   payments    Payment[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
