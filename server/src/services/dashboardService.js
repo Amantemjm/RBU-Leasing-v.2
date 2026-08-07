@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { startOfMonth, startOfNextMonth } from "../lib/dates.js";
+import { startOfMonth, startOfNextMonth, addDays } from "../lib/dates.js";
 
 // Prisma Decimal (or null) -> Number
 function num(value) {
@@ -38,4 +38,42 @@ export async function getNewLeasesThisMonth(now = new Date()) {
   return prisma.lease.count({
     where: { startDate: { gte: startOfMonth(now), lt: startOfNextMonth(now) } },
   });
+}
+
+export async function getExpiringLeases(now = new Date()) {
+  const d30 = addDays(now, 30);
+  const d60 = addDays(now, 60);
+  const d90 = addDays(now, 90);
+  const [within30, within60, within90] = await Promise.all([
+    prisma.lease.count({ where: { status: "ACTIVE", endDate: { gte: now, lte: d30 } } }),
+    prisma.lease.count({ where: { status: "ACTIVE", endDate: { gt: d30, lte: d60 } } }),
+    prisma.lease.count({ where: { status: "ACTIVE", endDate: { gt: d60, lte: d90 } } }),
+  ]);
+  return { within30, within60, within90 };
+}
+
+export async function getOverdue(now = new Date()) {
+  const overdueWhere = { paidDate: null, dueDate: { lt: now } };
+  const [overdueCount, overdueAgg, outstandingAgg] = await Promise.all([
+    prisma.payment.count({ where: overdueWhere }),
+    prisma.payment.aggregate({ _sum: { amount: true }, where: overdueWhere }),
+    prisma.payment.aggregate({ _sum: { amount: true }, where: { paidDate: null } }),
+  ]);
+  return {
+    overdueCount,
+    overdueAmount: num(overdueAgg._sum.amount),
+    outstandingAmount: num(outstandingAgg._sum.amount),
+  };
+}
+
+export async function getDashboard(now = new Date()) {
+  const [counts, occupancy, income, expiring, overdue, newLeasesThisMonth] = await Promise.all([
+    getCounts(),
+    getOccupancy(),
+    getMonthlyIncome(),
+    getExpiringLeases(now),
+    getOverdue(now),
+    getNewLeasesThisMonth(now),
+  ]);
+  return { counts, occupancy, income, expiring, overdue, newLeasesThisMonth };
 }
