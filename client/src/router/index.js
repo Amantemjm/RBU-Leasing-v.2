@@ -4,6 +4,7 @@ import AppLayout from "../components/AppLayout.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "../views/DashboardView.vue";
 import SummaryView from "../views/SummaryView.vue";
+import ReportsView from "../views/ReportsView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
 import TenantsView from "../views/TenantsView.vue";
@@ -24,6 +25,7 @@ const routes = [
     children: [
       { path: "", component: DashboardView },
       { path: "summary", component: SummaryView },
+      { path: "reports", component: ReportsView },
       { path: "owners", component: OwnersView },
       { path: "owners/new", component: OwnerFormView },
       { path: "owners/:id", component: OwnerFormView },
