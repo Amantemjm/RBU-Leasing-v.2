@@ -45,3 +45,36 @@ export async function metricsFor(range) {
 
   return { totalIncome: collected, expected, collected, collectionRate, occupancyRate, newLeases, terminatedLeases };
 }
+
+const METRIC_KEYS = [
+  "totalIncome", "expected", "collected", "collectionRate",
+  "occupancyRate", "newLeases", "terminatedLeases",
+];
+
+function delta(current, prior) {
+  const change = current - prior;
+  const pct = prior !== 0 ? change / prior : null;
+  const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
+  return { change, pct, direction };
+}
+
+function periodLabel(type, start) {
+  const year = start.getFullYear();
+  if (type === "year") return String(year);
+  if (type === "quarter") return `Q${Math.floor(start.getMonth() / 3) + 1} ${year}`;
+  return `${start.toLocaleString("en-US", { month: "long" })} ${year}`;
+}
+
+export async function getExecutiveSummary({ type = "month", anchor = new Date() } = {}) {
+  const cur = periodRange(type, anchor);
+  const prev = priorRange(type, anchor);
+  const [current, prior] = await Promise.all([metricsFor(cur), metricsFor(prev)]);
+  const deltas = {};
+  for (const key of METRIC_KEYS) deltas[key] = delta(current[key], prior[key]);
+  return {
+    period: { type, start: cur.start, end: cur.end, label: periodLabel(type, cur.start) },
+    current,
+    prior,
+    deltas,
+  };
+}
