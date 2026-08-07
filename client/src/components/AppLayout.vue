@@ -7,6 +7,7 @@ const route = useRoute();
 const router = useRouter();
 const links = [
   { to: "/", label: "Dashboard" },
+  { to: "/summary", label: "Summary" },
   { to: "/owners", label: "Owners" },
   { to: "/units", label: "Units" },
   { to: "/tenants", label: "Tenants" },

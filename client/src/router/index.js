@@ -3,6 +3,7 @@ import { useAuthStore } from "../stores/auth.js";
 import AppLayout from "../components/AppLayout.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "../views/DashboardView.vue";
+import SummaryView from "../views/SummaryView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
 import TenantsView from "../views/TenantsView.vue";
@@ -22,6 +23,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: "", component: DashboardView },
+      { path: "summary", component: SummaryView },
       { path: "owners", component: OwnersView },
       { path: "owners/new", component: OwnerFormView },
       { path: "owners/:id", component: OwnerFormView },
