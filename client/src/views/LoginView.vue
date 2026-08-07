@@ -20,11 +20,17 @@ async function submit() {
 </script>
 
 <template>
-  <form @submit.prevent="submit">
-    <h1>RBU Leasing — Sign in</h1>
-    <input v-model="email" type="email" placeholder="Email" />
-    <input v-model="password" type="password" placeholder="Password" />
-    <button type="submit">Log in</button>
-    <p v-if="error">{{ error }}</p>
-  </form>
+  <div class="auth">
+    <div class="auth__card">
+      <div class="auth__brand">RBU Leasing</div>
+      <p class="auth__eyebrow">Residential Business Unit</p>
+      <h1>Sign in to your account</h1>
+      <form @submit.prevent="submit">
+        <input v-model="email" type="email" placeholder="Email" autocomplete="username" />
+        <input v-model="password" type="password" placeholder="Password" autocomplete="current-password" />
+        <button type="submit">Log in</button>
+        <p v-if="error" class="error">{{ error }}</p>
+      </form>
+    </div>
+  </div>
 </template>

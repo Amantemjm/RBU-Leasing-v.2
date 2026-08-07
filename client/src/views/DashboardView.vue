@@ -16,28 +16,36 @@ function pct(rate) { return `${Math.round(rate * 100)}%`; }
       <div class="card">
         <h2>Occupancy</h2>
         <p class="big">{{ pct(data.occupancy.rate) }}</p>
+        <div class="meter" role="img" :aria-label="`${pct(data.occupancy.rate)} occupied`">
+          <span class="meter__fill" :style="{ width: pct(data.occupancy.rate) }"></span>
+        </div>
         <p>{{ data.occupancy.occupied }} of {{ data.occupancy.totalUnits }} units occupied</p>
       </div>
+
       <div class="card">
         <h2>Monthly income</h2>
         <p class="big">{{ formatPHP(data.income.monthlyIncome) }}</p>
         <p>{{ data.income.activeLeases }} active leases</p>
       </div>
+
       <div class="card">
         <h2>Leases expiring soon</h2>
         <p>≤30 days: {{ data.expiring.within30 }}</p>
         <p>31–60 days: {{ data.expiring.within60 }}</p>
         <p>61–90 days: {{ data.expiring.within90 }}</p>
       </div>
-      <div class="card">
+
+      <div class="card" :class="{ 'card--alert': data.overdue.overdueCount > 0 }">
         <h2>Overdue / outstanding</h2>
+        <p class="big">{{ formatPHP(data.overdue.outstandingAmount) }}</p>
         <p>{{ data.overdue.overdueCount }} overdue ({{ formatPHP(data.overdue.overdueAmount) }})</p>
-        <p>Outstanding: {{ formatPHP(data.overdue.outstandingAmount) }}</p>
       </div>
+
       <div class="card">
         <h2>New leases this month</h2>
         <p class="big">{{ data.newLeasesThisMonth }}</p>
       </div>
+
       <div class="card">
         <h2>Totals</h2>
         <p>{{ data.counts.owners }} owners</p>
