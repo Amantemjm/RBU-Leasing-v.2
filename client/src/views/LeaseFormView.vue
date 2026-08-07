@@ -25,6 +25,14 @@ const fields = computed(() => [
   { key: "monthlyRent", label: "Monthly rent (PHP)", type: "number" },
   { key: "deposit", label: "Deposit (PHP)", type: "number" },
   { key: "status", label: "Status", type: "select", options: STATUS },
+  { key: "managedBy", label: "Managed by (O-LEASE)", type: "text" },
+  { key: "advanceRent", label: "Advance rent", type: "text" },
+  { key: "securityDeposit", label: "Security deposit", type: "text" },
+  { key: "modeOfPayment", label: "Mode of payment", type: "text" },
+  { key: "serviceFee", label: "Service fee paid", type: "text" },
+  { key: "source", label: "Source", type: "text" },
+  { key: "renewalPeriod", label: "Renewal period", type: "text" },
+  { key: "remarks", label: "Remarks", type: "text" },
 ]);
 
 onMounted(async () => {

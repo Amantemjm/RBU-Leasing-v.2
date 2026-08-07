@@ -17,6 +17,8 @@ const columns = [
   { key: "endDate", label: "End", format: formatDate },
   { key: "monthlyRent", label: "Monthly rent", format: formatPHP },
   { key: "status", label: "Status" },
+  { key: "modeOfPayment", label: "Mode" },
+  { key: "source", label: "Source" },
 ];
 
 async function load() { rows.value = await leases.list(); }

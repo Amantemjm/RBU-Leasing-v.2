@@ -13,15 +13,15 @@ const ownerOptions = ref([]);
 const error = ref("");
 const submitting = ref(false);
 
-const TYPES = ["STUDIO", "ONE_BR", "TWO_BR", "THREE_BR", "OTHER"].map((v) => ({ value: v, label: v }));
 const STATUS = ["VACANT", "OCCUPIED"].map((v) => ({ value: v, label: v }));
 
 const fields = computed(() => [
   { key: "ownerId", label: "Owner", type: "select", options: ownerOptions.value },
   { key: "unitNumber", label: "Unit number", type: "text" },
   { key: "building", label: "Building", type: "text" },
-  { key: "floor", label: "Floor", type: "text" },
-  { key: "type", label: "Type", type: "select", options: TYPES },
+  { key: "floor", label: "Level", type: "text" },
+  { key: "slotNo", label: "Slot no.", type: "text" },
+  { key: "type", label: "Unit type", type: "text" },
   { key: "sizeSqm", label: "Size (sqm)", type: "number" },
   { key: "baseRent", label: "Base rent (PHP)", type: "number" },
   { key: "status", label: "Status", type: "select", options: STATUS },
