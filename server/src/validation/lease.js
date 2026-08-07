@@ -8,6 +8,14 @@ export const leaseCreateSchema = z.object({
   monthlyRent: z.coerce.number().nonnegative(),
   deposit: z.coerce.number().nonnegative().optional(),
   status: z.enum(["ACTIVE", "EXPIRED", "TERMINATED"]).optional(),
+  advanceRent: z.string().nullish(),
+  securityDeposit: z.string().nullish(),
+  modeOfPayment: z.string().nullish(),
+  serviceFee: z.string().nullish(),
+  source: z.string().nullish(),
+  renewalPeriod: z.string().nullish(),
+  remarks: z.string().nullish(),
+  managedBy: z.string().nullish(),
 });
 
 export const leaseUpdateSchema = leaseCreateSchema.partial();
