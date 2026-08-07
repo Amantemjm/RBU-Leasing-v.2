@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import ownerRoutes from "./routes/ownerRoutes.js";
 import tenantRoutes from "./routes/tenantRoutes.js";
@@ -25,6 +27,19 @@ export function createApp() {
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/summary", summaryRoutes);
   app.use("/api/reports", reportRoutes);
+
+  // Production: serve the built Vue client as a single deployable. The API
+  // routes above take precedence; any other GET falls back to index.html so
+  // client-side routing works. Gated on NODE_ENV so tests are unaffected.
+  if (process.env.NODE_ENV === "production") {
+    const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");
+    app.use(express.static(dist));
+    app.use((req, res, next) => {
+      if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+      res.sendFile(path.join(dist, "index.html"));
+    });
+  }
+
   app.use(errorHandler);
   return app;
 }

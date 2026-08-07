@@ -5,7 +5,10 @@
     "dev": "node src/index.js",
     "test": "vitest run",
     "prisma:migrate": "prisma migrate dev",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "set-admin-password": "node scripts/set-admin-password.js",
+    "service:install": "node scripts/install-service.cjs",
+    "service:uninstall": "node scripts/uninstall-service.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -15,6 +18,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "node-windows": "^1.0.0-beta.8",
     "prisma": "^6.19.3",
     "zod": "^4.4.3"
   },
