@@ -10,7 +10,7 @@ describe("seedEstates", () => {
     await seedEstates(prisma);
     const estates = await prisma.estate.findMany({ include: { towers: true } });
     expect(estates).toHaveLength(5);
-    expect(await prisma.tower.count()).toBe(15);
+    expect(await prisma.tower.count()).toBe(16);
 
     const capitol = estates.find((e) => e.name === "Capitol Commons");
     expect(capitol.towers.map((t) => t.name).sort()).toEqual([
@@ -21,13 +21,13 @@ describe("seedEstates", () => {
     ]);
     // every configured tower is present
     const totalConfigured = Object.values(ESTATE_HIERARCHY).reduce((n, t) => n + t.length, 0);
-    expect(totalConfigured).toBe(15);
+    expect(totalConfigured).toBe(16);
   });
 
   it("is idempotent — running twice does not duplicate", async () => {
     await seedEstates(prisma);
     await seedEstates(prisma);
     expect(await prisma.estate.count()).toBe(5);
-    expect(await prisma.tower.count()).toBe(15);
+    expect(await prisma.tower.count()).toBe(16);
   });
 });

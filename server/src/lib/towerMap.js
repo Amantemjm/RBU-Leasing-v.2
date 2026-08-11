@@ -13,6 +13,7 @@ const RULES = [
   [/lleida/i, "Lleida Tower"],
   [/majorca/i, "Majorca Residences"],
   [/maple/i, "Maple at Verdant Towers"],
+  [/glaston/i, "Glaston"],
 ];
 
 export function towerNameFor(building) {

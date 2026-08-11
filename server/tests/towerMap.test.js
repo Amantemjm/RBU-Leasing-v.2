@@ -21,14 +21,14 @@ describe("towerNameFor (decode column C)", () => {
     expect(towerNameFor("CV Lleida")).toBe("Lleida Tower");
     expect(towerNameFor("CV Majorca Tower")).toBe("Majorca Residences");
   });
-  it("maps Connor / Viridian (Greenhills) and Maple (Ortigas East)", () => {
+  it("maps Connor / Viridian (Greenhills) and Maple / Glaston (Ortigas East)", () => {
     expect(towerNameFor("CONNOR")).toBe("Connor at Greenhills");
     expect(towerNameFor("Viridian in GH")).toBe("Viridian in Greenhills");
     expect(towerNameFor("Maple")).toBe("Maple at Verdant Towers");
+    expect(towerNameFor("Glaston")).toBe("Glaston");
   });
   it("returns null for unknown / ambiguous values", () => {
     expect(towerNameFor("ICC")).toBeNull();
-    expect(towerNameFor("Glaston")).toBeNull();
     expect(towerNameFor("VGCC")).toBeNull();
     expect(towerNameFor("")).toBeNull();
     expect(towerNameFor(null)).toBeNull();

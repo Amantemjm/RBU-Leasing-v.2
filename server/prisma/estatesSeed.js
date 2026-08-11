@@ -20,6 +20,7 @@ export const ESTATE_HIERARCHY = {
   ],
   "Ortigas East": [
     "Maple at Verdant Towers",
+    "Glaston",
   ],
   "Ortigas Center": [
     "Residences at The Galleon",
