@@ -1,10 +1,13 @@
 import { prisma } from "../src/lib/prisma.js";
 import { issueToken } from "../src/services/authService.js";
 
-// Delete in FK-safe order (children before parents).
+// Delete in FK-safe order (children before parents). Removes owner/tenant-linked
+// user logins too (seeded admin has no link, so it survives).
 export async function resetCrudTables() {
   await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
+  await prisma.requirement.deleteMany();
+  await prisma.user.deleteMany({ where: { OR: [{ unitOwnerId: { not: null } }, { tenantId: { not: null } }] } });
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.unitOwner.deleteMany();
@@ -24,6 +27,10 @@ export const factory = {
   tenant: (over = {}) => prisma.tenant.create({ data: { name: "Tenant", ...over } }),
   estate: (over = {}) => prisma.estate.create({ data: { name: "Estate", ...over } }),
   tower: (estateId, over = {}) => prisma.tower.create({ data: { estateId, name: "Tower", ...over } }),
+  requirement: (tenantId, over = {}) =>
+    prisma.requirement.create({
+      data: { tenantId, filename: "doc.pdf", mimeType: "application/pdf", size: 3, data: Buffer.from("abc"), ...over },
+    }),
   unit: (ownerId, over = {}) =>
     prisma.unit.create({ data: { ownerId, unitNumber: "101", baseRent: 25000, ...over } }),
   lease: (unitId, tenantId, over = {}) =>
