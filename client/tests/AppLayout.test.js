@@ -11,9 +11,10 @@ function makeRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: "/", component: stub }, { path: "/login", component: stub },
-      { path: "/owners", component: stub }, { path: "/units", component: stub },
-      { path: "/tenants", component: stub }, { path: "/leases", component: stub },
-      { path: "/payments", component: stub },
+      { path: "/summary", component: stub }, { path: "/reports", component: stub },
+      { path: "/admin", component: stub }, { path: "/owners", component: stub },
+      { path: "/units", component: stub }, { path: "/tenants", component: stub },
+      { path: "/leases", component: stub }, { path: "/payments", component: stub },
     ],
   });
 }
@@ -21,12 +22,22 @@ function makeRouter() {
 describe("AppLayout", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("renders all nav links", async () => {
+  it("renders the top-level staff nav links", async () => {
     const router = makeRouter(); router.push("/"); await router.isReady();
     const w = mount(AppLayout, { global: { plugins: [router] } });
-    for (const label of ["Dashboard", "Owners", "Units", "Tenants", "Leases", "Payments"]) {
+    for (const label of ["Dashboard", "Summary", "Reports"]) {
       expect(w.text()).toContain(label);
     }
+  });
+
+  it("shows the Master Admin hub link for staff who can write", async () => {
+    const auth = useAuthStore();
+    auth.setSession({ token: "t", user: { email: "o@b.c", role: "LEASING_OFFICER" } });
+    const router = makeRouter(); router.push("/"); await router.isReady();
+    const w = mount(AppLayout, { global: { plugins: [router] } });
+    expect(w.text()).toContain("Master Admin");
+    // management sections are no longer top-level nav
+    expect(w.find("nav.app-nav").text()).not.toContain("Owners");
   });
 
   it("logout clears the auth store", async () => {

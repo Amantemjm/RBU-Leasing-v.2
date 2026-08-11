@@ -19,23 +19,12 @@ const STAFF_LINKS = [
   { to: "/", label: "Dashboard" },
   { to: "/summary", label: "Summary" },
   { to: "/reports", label: "Reports" },
-  { to: "/approvals", label: "Approvals", staffWrite: true },
-  { to: "/requirements", label: "Requirements", staffWrite: true },
-  { to: "/owners", label: "Owners" },
-  { to: "/units", label: "Units" },
-  { to: "/tenants", label: "Tenants" },
-  { to: "/leases", label: "Leases" },
-  { to: "/payments", label: "Payments" },
 ];
 
 const links = computed(() => {
   if (auth.isOwner) return OWNER_LINKS;
   if (auth.isTenant) return TENANT_LINKS;
-  return STAFF_LINKS.filter((l) => {
-    if (l.adminOnly) return auth.role === "ADMIN";
-    if (l.staffWrite) return ["ADMIN", "LEASING_OFFICER"].includes(auth.role);
-    return true;
-  });
+  return STAFF_LINKS;
 });
 
 function isActive(to) {
@@ -62,7 +51,7 @@ function logout() {
       </nav>
       <div class="topbar-foot">
         <RouterLink
-          v-if="auth.role === 'ADMIN'"
+          v-if="auth.canWrite"
           to="/admin"
           class="master-admin"
           :class="{ active: isActive('/admin') }"
