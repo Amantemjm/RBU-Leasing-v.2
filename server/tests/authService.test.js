@@ -17,4 +17,12 @@ describe("authService pure helpers", () => {
     expect(decoded.userId).toBe("u1");
     expect(decoded.role).toBe("ADMIN");
   });
+
+  it("issues a JWT carrying owner/tenant links", () => {
+    process.env.JWT_SECRET = "test-secret";
+    const token = issueToken({ id: "u2", role: "UNIT_OWNER", unitOwnerId: "o9", tenantId: null });
+    const decoded = jwt.verify(token, "test-secret");
+    expect(decoded.unitOwnerId).toBe("o9");
+    expect(decoded.tenantId).toBeNull();
+  });
 });
