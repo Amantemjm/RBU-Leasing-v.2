@@ -15,6 +15,11 @@ import LeasesView from "../views/LeasesView.vue";
 import LeaseFormView from "../views/LeaseFormView.vue";
 import PaymentsView from "../views/PaymentsView.vue";
 import PaymentFormView from "../views/PaymentFormView.vue";
+import MyUnitsView from "../views/MyUnitsView.vue";
+import RegisterUnitView from "../views/RegisterUnitView.vue";
+import ApprovalsView from "../views/ApprovalsView.vue";
+import RequirementsView from "../views/RequirementsView.vue";
+import UsersView from "../views/UsersView.vue";
 
 const routes = [
   { path: "/login", component: LoginView },
@@ -41,6 +46,11 @@ const routes = [
       { path: "payments", component: PaymentsView },
       { path: "payments/new", component: PaymentFormView },
       { path: "payments/:id", component: PaymentFormView },
+      { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
+      { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
+      { path: "approvals", component: ApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
+      { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
+      { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
     ],
   },
 ];
@@ -49,5 +59,9 @@ const router = createRouter({ history: createWebHistory(), routes });
 router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
+  if (!auth.isAuthenticated) return;
+  const home = auth.isOwner ? "/my-units" : auth.isTenant ? "/requirements" : "/";
+  if (to.path === "/" && home !== "/") return home;
+  if (to.meta.roles && !to.meta.roles.includes(auth.role)) return home;
 });
 export default router;

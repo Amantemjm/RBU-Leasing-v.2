@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, ConflictError, InvalidReferenceError } from "../lib/errors.js";
 
-const withHierarchy = { tower: { include: { estate: true } } };
+const withHierarchy = { tower: { include: { estate: true } }, owner: { select: { id: true, name: true } } };
 
 async function assertOwnerExists(ownerId) {
   const owner = await prisma.unitOwner.findUnique({ where: { id: ownerId } });

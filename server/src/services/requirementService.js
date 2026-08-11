@@ -2,7 +2,10 @@ import { prisma } from "../lib/prisma.js";
 import { NotFoundError } from "../lib/errors.js";
 
 // Metadata only — never returns the file bytes.
-const META = { id: true, tenantId: true, filename: true, mimeType: true, size: true, uploadedAt: true };
+const META = {
+  id: true, tenantId: true, filename: true, mimeType: true, size: true, uploadedAt: true,
+  tenant: { select: { id: true, name: true } },
+};
 
 export function createRequirement(data) {
   return prisma.requirement.create({ data, select: META });

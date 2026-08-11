@@ -17,3 +17,13 @@ export const leases = resource("/leases");
 export const payments = resource("/payments");
 export const estates = resource("/estates");
 export const towers = resource("/towers");
+
+export function approveUnit(id) {
+  return api.patch(`/units/${id}/approve`).then((r) => r.data);
+}
+export function rejectUnit(id) {
+  return api.patch(`/units/${id}/reject`).then((r) => r.data);
+}
+export function createUser(payload) {
+  return api.post("/auth/register", payload).then((r) => r.data);
+}

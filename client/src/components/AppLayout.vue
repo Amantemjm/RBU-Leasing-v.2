@@ -1,20 +1,42 @@
 <script setup>
+import { computed } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const links = [
+
+const OWNER_LINKS = [
+  { to: "/my-units", label: "My Units" },
+  { to: "/register-unit", label: "Register Unit" },
+  { to: "/leases", label: "Leases" },
+  { to: "/payments", label: "Payments" },
+];
+const TENANT_LINKS = [{ to: "/requirements", label: "Requirements" }];
+const STAFF_LINKS = [
   { to: "/", label: "Dashboard" },
   { to: "/summary", label: "Summary" },
   { to: "/reports", label: "Reports" },
+  { to: "/approvals", label: "Approvals", staffWrite: true },
+  { to: "/requirements", label: "Requirements", staffWrite: true },
+  { to: "/users", label: "Users", adminOnly: true },
   { to: "/owners", label: "Owners" },
   { to: "/units", label: "Units" },
   { to: "/tenants", label: "Tenants" },
   { to: "/leases", label: "Leases" },
   { to: "/payments", label: "Payments" },
 ];
+
+const links = computed(() => {
+  if (auth.isOwner) return OWNER_LINKS;
+  if (auth.isTenant) return TENANT_LINKS;
+  return STAFF_LINKS.filter((l) => {
+    if (l.adminOnly) return auth.role === "ADMIN";
+    if (l.staffWrite) return ["ADMIN", "LEASING_OFFICER"].includes(auth.role);
+    return true;
+  });
+});
 
 function isActive(to) {
   return to === "/" ? route.path === "/" : route.path.startsWith(to);
