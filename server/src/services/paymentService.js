@@ -13,6 +13,15 @@ export function listPayments({ leaseId, status } = {}) {
   return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
 }
 
+// A UNIT_OWNER only sees payments on leases of units they own.
+export function listPaymentsForUser(user, filters = {}) {
+  const where = {};
+  if (filters.leaseId) where.leaseId = filters.leaseId;
+  if (filters.status) where.status = filters.status;
+  if (user.role === "UNIT_OWNER") where.lease = { unit: { ownerId: user.unitOwnerId } };
+  return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
+}
+
 export async function getPayment(id) {
   const payment = await prisma.payment.findUnique({ where: { id } });
   if (!payment) throw new NotFoundError("Payment not found");

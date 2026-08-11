@@ -4,7 +4,7 @@ import { paymentCreateSchema, paymentUpdateSchema } from "../validation/payment.
 export async function list(req, res, next) {
   try {
     const { leaseId, status } = req.query;
-    res.json(await service.listPayments({ leaseId, status }));
+    res.json(await service.listPaymentsForUser(req.user, { leaseId, status }));
   } catch (e) { next(e); }
 }
 export async function get(req, res, next) {

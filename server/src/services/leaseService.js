@@ -19,6 +19,16 @@ export function listLeases({ unitId, tenantId, status } = {}) {
   return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
 }
 
+// A UNIT_OWNER only sees leases on units they own.
+export function listLeasesForUser(user, filters = {}) {
+  const where = {};
+  if (filters.unitId) where.unitId = filters.unitId;
+  if (filters.tenantId) where.tenantId = filters.tenantId;
+  if (filters.status) where.status = filters.status;
+  if (user.role === "UNIT_OWNER") where.unit = { ownerId: user.unitOwnerId };
+  return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
+}
+
 export async function getLease(id) {
   const lease = await prisma.lease.findUnique({ where: { id } });
   if (!lease) throw new NotFoundError("Lease not found");

@@ -4,7 +4,7 @@ import { leaseCreateSchema, leaseUpdateSchema } from "../validation/lease.js";
 export async function list(req, res, next) {
   try {
     const { unitId, tenantId, status } = req.query;
-    res.json(await service.listLeases({ unitId, tenantId, status }));
+    res.json(await service.listLeasesForUser(req.user, { unitId, tenantId, status }));
   } catch (e) { next(e); }
 }
 export async function get(req, res, next) {
