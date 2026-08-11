@@ -3,8 +3,8 @@ import { unitCreateSchema, unitUpdateSchema } from "../validation/unit.js";
 
 export async function list(req, res, next) {
   try {
-    const { ownerId, status } = req.query;
-    res.json(await service.listUnits({ ownerId, status }));
+    const { ownerId, status, estateId, towerId } = req.query;
+    res.json(await service.listUnits({ ownerId, status, estateId, towerId }));
   } catch (e) { next(e); }
 }
 export async function get(req, res, next) {

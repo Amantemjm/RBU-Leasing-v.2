@@ -3,6 +3,7 @@ import { z } from "zod";
 export const unitCreateSchema = z.object({
   ownerId: z.string().min(1),
   unitNumber: z.string().min(1),
+  towerId: z.string().nullish(),
   building: z.string().nullish(),
   floor: z.string().nullish(),
   slotNo: z.string().nullish(),

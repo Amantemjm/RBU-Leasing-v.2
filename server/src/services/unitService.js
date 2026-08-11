@@ -1,32 +1,43 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, ConflictError, InvalidReferenceError } from "../lib/errors.js";
 
+const withHierarchy = { tower: { include: { estate: true } } };
+
 async function assertOwnerExists(ownerId) {
   const owner = await prisma.unitOwner.findUnique({ where: { id: ownerId } });
   if (!owner) throw new InvalidReferenceError("ownerId does not reference an existing owner");
 }
 
-export function listUnits({ ownerId, status } = {}) {
+async function assertTowerExists(towerId) {
+  const tower = await prisma.tower.findUnique({ where: { id: towerId } });
+  if (!tower) throw new InvalidReferenceError("towerId does not reference an existing tower");
+}
+
+export function listUnits({ ownerId, status, estateId, towerId } = {}) {
   const where = {};
   if (ownerId) where.ownerId = ownerId;
   if (status) where.status = status;
-  return prisma.unit.findMany({ where, orderBy: { createdAt: "desc" } });
+  if (towerId) where.towerId = towerId;
+  if (estateId) where.tower = { estateId };
+  return prisma.unit.findMany({ where, include: withHierarchy, orderBy: { createdAt: "desc" } });
 }
 
 export async function getUnit(id) {
-  const unit = await prisma.unit.findUnique({ where: { id } });
+  const unit = await prisma.unit.findUnique({ where: { id }, include: withHierarchy });
   if (!unit) throw new NotFoundError("Unit not found");
   return unit;
 }
 
 export async function createUnit(data) {
   await assertOwnerExists(data.ownerId);
+  if (data.towerId) await assertTowerExists(data.towerId);
   return prisma.unit.create({ data });
 }
 
 export async function updateUnit(id, data) {
   await getUnit(id);
   if (data.ownerId) await assertOwnerExists(data.ownerId);
+  if (data.towerId) await assertTowerExists(data.towerId);
   return prisma.unit.update({ where: { id }, data });
 }
 
