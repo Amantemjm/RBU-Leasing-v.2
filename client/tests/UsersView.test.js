@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 
 vi.mock("../src/lib/resource.js", () => ({
-  owners: { list: vi.fn(() => Promise.resolve([{ id: "o1", name: "Ayala" }])) },
-  tenants: { list: vi.fn(() => Promise.resolve([{ id: "t1", name: "Juan" }])) },
-  createUser: vi.fn(() => Promise.resolve({ email: "owner1@x.com", role: "UNIT_OWNER" })),
+  createUser: vi.fn(() => Promise.resolve({ email: "frontdesk", role: "VIEWER" })),
 }));
 
 import UsersView from "../src/views/UsersView.vue";
@@ -12,16 +10,18 @@ import { createUser } from "../src/lib/resource.js";
 
 describe("UsersView", () => {
   beforeEach(() => { createUser.mockClear(); });
-  it("shows the owner picker for UNIT_OWNER and creates a linked login", async () => {
+  it("creates a plain login with no owner/tenant link", async () => {
     const w = mount(UsersView);
     await flushPromises();
-    expect(w.find("#unitOwnerId").exists()).toBe(true); // default role is UNIT_OWNER
-    await w.find("#name").setValue("Owner One");
-    await w.find("#email").setValue("owner1@x.com");
+    expect(w.find("#unitOwnerId").exists()).toBe(false);
+    expect(w.find("#tenantId").exists()).toBe(false);
+    await w.find("#name").setValue("Front Desk");
+    await w.find("#email").setValue("frontdesk");
     await w.find("#password").setValue("pw123456");
-    await w.find("#unitOwnerId").setValue("o1");
     await w.find("form").trigger("submit.prevent");
     await flushPromises();
-    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({ role: "UNIT_OWNER", unitOwnerId: "o1" }));
+    expect(createUser).toHaveBeenCalledWith({
+      name: "Front Desk", email: "frontdesk", password: "pw123456", role: "VIEWER",
+    });
   });
 });

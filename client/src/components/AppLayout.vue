@@ -20,7 +20,6 @@ const STAFF_LINKS = [
   { to: "/reports", label: "Reports" },
   { to: "/approvals", label: "Approvals", staffWrite: true },
   { to: "/requirements", label: "Requirements", staffWrite: true },
-  { to: "/users", label: "Users", adminOnly: true },
   { to: "/owners", label: "Owners" },
   { to: "/units", label: "Units" },
   { to: "/tenants", label: "Tenants" },
@@ -61,8 +60,14 @@ function logout() {
         </RouterLink>
       </nav>
       <div class="topbar-foot">
+        <RouterLink
+          v-if="auth.role === 'ADMIN'"
+          to="/users"
+          class="master-admin"
+          :class="{ active: isActive('/users') }"
+        >Master Admin</RouterLink>
         <div class="who">
-          <span class="email">{{ auth.user?.email }}</span>
+          <span class="name">{{ auth.user?.name || auth.user?.email }}</span>
           <span v-if="auth.role" class="role">{{ auth.role }}</span>
         </div>
         <button type="button" class="logout" @click="logout">Log out</button>

@@ -230,10 +230,33 @@ button:disabled {
   line-height: 1;
 }
 
-.topbar-foot .who .email {
+.topbar-foot .who .name {
   color: #e6ebf2;
   font-size: 0.82rem;
   font-weight: 500;
+}
+
+.topbar-foot .master-admin {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  color: #f0d9a3;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border: 1px solid rgba(201, 162, 74, 0.45);
+  text-decoration: none;
+}
+
+.topbar-foot .master-admin:hover {
+  background: rgba(201, 162, 74, 0.12);
+  color: #fff;
+}
+
+.topbar-foot .master-admin.active {
+  background: #c9a24a;
+  color: var(--ink-900);
+  border-color: #c9a24a;
 }
 
 .topbar-foot .who .role {
