@@ -58,6 +58,22 @@ describe("admin provisions owner/tenant accounts", () => {
     expect(res.body).toHaveLength(0);
   });
 
+  it("lists credentials for an admin (no password hash)", async () => {
+    await request(app).post("/api/auth/register")
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: "Front Desk", email: "frontdesk", password: "pw123456", role: "VIEWER" });
+    const res = await request(app).get("/api/auth/users").set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(res.status).toBe(200);
+    const created = res.body.find((u) => u.email === "frontdesk");
+    expect(created).toMatchObject({ name: "Front Desk", role: "VIEWER" });
+    expect(created.passwordHash).toBeUndefined();
+  });
+
+  it("a viewer cannot list credentials (403)", async () => {
+    const res = await request(app).get("/api/auth/users").set("Authorization", `Bearer ${tokens.viewer()}`);
+    expect(res.status).toBe(403);
+  });
+
   it("a viewer cannot register users (403)", async () => {
     const res = await request(app).post("/api/auth/register")
       .set("Authorization", `Bearer ${tokens.viewer()}`)

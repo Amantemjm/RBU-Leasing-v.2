@@ -1,13 +1,13 @@
 import { prisma } from "../src/lib/prisma.js";
 import { issueToken } from "../src/services/authService.js";
 
-// Delete in FK-safe order (children before parents). Removes owner/tenant-linked
-// user logins too (seeded admin has no link, so it survives).
+// Delete in FK-safe order (children before parents). Removes every test-created
+// login (the seeded ADMIN is the only ADMIN, so it survives).
 export async function resetCrudTables() {
   await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.requirement.deleteMany();
-  await prisma.user.deleteMany({ where: { role: { in: ["UNIT_OWNER", "TENANT"] } } });
+  await prisma.user.deleteMany({ where: { role: { not: "ADMIN" } } });
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.unitOwner.deleteMany();

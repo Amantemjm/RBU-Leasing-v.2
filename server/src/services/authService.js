@@ -43,6 +43,16 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
   };
 }
 
+export async function listUsers() {
+  return prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, name: true, email: true, role: true,
+      unitOwnerId: true, tenantId: true, createdAt: true,
+    },
+  });
+}
+
 export async function loginUser({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("INVALID_CREDENTIALS");
