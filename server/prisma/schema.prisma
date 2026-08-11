@@ -51,12 +51,34 @@ model UnitOwner {
   updatedAt DateTime @updatedAt
 }
 
+model Estate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  towers    Tower[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tower {
+  id        String   @id @default(cuid())
+  name      String
+  estate    Estate   @relation(fields: [estateId], references: [id])
+  estateId  String
+  units     Unit[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([estateId, name])
+}
+
 model Unit {
   id         String     @id @default(cuid())
   owner      UnitOwner  @relation(fields: [ownerId], references: [id])
   ownerId    String
   unitNumber String
   building   String?
+  tower      Tower?     @relation(fields: [towerId], references: [id])
+  towerId    String?
   floor      String?
   slotNo     String?
   type       String     @default("OTHER")
