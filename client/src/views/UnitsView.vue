@@ -1,63 +1,75 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { units, estates } from "../lib/resource.js";
 import { formatPHP } from "../lib/formatters.js";
 import { useAuthStore } from "../stores/auth.js";
 import ResourceTable from "../components/ResourceTable.vue";
+import MultiSelect from "../components/MultiSelect.vue";
 
 const router = useRouter();
 const auth = useAuthStore();
 const canWrite = computed(() => ["ADMIN", "LEASING_OFFICER"].includes(auth.role));
 
+const allUnits = ref([]); // every unit, filtered client-side
 const estateList = ref([]); // [{ id, name, towers:[{id,name}] }]
-const selectedEstateId = ref(""); // "" = All estates
-const selectedTowerId = ref(""); // "" = all towers
-const rows = ref([]);
+const selectedEstateIds = ref([]);
+const selectedTowerIds = ref([]);
 
 const columns = [
   { key: "unitNumber", label: "Unit #" },
+  { key: "estateName", label: "Estate" },
+  { key: "towerName", label: "Tower" },
   { key: "type", label: "Type" },
   { key: "baseRent", label: "Base rent", format: formatPHP },
   { key: "status", label: "Status" },
 ];
 
-const selectedEstate = computed(() => estateList.value.find((e) => e.id === selectedEstateId.value) || null);
-const towerFilterOptions = computed(() => (selectedEstate.value ? selectedEstate.value.towers : []));
+const estateOptions = computed(() => estateList.value.map((e) => ({ value: e.id, label: e.name })));
 
-// Group the fetched units by their tower for display.
-const groups = computed(() => {
-  const map = new Map();
-  for (const u of rows.value) {
-    const key = u.tower?.id || "__none__";
-    const name = u.tower?.name || "Unassigned (no tower)";
-    if (!map.has(key)) map.set(key, { key, name, rows: [] });
-    map.get(key).rows.push(u);
-  }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+// Tower options reflect the chosen estates (all towers when no estate is selected).
+const towerOptions = computed(() => {
+  const shown = selectedEstateIds.value.length
+    ? estateList.value.filter((e) => selectedEstateIds.value.includes(e.id))
+    : estateList.value;
+  return shown.flatMap((e) => e.towers.map((t) => ({ value: t.id, label: `${t.name} · ${e.name}` })));
 });
 
-async function load() {
-  const params = {};
-  if (selectedEstateId.value) params.estateId = selectedEstateId.value;
-  if (selectedTowerId.value) params.towerId = selectedTowerId.value;
-  rows.value = await units.list(params);
-}
+// Drop any selected towers that no longer belong to the chosen estates.
+watch(selectedEstateIds, () => {
+  const valid = new Set(towerOptions.value.map((o) => o.value));
+  selectedTowerIds.value = selectedTowerIds.value.filter((id) => valid.has(id));
+});
 
-function selectEstate(estateId) {
-  selectedEstateId.value = estateId;
-  selectedTowerId.value = "";
-  load();
+const rows = computed(() =>
+  allUnits.value
+    .filter((u) => {
+      const estateId = u.tower?.estate?.id ?? u.tower?.estateId ?? null;
+      const towerId = u.tower?.id ?? null;
+      if (selectedEstateIds.value.length && !selectedEstateIds.value.includes(estateId)) return false;
+      if (selectedTowerIds.value.length && !selectedTowerIds.value.includes(towerId)) return false;
+      return true;
+    })
+    .map((u) => ({
+      ...u,
+      estateName: u.tower?.estate?.name || "—",
+      towerName: u.tower?.name || "Unassigned",
+    })),
+);
+
+async function reload() {
+  allUnits.value = await units.list();
 }
 
 onMounted(async () => {
-  estateList.value = await estates.list();
-  await load();
+  const [u, e] = await Promise.all([units.list(), estates.list()]);
+  allUnits.value = u;
+  estateList.value = e;
 });
 
 function remove(row) {
   if (!confirm(`Delete unit "${row.unitNumber}"?`)) return;
-  units.remove(row.id).then(load).catch((e) => alert(e.response?.data?.error || "Delete failed"));
+  units.remove(row.id).then(reload).catch((e) => alert(e.response?.data?.error || "Delete failed"));
 }
 </script>
 
@@ -68,101 +80,32 @@ function remove(row) {
       <button v-if="canWrite" type="button" @click="router.push('/units/new')">New unit</button>
     </header>
 
-    <div class="tabs">
-      <button type="button" :class="{ active: selectedEstateId === '' }" @click="selectEstate('')">All</button>
-      <button
-        v-for="e in estateList"
-        :key="e.id"
-        type="button"
-        :class="{ active: selectedEstateId === e.id }"
-        @click="selectEstate(e.id)"
-      >
-        {{ e.name }}
-      </button>
+    <div class="filters">
+      <MultiSelect label="Estate" :options="estateOptions" v-model="selectedEstateIds" />
+      <MultiSelect label="Tower" :options="towerOptions" v-model="selectedTowerIds" />
+      <span class="count">{{ rows.length }} unit{{ rows.length === 1 ? "" : "s" }}</span>
     </div>
 
-    <div v-if="selectedEstate" class="tower-filter">
-      <label>Tower
-        <select v-model="selectedTowerId" @change="load">
-          <option value="">All towers</option>
-          <option v-for="t in towerFilterOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
-        </select>
-      </label>
-    </div>
-
-    <p v-if="rows.length === 0" class="muted">No units.</p>
-
-    <div v-for="g in groups" :key="g.key" class="tower-group">
-      <h2>{{ g.name }} <span class="count">{{ g.rows.length }} unit{{ g.rows.length === 1 ? "" : "s" }}</span></h2>
-      <ResourceTable
-        :columns="columns"
-        :rows="g.rows"
-        :can-write="canWrite"
-        @edit="(row) => router.push(`/units/${row.id}`)"
-        @delete="remove"
-      />
-    </div>
+    <ResourceTable
+      :columns="columns"
+      :rows="rows"
+      :can-write="canWrite"
+      @edit="(row) => router.push(`/units/${row.id}`)"
+      @delete="remove"
+    />
   </section>
 </template>
 
 <style scoped>
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
+.units header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.filters {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
 }
-.tabs button {
-  background: var(--surface);
-  color: var(--muted);
-  border: 1px solid var(--line-strong);
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
+.count {
+  margin-left: auto; font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 999px; padding: 0.18rem 0.6rem;
 }
-.tabs button.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.tower-filter {
-  margin-bottom: 1.25rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.tower-filter select {
-  font-family: inherit;
-  text-transform: none;
-  letter-spacing: 0;
-  margin-left: 0.5rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.55rem;
-}
-.tower-group {
-  margin-bottom: 1.75rem;
-}
-.tower-group h2 {
-  font-size: 1rem;
-  color: var(--ink-800);
-  margin-bottom: 0.6rem;
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-.tower-group .count {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.12rem 0.5rem;
-}
-.muted { color: var(--muted); }
 </style>
