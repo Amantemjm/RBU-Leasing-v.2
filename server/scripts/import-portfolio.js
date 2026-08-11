@@ -2,6 +2,7 @@ import "../src/env.js";
 import { createRequire } from "module";
 import { prisma } from "../src/lib/prisma.js";
 import { text, money, toDate, leaseStatus, key } from "../src/lib/importClean.js";
+import { towerNameFor } from "../src/lib/towerMap.js";
 
 const require = createRequire(import.meta.url);
 const ExcelJS = require("exceljs");
@@ -21,6 +22,9 @@ async function main() {
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.unitOwner.deleteMany();
+
+  // Map seeded towers by canonical name so imported units link to a Tower.
+  const towerByName = new Map((await prisma.tower.findMany()).map((t) => [t.name, t.id]));
 
   const owners = new Map();
   const tenants = new Map();
@@ -73,9 +77,10 @@ async function main() {
     const uKey = `${key(building)}|${key(unitNumber)}`;
     let unitId = units.get(uKey);
     if (!unitId) {
+      const towerId = towerByName.get(towerNameFor(building)) ?? null;
       const u = await prisma.unit.create({
         data: {
-          ownerId, unitNumber, building, floor, slotNo, type: unitType,
+          ownerId, unitNumber, building, towerId, floor, slotNo, type: unitType,
           baseRent: monthlyRent, status: "OCCUPIED",
         },
       });
