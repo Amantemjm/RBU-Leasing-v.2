@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
+import { InvalidReferenceError } from "../lib/errors.js";
 
 export async function hashPassword(plain) {
   return bcrypt.hash(plain, 10);
@@ -18,12 +19,28 @@ export function issueToken({ id, role, unitOwnerId = null, tenantId = null }) {
   );
 }
 
-export async function registerUser({ name, email, password, role }) {
-  const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: { name, email, passwordHash, role: role || "VIEWER" },
-  });
-  return { id: user.id, name: user.name, email: user.email, role: user.role };
+export async function registerUser({ name, email, password, role, unitOwnerId, tenantId }) {
+  const finalRole = role || "VIEWER";
+  const data = { name, email, passwordHash: await hashPassword(password), role: finalRole };
+
+  if (finalRole === "UNIT_OWNER") {
+    if (!unitOwnerId) throw new InvalidReferenceError("unitOwnerId is required for a UNIT_OWNER");
+    const owner = await prisma.unitOwner.findUnique({ where: { id: unitOwnerId } });
+    if (!owner) throw new InvalidReferenceError("unitOwnerId does not reference an existing owner");
+    data.unitOwnerId = unitOwnerId;
+  }
+  if (finalRole === "TENANT") {
+    if (!tenantId) throw new InvalidReferenceError("tenantId is required for a TENANT");
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new InvalidReferenceError("tenantId does not reference an existing tenant");
+    data.tenantId = tenantId;
+  }
+
+  const user = await prisma.user.create({ data });
+  return {
+    id: user.id, name: user.name, email: user.email, role: user.role,
+    unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+  };
 }
 
 export async function loginUser({ email, password }) {

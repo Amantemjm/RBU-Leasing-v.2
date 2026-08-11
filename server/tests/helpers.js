@@ -7,7 +7,7 @@ export async function resetCrudTables() {
   await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.requirement.deleteMany();
-  await prisma.user.deleteMany({ where: { OR: [{ unitOwnerId: { not: null } }, { tenantId: { not: null } }] } });
+  await prisma.user.deleteMany({ where: { role: { in: ["UNIT_OWNER", "TENANT"] } } });
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.unitOwner.deleteMany();
