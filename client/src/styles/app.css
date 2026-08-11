@@ -144,56 +144,58 @@ button:disabled {
 
 .layout {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-.app-sidebar {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
+.app-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   background: var(--ink-900);
   color: #c7d0dd;
-  display: flex;
-  flex-direction: column;
+  padding: 0 1.5rem;
+  height: 60px;
   position: sticky;
   top: 0;
-  height: 100vh;
-  padding: 1.35rem 0.85rem;
+  z-index: 20;
 }
 
 .brand {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.4rem 0.75rem 1.4rem;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .brand__mark {
   font-family: var(--display);
   font-weight: 600;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   letter-spacing: 0.02em;
   color: #fff;
   line-height: 1;
 }
 
 .brand__sub {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   color: #7f8da3;
 }
 
 .app-nav {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 0.15rem;
+  flex-wrap: wrap;
 }
 
 .app-nav a {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.85rem;
   border-radius: var(--radius-sm);
   color: #aeb9c9;
   font-weight: 500;
@@ -213,32 +215,29 @@ button:disabled {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.sidebar-foot {
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.topbar-foot {
+  margin-left: auto;
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.9rem;
+  flex-shrink: 0;
 }
 
-.sidebar-foot .who {
-  padding: 0 0.75rem;
-  line-height: 1.35;
+.topbar-foot .who {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1;
 }
 
-.sidebar-foot .who .email {
-  display: block;
+.topbar-foot .who .email {
   color: #e6ebf2;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
-  word-break: break-all;
 }
 
-.sidebar-foot .who .role {
-  display: inline-block;
-  margin-top: 0.35rem;
-  font-size: 0.62rem;
+.topbar-foot .who .role {
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--ink-900);
@@ -248,14 +247,14 @@ button:disabled {
   font-weight: 700;
 }
 
-.app-sidebar .logout {
+.app-topbar .logout {
   background: transparent;
   color: #aeb9c9;
   border-color: rgba(255, 255, 255, 0.14);
-  text-align: left;
+  padding: 0.45rem 0.8rem;
 }
 
-.app-sidebar .logout:hover {
+.app-topbar .logout:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.28);
@@ -595,34 +594,20 @@ button:disabled {
    Responsive
    -------------------------------------------------------------------------- */
 
-@media (max-width: 760px) {
-  .layout {
-    flex-direction: column;
-  }
-  .app-sidebar {
-    width: 100%;
-    height: auto;
-    position: static;
-    flex-direction: row;
-    align-items: center;
+@media (max-width: 860px) {
+  .app-topbar {
     flex-wrap: wrap;
+    height: auto;
+    padding: 0.75rem 1rem;
     gap: 0.5rem 0.75rem;
-    padding: 0.85rem 1rem;
-  }
-  .brand {
-    padding: 0;
-    flex: 1;
+    position: static;
   }
   .app-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
+    order: 3;
+    width: 100%;
   }
-  .sidebar-foot {
-    margin: 0;
-    border: none;
-    padding: 0;
-    flex-direction: row;
-    align-items: center;
+  .topbar-foot {
+    margin-left: auto;
   }
   .app-main {
     padding: 1.35rem 1.25rem 2.5rem;

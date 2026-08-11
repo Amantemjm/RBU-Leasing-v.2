@@ -28,7 +28,7 @@ function logout() {
 
 <template>
   <div class="layout">
-    <aside class="app-sidebar">
+    <header class="app-topbar">
       <div class="brand">
         <span class="brand__mark">RBU</span>
         <span class="brand__sub">Leasing</span>
@@ -38,14 +38,14 @@ function logout() {
           {{ l.label }}
         </RouterLink>
       </nav>
-      <div class="sidebar-foot">
+      <div class="topbar-foot">
         <div class="who">
           <span class="email">{{ auth.user?.email }}</span>
           <span v-if="auth.role" class="role">{{ auth.role }}</span>
         </div>
         <button type="button" class="logout" @click="logout">Log out</button>
       </div>
-    </aside>
+    </header>
     <main class="app-main"><RouterView /></main>
   </div>
 </template>
