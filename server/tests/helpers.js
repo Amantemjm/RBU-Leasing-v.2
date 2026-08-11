@@ -8,6 +8,8 @@ export async function resetCrudTables() {
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.unitOwner.deleteMany();
+  await prisma.tower.deleteMany();
+  await prisma.estate.deleteMany();
 }
 
 export const tokens = {
@@ -20,6 +22,8 @@ export const tokens = {
 export const factory = {
   owner: (over = {}) => prisma.unitOwner.create({ data: { name: "Owner", ...over } }),
   tenant: (over = {}) => prisma.tenant.create({ data: { name: "Tenant", ...over } }),
+  estate: (over = {}) => prisma.estate.create({ data: { name: "Estate", ...over } }),
+  tower: (estateId, over = {}) => prisma.tower.create({ data: { estateId, name: "Tower", ...over } }),
   unit: (ownerId, over = {}) =>
     prisma.unit.create({ data: { ownerId, unitNumber: "101", baseRent: 25000, ...over } }),
   lease: (unitId, tenantId, over = {}) =>
