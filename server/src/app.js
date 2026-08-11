@@ -13,6 +13,7 @@ import summaryRoutes from "./routes/summaryRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import estateRoutes from "./routes/estateRoutes.js";
 import towerRoutes from "./routes/towerRoutes.js";
+import requirementRoutes from "./routes/requirementRoutes.js";
 import { errorHandler } from "./middleware/error.js";
 
 export function createApp() {
@@ -31,6 +32,7 @@ export function createApp() {
   app.use("/api/reports", reportRoutes);
   app.use("/api/estates", estateRoutes);
   app.use("/api/towers", towerRoutes);
+  app.use("/api/requirements", requirementRoutes);
 
   // Production: serve the built Vue client as a single deployable. The API
   // routes above take precedence; any other GET falls back to index.html so
