@@ -5,20 +5,13 @@ import { seedEstates } from "./estatesSeed.js";
 
 async function main() {
   const email = "admin@rbu.local";
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    console.log("admin exists");
-  } else {
-    await prisma.user.create({
-      data: {
-        name: "RBU Admin",
-        email,
-        passwordHash: await hashPassword("admin123"),
-        role: "ADMIN",
-      },
-    });
-    console.log("seeded admin@rbu.local / admin123");
-  }
+  // Super admin: always guaranteed present with a known password and ADMIN role.
+  await prisma.user.upsert({
+    where: { email },
+    update: { passwordHash: await hashPassword("admin123"), role: "ADMIN" },
+    create: { name: "Super Admin", email, passwordHash: await hashPassword("admin123"), role: "ADMIN" },
+  });
+  console.log("seeded super admin admin@rbu.local / admin123");
 
   await seedEstates(prisma);
   console.log("seeded estate/tower hierarchy");

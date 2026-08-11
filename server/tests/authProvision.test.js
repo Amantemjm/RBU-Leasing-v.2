@@ -74,6 +74,50 @@ describe("admin provisions owner/tenant accounts", () => {
     expect(res.status).toBe(403);
   });
 
+  async function createLogin(over = {}) {
+    const res = await request(app).post("/api/auth/register")
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: "Front Desk", email: "frontdesk", password: "pw123456", role: "VIEWER", ...over });
+    return res.body;
+  }
+
+  it("edits a login's name and role", async () => {
+    const u = await createLogin();
+    const res = await request(app).patch(`/api/auth/users/${u.id}`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: "Reception", role: "LEASING_OFFICER" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ name: "Reception", role: "LEASING_OFFICER" });
+  });
+
+  it("resets a login's password (can log in with the new one)", async () => {
+    const u = await createLogin();
+    await request(app).patch(`/api/auth/users/${u.id}`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ password: "newpass123" });
+    const login = await request(app).post("/api/auth/login").send({ email: "frontdesk", password: "newpass123" });
+    expect(login.status).toBe(200);
+  });
+
+  it("deletes a login", async () => {
+    const u = await createLogin();
+    const del = await request(app).delete(`/api/auth/users/${u.id}`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(del.status).toBe(204);
+    const list = await request(app).get("/api/auth/users").set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(list.body.find((x) => x.id === u.id)).toBeUndefined();
+  });
+
+  it("protects the super admin from deletion and demotion", async () => {
+    const list = await request(app).get("/api/auth/users").set("Authorization", `Bearer ${tokens.admin()}`);
+    const superAdmin = list.body.find((x) => x.email === "admin@rbu.local");
+    expect(superAdmin).toBeTruthy();
+    const del = await request(app).delete(`/api/auth/users/${superAdmin.id}`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(del.status).toBe(409);
+    const demote = await request(app).patch(`/api/auth/users/${superAdmin.id}`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ role: "VIEWER" });
+    expect(demote.status).toBe(409);
+  });
+
   it("a viewer cannot register users (403)", async () => {
     const res = await request(app).post("/api/auth/register")
       .set("Authorization", `Bearer ${tokens.viewer()}`)

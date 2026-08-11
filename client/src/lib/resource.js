@@ -30,3 +30,9 @@ export function createUser(payload) {
 export function listUsers() {
   return api.get("/auth/users").then((r) => r.data);
 }
+export function updateUser(id, payload) {
+  return api.patch(`/auth/users/${id}`, payload).then((r) => r.data);
+}
+export function deleteUser(id) {
+  return api.delete(`/auth/users/${id}`).then((r) => r.data);
+}

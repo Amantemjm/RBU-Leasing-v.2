@@ -1,7 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
-import { InvalidReferenceError } from "../lib/errors.js";
+import { InvalidReferenceError, NotFoundError, ConflictError } from "../lib/errors.js";
+
+// The seeded super admin cannot be deleted or demoted from ADMIN.
+export const SUPER_ADMIN_EMAIL = "admin@rbu.local";
 
 export async function hashPassword(plain) {
   return bcrypt.hash(plain, 10);
@@ -51,6 +54,37 @@ export async function listUsers() {
       unitOwnerId: true, tenantId: true, createdAt: true,
     },
   });
+}
+
+export async function updateUser(id, { name, email, password, role }) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundError("user not found");
+  if (user.email === SUPER_ADMIN_EMAIL && role && role !== "ADMIN") {
+    throw new ConflictError("the super admin must remain an ADMIN");
+  }
+  if (email && email !== user.email) {
+    const dup = await prisma.user.findUnique({ where: { email } });
+    if (dup) throw new ConflictError("username already exists");
+  }
+
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (email !== undefined) data.email = email;
+  if (role !== undefined) data.role = role;
+  if (password) data.passwordHash = await hashPassword(password);
+
+  const updated = await prisma.user.update({ where: { id }, data });
+  return {
+    id: updated.id, name: updated.name, email: updated.email, role: updated.role,
+    unitOwnerId: updated.unitOwnerId, tenantId: updated.tenantId,
+  };
+}
+
+export async function deleteUser(id) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundError("user not found");
+  if (user.email === SUPER_ADMIN_EMAIL) throw new ConflictError("the super admin cannot be deleted");
+  await prisma.user.delete({ where: { id } });
 }
 
 export async function loginUser({ email, password }) {
