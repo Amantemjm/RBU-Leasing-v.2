@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
+import { roleLabel } from "../lib/formatters.js";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -68,7 +69,7 @@ function logout() {
         >Master Admin</RouterLink>
         <div class="who">
           <span class="name">{{ auth.user?.name || auth.user?.email }}</span>
-          <span v-if="auth.role" class="role">{{ auth.role }}</span>
+          <span v-if="auth.role" class="role">{{ roleLabel(auth.role) }}</span>
         </div>
         <button type="button" class="logout" @click="logout">Log out</button>
       </div>

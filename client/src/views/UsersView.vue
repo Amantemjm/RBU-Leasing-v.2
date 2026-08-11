@@ -1,9 +1,8 @@
 <script setup>
 import { reactive, ref, computed, onMounted } from "vue";
 import { createUser, listUsers, updateUser, deleteUser } from "../lib/resource.js";
-import { formatDate } from "../lib/formatters.js";
+import { formatDate, ROLE_OPTIONS, roleLabel } from "../lib/formatters.js";
 
-const ROLES = ["ADMIN", "LEASING_OFFICER", "VIEWER", "UNIT_OWNER", "TENANT"];
 const SUPER_ADMIN_EMAIL = "admin@rbu.local";
 const SUPER_ADMIN_PASSWORD = "admin123"; // seeded default
 
@@ -15,7 +14,7 @@ const showForm = ref(false);
 const editingId = ref(null);
 const error = ref("");
 const submitting = ref(false);
-const form = reactive({ name: "", email: "", password: "", role: "VIEWER" });
+const form = reactive({ name: "", email: "", password: "", role: "LEASING_OFFICER" });
 
 const isEditing = computed(() => editingId.value !== null);
 const editingSuperAdmin = computed(() => isEditing.value && form.email === SUPER_ADMIN_EMAIL);
@@ -37,7 +36,7 @@ onMounted(load);
 function openCreate() {
   editingId.value = null;
   error.value = "";
-  form.name = ""; form.email = ""; form.password = ""; form.role = "VIEWER";
+  form.name = ""; form.email = ""; form.password = ""; form.role = "LEASING_OFFICER";
   showForm.value = true;
 }
 function openEdit(u) {
@@ -113,7 +112,7 @@ async function remove(u) {
             {{ u.email }}
             <span v-if="u.email === SUPER_ADMIN_EMAIL" class="super-tag">Super admin</span>
           </td>
-          <td><span class="role-tag">{{ u.role }}</span></td>
+          <td><span class="role-tag">{{ roleLabel(u.role) }}</span></td>
           <td>{{ formatDate(u.createdAt) }}</td>
           <td class="row-actions">
             <button type="button" class="link" @click="openEdit(u)">Edit</button>
@@ -142,7 +141,7 @@ async function remove(u) {
           <div class="field">
             <label for="role">Role</label>
             <select id="role" v-model="form.role" :disabled="editingSuperAdmin">
-              <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
+              <option v-for="r in ROLE_OPTIONS" :key="r.value" :value="r.value">{{ r.label }}</option>
             </select>
             <small v-if="editingSuperAdmin" class="muted">The super admin must remain an ADMIN.</small>
           </div>

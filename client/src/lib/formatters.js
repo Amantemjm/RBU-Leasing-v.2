@@ -15,3 +15,16 @@ export function toDateInput(iso) {
   if (!iso) return "";
   return String(iso).slice(0, 10);
 }
+
+// The four selectable roles, mapped to their underlying enum values.
+export const ROLE_OPTIONS = [
+  { value: "LEASING_OFFICER", label: "O-Lease" },
+  { value: "UNIT_OWNER", label: "Lessor" },
+  { value: "TENANT", label: "Lessee" },
+  { value: "ADMIN", label: "Super Admin" },
+];
+
+export function roleLabel(value) {
+  const found = ROLE_OPTIONS.find((r) => r.value === value);
+  return found ? found.label : value;
+}
