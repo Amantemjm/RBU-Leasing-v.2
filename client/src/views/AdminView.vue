@@ -61,7 +61,7 @@ const active = computed(() => tabs.value.find((t) => t.key === activeKey.value) 
 .muted { color: var(--muted); }
 .tabs {
   display: flex; flex-wrap: wrap; gap: 0.25rem;
-  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border-bottom: 1px solid var(--line);
   margin-bottom: 1.4rem;
 }
 .tab {
@@ -69,7 +69,7 @@ const active = computed(() => tabs.value.find((t) => t.key === activeKey.value) 
   color: var(--muted); padding: 0.6rem 0.95rem; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-.tab:hover { color: var(--ink-900, #1a2230); background: rgba(0, 0, 0, 0.03); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover { color: var(--text); background: var(--row-hover); }
+.tab.active { color: var(--accent-text); border-bottom-color: var(--accent-text); }
 .tab-panel { min-height: 4rem; }
 </style>

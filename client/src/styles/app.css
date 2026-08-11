@@ -1,44 +1,98 @@
 /* ==========================================================================
-   RBU Leasing — "Blueprint & Ledger" design system
-   Navy sidebar · paper content · teal accent · Fraunces numerals
+   RBU Leasing — Ortigas Land theme
+   Deep-green shell (Green Pea #1D6142 · Japanese Laurel #0A6906) · white
+   surfaces · Fraunces numerals · auto light/dark (prefers-color-scheme
+   + manual data-theme override)
    ========================================================================== */
 
 :root {
-  /* Ink / navy */
-  --ink-900: #0f1c30;
-  --ink-800: #16243b;
-  --ink-700: #22344f;
-  --ink-600: #33475f;
+  /* Deep greens — shell + headings (constant across modes) */
+  --ink-900: #0c2c21;  /* top bar + auth backdrop */
+  --ink-800: #103a2b;  /* headings / display numerals */
+  --ink-700: #1c4a39;
+  --ink-600: #2f5a48;
 
   /* Neutrals */
-  --paper: #f5f7fa;
+  --paper: #eef4f0;
   --surface: #ffffff;
-  --line: #e5e9f0;
-  --line-strong: #d3d9e3;
-  --text: #1b2637;
-  --muted: #667487;
-  --faint: #9aa4b2;
+  --line: #e0eae4;
+  --line-strong: #cddbd3;
+  --text: #16241d;
+  --muted: #5d7269;
+  --faint: #93a49b;
+  --thead-bg: #f2f8f4;
+  --row-hover: #f4faf6;
 
-  /* Accent + status */
-  --accent: #0e7c74;
-  --accent-600: #0b655e;
-  --accent-050: #e6f2f1;
-  --good: #1e7a4d;
-  --good-050: #e8f3ec;
-  --warn: #a9741f;
-  --warn-050: #f6efe0;
-  --danger: #bf4238;
-  --danger-050: #f8e9e7;
+  /* Brand accent — Green Pea base, Japanese Laurel on hover */
+  --accent: #1D6142;       /* fills: buttons, badges, active nav, meters */
+  --accent-600: #0A6906;   /* hover fill (Japanese Laurel) */
+  --accent-050: #e6f1eb;   /* focus ring / tint background */
+  --accent-text: #17624a;  /* accent as text / links / borders on a surface */
+  --brand-mint: #8fd3b0;   /* highlight against the deep-green shell */
+
+  /* Status */
+  --good: #157a3e;   --good-050: #e7f3ec;
+  --warn: #a9741f;   --warn-050: #f6efe0;
+  --danger: #bf4238; --danger-050: #f8e9e7;
 
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px rgba(15, 28, 48, 0.06), 0 1px 3px rgba(15, 28, 48, 0.05);
-  --shadow-md: 0 6px 20px rgba(15, 28, 48, 0.09);
+  --shadow-sm: 0 1px 2px rgba(9, 30, 22, 0.06), 0 1px 3px rgba(9, 30, 22, 0.05);
+  --shadow-md: 0 6px 20px rgba(9, 30, 22, 0.10);
 
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --display: "Fraunces", Georgia, "Times New Roman", serif;
 
   --sidebar-w: 244px;
+}
+
+/* Dark palette — shared by the auto (OS) and manual (data-theme) paths */
+:root[data-theme="dark"],
+:root.is-dark {
+  --paper: #0d1611;
+  --surface: #14211a;
+  --line: #26362d;
+  --line-strong: #33473c;
+  --text: #dfeae4;
+  --muted: #93a89d;
+  --faint: #6f857a;
+  --thead-bg: #17251e;
+  --row-hover: #1b2a22;
+  --ink-800: #e8f2ec;   /* headings become light on dark surfaces */
+  --ink-700: #cfe0d6;
+  --ink-600: #b3c8bd;
+  --accent-050: rgba(92, 196, 146, 0.16);
+  --accent-text: #5cc492;
+  --good-050: rgba(21, 122, 62, 0.20);
+  --warn-050: rgba(169, 116, 31, 0.20);
+  --danger-050: rgba(191, 66, 56, 0.22);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Follow the OS unless the user has explicitly chosen light */
+  :root:not([data-theme="light"]) {
+    --paper: #0d1611;
+    --surface: #14211a;
+    --line: #26362d;
+    --line-strong: #33473c;
+    --text: #dfeae4;
+    --muted: #93a89d;
+    --faint: #6f857a;
+    --thead-bg: #17251e;
+    --row-hover: #1b2a22;
+    --ink-800: #e8f2ec;
+    --ink-700: #cfe0d6;
+    --ink-600: #b3c8bd;
+    --accent-050: rgba(92, 196, 146, 0.16);
+    --accent-text: #5cc492;
+    --good-050: rgba(21, 122, 62, 0.20);
+    --warn-050: rgba(169, 116, 31, 0.20);
+    --danger-050: rgba(191, 66, 56, 0.22);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
+  }
 }
 
 *,
@@ -74,12 +128,12 @@ h3 {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -181,7 +235,7 @@ button:disabled {
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: #7f8da3;
+  color: #7fa08f;
 }
 
 .app-nav {
@@ -197,7 +251,7 @@ button:disabled {
   align-items: center;
   padding: 0.5rem 0.85rem;
   border-radius: var(--radius-sm);
-  color: #aeb9c9;
+  color: #b4c6bd;
   font-weight: 500;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
@@ -205,8 +259,8 @@ button:disabled {
 }
 
 .app-nav a:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #eef2f7;
+  background: rgba(255, 255, 255, 0.07);
+  color: #eef7f1;
 }
 
 .app-nav a.active {
@@ -231,7 +285,7 @@ button:disabled {
 }
 
 .topbar-foot .who .name {
-  color: #e6ebf2;
+  color: #e7f1ea;
   font-size: 0.82rem;
   font-weight: 500;
 }
@@ -241,22 +295,22 @@ button:disabled {
   align-items: center;
   padding: 0.5rem 0.85rem;
   border-radius: var(--radius-sm);
-  color: #f0d9a3;
+  color: var(--brand-mint);
   font-weight: 600;
   font-size: 0.82rem;
-  border: 1px solid rgba(201, 162, 74, 0.45);
+  border: 1px solid rgba(143, 211, 176, 0.5);
   text-decoration: none;
 }
 
 .topbar-foot .master-admin:hover {
-  background: rgba(201, 162, 74, 0.12);
+  background: rgba(143, 211, 176, 0.14);
   color: #fff;
 }
 
 .topbar-foot .master-admin.active {
-  background: #c9a24a;
+  background: var(--brand-mint);
   color: var(--ink-900);
-  border-color: #c9a24a;
+  border-color: var(--brand-mint);
 }
 
 .topbar-foot .who .role {
@@ -264,21 +318,35 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--ink-900);
-  background: #c9a24a;
+  background: var(--brand-mint);
   padding: 0.18rem 0.45rem;
   border-radius: 999px;
   font-weight: 700;
 }
 
+.app-topbar .theme-toggle {
+  background: transparent;
+  color: #b4c6bd;
+  border-color: rgba(255, 255, 255, 0.14);
+  padding: 0.45rem 0.6rem;
+  line-height: 1;
+}
+
+.app-topbar .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
 .app-topbar .logout {
   background: transparent;
-  color: #aeb9c9;
+  color: #b4c6bd;
   border-color: rgba(255, 255, 255, 0.14);
   padding: 0.45rem 0.8rem;
 }
 
 .app-topbar .logout:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.28);
 }
@@ -332,7 +400,7 @@ button:disabled {
   color: var(--muted);
   font-weight: 600;
   padding: 0.85rem 1rem;
-  background: #fbfcfe;
+  background: var(--thead-bg);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -349,7 +417,7 @@ button:disabled {
 }
 
 .app-main tbody tr:hover td {
-  background: #fafbfe;
+  background: var(--row-hover);
 }
 
 .app-main table button {
@@ -422,7 +490,7 @@ button:disabled {
 .app-main .field input:focus,
 .app-main .field select:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 3px var(--accent-050);
 }
 
@@ -544,7 +612,7 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: radial-gradient(120% 120% at 15% 0%, #1a2c48 0%, var(--ink-900) 60%);
+  background: radial-gradient(120% 120% at 15% 0%, #14503a 0%, var(--ink-900) 60%);
 }
 
 .auth__card {
@@ -596,7 +664,7 @@ button:disabled {
 
 .auth input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   box-shadow: 0 0 0 3px var(--accent-050);
 }
 

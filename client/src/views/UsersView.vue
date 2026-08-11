@@ -161,12 +161,12 @@ async function remove(u) {
 .muted { color: var(--muted); }
 .super-cred {
   margin: 0.5rem 0 1.25rem; padding: 0.9rem 1.1rem;
-  border: 1px solid rgba(46, 92, 173, 0.25); border-left: 3px solid #2e5cad;
-  border-radius: var(--radius-sm); background: rgba(46, 92, 173, 0.06);
+  border: 1px solid var(--line-strong); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm); background: var(--accent-050);
 }
 .super-cred__title {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
-  color: #2e5cad; font-weight: 700; margin-bottom: 0.5rem;
+  color: var(--accent-text); font-weight: 700; margin-bottom: 0.5rem;
 }
 .super-cred__rows { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
 .super-cred__rows .k { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
@@ -174,20 +174,20 @@ async function remove(u) {
 .role-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
-  background: rgba(201, 162, 74, 0.16); color: #a97f27;
+  background: var(--accent-050); color: var(--accent-text);
 }
 .super-tag {
   margin-left: 0.4rem; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.12rem 0.4rem; border-radius: var(--radius-sm);
-  background: rgba(46, 92, 173, 0.14); color: #2e5cad;
+  background: var(--warn-050); color: var(--warn);
 }
 .row-actions { display: flex; gap: 0.75rem; }
 .link {
   background: none; border: none; padding: 0; cursor: pointer;
-  color: var(--accent); font: inherit; font-weight: 500;
+  color: var(--accent-text); font: inherit; font-weight: 500;
 }
 .link:hover { text-decoration: underline; }
-.link.danger { color: #c0392b; }
+.link.danger { color: var(--danger); }
 .link:disabled { color: var(--muted); cursor: not-allowed; text-decoration: none; }
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(15, 22, 33, 0.55);

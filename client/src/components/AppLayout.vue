@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
@@ -7,6 +7,32 @@ import { roleLabel } from "../lib/formatters.js";
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+
+// Theme: unset follows the OS; toggling stores an explicit light/dark choice.
+const theme = ref(null);
+
+function applyTheme(t) {
+  const el = document.documentElement;
+  if (t) el.setAttribute("data-theme", t);
+  else el.removeAttribute("data-theme");
+}
+function prefersDark() {
+  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function toggleTheme() {
+  const current = theme.value || (prefersDark() ? "dark" : "light");
+  theme.value = current === "dark" ? "light" : "dark";
+  applyTheme(theme.value);
+  try { localStorage.setItem("rbu-theme", theme.value); } catch { /* ignore */ }
+}
+onMounted(() => {
+  let saved = null;
+  try { saved = localStorage.getItem("rbu-theme"); } catch { /* ignore */ }
+  if (saved === "dark" || saved === "light") {
+    theme.value = saved;
+    applyTheme(saved);
+  }
+});
 
 const OWNER_LINKS = [
   { to: "/my-units", label: "My Units" },
@@ -60,6 +86,7 @@ function logout() {
           <span class="name">{{ auth.user?.name || auth.user?.email }}</span>
           <span v-if="auth.role" class="role">{{ roleLabel(auth.role) }}</span>
         </div>
+        <button type="button" class="theme-toggle" @click="toggleTheme" aria-label="Toggle light or dark theme" title="Toggle theme">◐</button>
         <button type="button" class="logout" @click="logout">Log out</button>
       </div>
     </header>

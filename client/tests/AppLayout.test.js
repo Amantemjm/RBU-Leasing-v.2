@@ -40,6 +40,17 @@ describe("AppLayout", () => {
     expect(w.find("nav.app-nav").text()).not.toContain("Owners");
   });
 
+  it("toggles the color theme via data-theme", async () => {
+    const router = makeRouter(); router.push("/"); await router.isReady();
+    const w = mount(AppLayout, { global: { plugins: [router] } });
+    const btn = w.find("button.theme-toggle");
+    await btn.trigger("click");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    await btn.trigger("click");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    document.documentElement.removeAttribute("data-theme");
+  });
+
   it("logout clears the auth store", async () => {
     const auth = useAuthStore();
     auth.setSession({ token: "t", user: { email: "a@b.c", role: "ADMIN" } });

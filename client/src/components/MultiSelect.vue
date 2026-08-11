@@ -63,7 +63,7 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocMouseDown))
 .ms { position: relative; display: inline-block; }
 .ms__btn {
   display: inline-flex; align-items: center; gap: 0.4rem;
-  background: var(--surface); color: var(--ink-800, inherit);
+  background: var(--surface); color: var(--text);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   padding: 0.45rem 0.75rem; font: inherit; font-size: 0.85rem; cursor: pointer;
 }
@@ -81,10 +81,10 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocMouseDown))
 .ms__actions { display: flex; gap: 0.5rem; padding: 0.15rem 0.35rem 0.5rem; border-bottom: 1px solid var(--line); margin-bottom: 0.35rem; }
 .ms__actions button {
   background: none; border: none; padding: 0; cursor: pointer;
-  color: var(--accent); font: inherit; font-size: 0.78rem; font-weight: 600;
+  color: var(--accent-text); font: inherit; font-size: 0.78rem; font-weight: 600;
 }
 .ms__opt { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.35rem; border-radius: var(--radius-sm); cursor: pointer; }
-.ms__opt:hover { background: rgba(0, 0, 0, 0.04); }
+.ms__opt:hover { background: var(--row-hover); }
 .ms__opt input { margin: 0; }
 .ms__empty { color: var(--muted); font-size: 0.8rem; padding: 0.35rem; margin: 0; }
 </style>
