@@ -13,13 +13,38 @@ async function assertTowerExists(towerId) {
   if (!tower) throw new InvalidReferenceError("towerId does not reference an existing tower");
 }
 
-export function listUnits({ ownerId, status, estateId, towerId } = {}) {
+export function listUnits({ ownerId, status, estateId, towerId, approvalStatus } = {}) {
   const where = {};
   if (ownerId) where.ownerId = ownerId;
   if (status) where.status = status;
   if (towerId) where.towerId = towerId;
   if (estateId) where.tower = { estateId };
+  if (approvalStatus) where.approvalStatus = approvalStatus;
   return prisma.unit.findMany({ where, include: withHierarchy, orderBy: { createdAt: "desc" } });
+}
+
+// A UNIT_OWNER only ever sees their own owner's units (all approval statuses).
+export function listUnitsForUser(user, filters = {}) {
+  const f = { ...filters };
+  if (user.role === "UNIT_OWNER") f.ownerId = user.unitOwnerId;
+  return listUnits(f);
+}
+
+export async function createUnitForUser(user, data) {
+  const payload = { ...data };
+  if (user.role === "UNIT_OWNER") {
+    payload.ownerId = user.unitOwnerId; // force own owner
+    payload.approvalStatus = "PENDING"; // owner submissions await O-Lease approval
+  }
+  await assertOwnerExists(payload.ownerId);
+  if (payload.towerId) await assertTowerExists(payload.towerId);
+  return prisma.unit.create({ data: payload, include: withHierarchy });
+}
+
+export async function approveUnit(id, decision) {
+  await getUnit(id);
+  const approvalStatus = decision === "approve" ? "APPROVED" : "REJECTED";
+  return prisma.unit.update({ where: { id }, data: { approvalStatus }, include: withHierarchy });
 }
 
 export async function getUnit(id) {
