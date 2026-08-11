@@ -8,6 +8,9 @@ vi.mock("../src/lib/resource.js", () => ({
     list: vi.fn(() => Promise.resolve([{ id: "u1", unitNumber: "12A", baseRent: "45000", status: "VACANT" }])),
     remove: vi.fn(() => Promise.resolve()),
   },
+  estates: {
+    list: vi.fn(() => Promise.resolve([])),
+  },
 }));
 
 import UnitsView from "../src/views/UnitsView.vue";

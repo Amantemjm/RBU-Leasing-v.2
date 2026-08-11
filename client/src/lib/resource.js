@@ -15,3 +15,5 @@ export const units = resource("/units");
 export const tenants = resource("/tenants");
 export const leases = resource("/leases");
 export const payments = resource("/payments");
+export const estates = resource("/estates");
+export const towers = resource("/towers");
