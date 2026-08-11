@@ -5,6 +5,7 @@ import { formatDate } from "../lib/formatters.js";
 
 const ROLES = ["ADMIN", "LEASING_OFFICER", "VIEWER", "UNIT_OWNER", "TENANT"];
 const SUPER_ADMIN_EMAIL = "admin@rbu.local";
+const SUPER_ADMIN_PASSWORD = "admin123"; // seeded default
 
 const accounts = ref([]);
 const loading = ref(false);
@@ -18,6 +19,7 @@ const form = reactive({ name: "", email: "", password: "", role: "VIEWER" });
 
 const isEditing = computed(() => editingId.value !== null);
 const editingSuperAdmin = computed(() => isEditing.value && form.email === SUPER_ADMIN_EMAIL);
+const superAdmin = computed(() => accounts.value.find((u) => u.email === SUPER_ADMIN_EMAIL));
 
 async function load() {
   loading.value = true;
@@ -83,10 +85,19 @@ async function remove(u) {
   <section>
     <div class="head">
       <div>
-        <h1>Master Admin</h1>
+        <h1>Administration</h1>
         <p class="muted">Login credentials with access to the system.</p>
       </div>
       <button type="button" class="primary" @click="openCreate">New account</button>
+    </div>
+
+    <div v-if="superAdmin" class="super-cred">
+      <div class="super-cred__title">Super admin credential</div>
+      <div class="super-cred__rows">
+        <div><span class="k">Username</span><span class="v">{{ superAdmin.email }}</span></div>
+        <div><span class="k">Password</span><span class="v">{{ SUPER_ADMIN_PASSWORD }}</span></div>
+      </div>
+      <small class="muted">Seeded default. If you change it with Edit, this note will be out of date.</small>
     </div>
 
     <p v-if="listError" class="error">{{ listError }}</p>
@@ -149,6 +160,18 @@ async function remove(u) {
 <style scoped>
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .muted { color: var(--muted); }
+.super-cred {
+  margin: 0.5rem 0 1.25rem; padding: 0.9rem 1.1rem;
+  border: 1px solid rgba(46, 92, 173, 0.25); border-left: 3px solid #2e5cad;
+  border-radius: var(--radius-sm); background: rgba(46, 92, 173, 0.06);
+}
+.super-cred__title {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: #2e5cad; font-weight: 700; margin-bottom: 0.5rem;
+}
+.super-cred__rows { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+.super-cred__rows .k { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.super-cred__rows .v { font-family: ui-monospace, "Cascadia Code", "Consolas", monospace; font-weight: 600; font-size: 0.95rem; }
 .role-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);

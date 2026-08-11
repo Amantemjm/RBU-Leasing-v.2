@@ -62,9 +62,9 @@ function logout() {
       <div class="topbar-foot">
         <RouterLink
           v-if="auth.role === 'ADMIN'"
-          to="/users"
+          to="/admin"
           class="master-admin"
-          :class="{ active: isActive('/users') }"
+          :class="{ active: isActive('/admin') }"
         >Master Admin</RouterLink>
         <div class="who">
           <span class="name">{{ auth.user?.name || auth.user?.email }}</span>

@@ -50,7 +50,7 @@ const routes = [
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "approvals", component: ApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
-      { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
+      { path: "admin", component: UsersView, meta: { roles: ["ADMIN"] } },
     ],
   },
 ];
