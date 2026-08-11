@@ -25,7 +25,7 @@ export function listLeasesForUser(user, filters = {}) {
   if (filters.unitId) where.unitId = filters.unitId;
   if (filters.tenantId) where.tenantId = filters.tenantId;
   if (filters.status) where.status = filters.status;
-  if (user.role === "UNIT_OWNER") where.unit = { ownerId: user.unitOwnerId };
+  if (user.role === "UNIT_OWNER") where.unit = { ownerId: user.unitOwnerId || "__none__" };
   return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
 }
 

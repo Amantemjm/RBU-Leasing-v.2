@@ -14,7 +14,7 @@ async function submit() {
     auth.setSession(data);
     router.push("/");
   } catch {
-    error.value = "Invalid email or password.";
+    error.value = "Invalid username or password.";
   }
 }
 </script>
@@ -26,7 +26,7 @@ async function submit() {
       <p class="auth__eyebrow">Residential Business Unit</p>
       <h1>Sign in to your account</h1>
       <form @submit.prevent="submit">
-        <input v-model="email" type="email" placeholder="Email" autocomplete="username" />
+        <input v-model="email" type="text" placeholder="Username" autocomplete="username" />
         <input v-model="password" type="password" placeholder="Password" autocomplete="current-password" />
         <button type="submit">Log in</button>
         <p v-if="error" class="error">{{ error }}</p>

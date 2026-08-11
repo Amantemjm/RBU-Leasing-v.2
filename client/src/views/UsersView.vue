@@ -39,26 +39,26 @@ async function submit() {
 <template>
   <section>
     <h1>Create a login</h1>
-    <p class="muted">Provision Unit Owner / Tenant portal accounts and link them to a record.</p>
+    <p class="muted">Create a login with a display name, username, and password. Linking to a Unit Owner or Tenant record is optional.</p>
     <form @submit.prevent="submit">
-      <div class="field"><label for="name">Name</label><input id="name" type="text" v-model="form.name" /></div>
-      <div class="field"><label for="email">Email</label><input id="email" type="email" v-model="form.email" /></div>
+      <div class="field"><label for="name">Display name</label><input id="name" type="text" v-model="form.name" /></div>
+      <div class="field"><label for="email">Username</label><input id="email" type="text" v-model="form.email" autocomplete="off" /></div>
       <div class="field"><label for="password">Password</label><input id="password" type="text" v-model="form.password" /></div>
       <div class="field">
         <label for="role">Role</label>
         <select id="role" v-model="form.role"><option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option></select>
       </div>
       <div class="field" v-if="form.role === 'UNIT_OWNER'">
-        <label for="unitOwnerId">Unit Owner</label>
+        <label for="unitOwnerId">Unit Owner <span class="muted">(optional)</span></label>
         <select id="unitOwnerId" v-model="form.unitOwnerId">
-          <option value="">— select —</option>
+          <option value="">— none (login only) —</option>
           <option v-for="o in ownerOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
       </div>
       <div class="field" v-if="form.role === 'TENANT'">
-        <label for="tenantId">Tenant</label>
+        <label for="tenantId">Tenant <span class="muted">(optional)</span></label>
         <select id="tenantId" v-model="form.tenantId">
-          <option value="">— select —</option>
+          <option value="">— none (login only) —</option>
           <option v-for="t in tenantOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
         </select>
       </div>

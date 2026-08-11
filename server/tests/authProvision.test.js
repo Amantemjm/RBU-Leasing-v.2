@@ -33,6 +33,31 @@ describe("admin provisions owner/tenant accounts", () => {
     expect(res.body.tenantId).toBe(t.id);
   });
 
+  it("creates a plain login (no owner/tenant link needed)", async () => {
+    const res = await request(app).post("/api/auth/register")
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: "Front Desk", email: "frontdesk", password: "pw123456", role: "VIEWER" });
+    expect(res.status).toBe(201);
+    expect(res.body.unitOwnerId).toBeNull();
+    expect(res.body.tenantId).toBeNull();
+  });
+
+  it("creates a UNIT_OWNER with no link (credential only)", async () => {
+    const res = await request(app).post("/api/auth/register")
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: "Owner No Link", email: "ownernolink", password: "pw123456", role: "UNIT_OWNER" });
+    expect(res.status).toBe(201);
+    expect(res.body.unitOwnerId).toBeNull();
+  });
+
+  it("an unlinked owner sees no units (not all)", async () => {
+    const o = await factory.owner();
+    await factory.unit(o.id);
+    const res = await request(app).get("/api/units").set("Authorization", `Bearer ${tokens.owner()}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(0);
+  });
+
   it("a viewer cannot register users (403)", async () => {
     const res = await request(app).post("/api/auth/register")
       .set("Authorization", `Bearer ${tokens.viewer()}`)

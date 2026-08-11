@@ -23,14 +23,14 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
   const finalRole = role || "VIEWER";
   const data = { name, email, passwordHash: await hashPassword(password), role: finalRole };
 
-  if (finalRole === "UNIT_OWNER") {
-    if (!unitOwnerId) throw new InvalidReferenceError("unitOwnerId is required for a UNIT_OWNER");
+  // The owner/tenant link is optional — a plain login can be created with just a
+  // name, username, and password. If a link IS supplied it must reference a real record.
+  if (finalRole === "UNIT_OWNER" && unitOwnerId) {
     const owner = await prisma.unitOwner.findUnique({ where: { id: unitOwnerId } });
     if (!owner) throw new InvalidReferenceError("unitOwnerId does not reference an existing owner");
     data.unitOwnerId = unitOwnerId;
   }
-  if (finalRole === "TENANT") {
-    if (!tenantId) throw new InvalidReferenceError("tenantId is required for a TENANT");
+  if (finalRole === "TENANT" && tenantId) {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) throw new InvalidReferenceError("tenantId does not reference an existing tenant");
     data.tenantId = tenantId;

@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const registerSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  // Login identifier: a plain username or an email address.
+  email: z.string().min(3),
   password: z.string().min(6),
   role: z.enum(["ADMIN", "LEASING_OFFICER", "VIEWER", "UNIT_OWNER", "TENANT"]).optional(),
   unitOwnerId: z.string().nullish(),

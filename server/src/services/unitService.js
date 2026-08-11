@@ -26,7 +26,7 @@ export function listUnits({ ownerId, status, estateId, towerId, approvalStatus }
 // A UNIT_OWNER only ever sees their own owner's units (all approval statuses).
 export function listUnitsForUser(user, filters = {}) {
   const f = { ...filters };
-  if (user.role === "UNIT_OWNER") f.ownerId = user.unitOwnerId;
+  if (user.role === "UNIT_OWNER") f.ownerId = user.unitOwnerId || "__none__";
   return listUnits(f);
 }
 

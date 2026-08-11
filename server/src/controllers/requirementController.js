@@ -17,7 +17,7 @@ export async function create(req, res, next) {
 
 export async function list(req, res, next) {
   try {
-    const tenantId = req.user.role === "TENANT" ? req.user.tenantId : req.query.tenantId;
+    const tenantId = req.user.role === "TENANT" ? (req.user.tenantId || "__none__") : req.query.tenantId;
     res.json(await service.listRequirements({ tenantId }));
   } catch (e) { next(e); }
 }

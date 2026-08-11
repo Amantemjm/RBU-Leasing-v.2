@@ -18,7 +18,7 @@ export function listPaymentsForUser(user, filters = {}) {
   const where = {};
   if (filters.leaseId) where.leaseId = filters.leaseId;
   if (filters.status) where.status = filters.status;
-  if (user.role === "UNIT_OWNER") where.lease = { unit: { ownerId: user.unitOwnerId } };
+  if (user.role === "UNIT_OWNER") where.lease = { unit: { ownerId: user.unitOwnerId || "__none__" } };
   return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
 }
 
