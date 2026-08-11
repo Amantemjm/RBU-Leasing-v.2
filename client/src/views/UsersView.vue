@@ -1,21 +1,7 @@
 <script setup>
 import { reactive, ref, computed, onMounted } from "vue";
-import { useAuthStore } from "../stores/auth.js";
 import { createUser, listUsers, updateUser, deleteUser } from "../lib/resource.js";
 import { formatDate, ROLE_OPTIONS, roleLabel } from "../lib/formatters.js";
-
-const auth = useAuthStore();
-const isAdmin = computed(() => auth.role === "ADMIN");
-
-const MANAGEMENT = [
-  { to: "/approvals", label: "Approvals", desc: "Review unit registrations" },
-  { to: "/requirements", label: "Requirements", desc: "Tenant document uploads" },
-  { to: "/owners", label: "Owners", desc: "Lessor records" },
-  { to: "/units", label: "Units", desc: "Units by estate & tower" },
-  { to: "/tenants", label: "Tenants", desc: "Lessee records" },
-  { to: "/leases", label: "Leases", desc: "Lease agreements" },
-  { to: "/payments", label: "Payments", desc: "Rent collections" },
-];
 
 const SUPER_ADMIN_EMAIL = "admin@rbu.local";
 const SUPER_ADMIN_PASSWORD = "admin123"; // seeded default
@@ -45,7 +31,7 @@ async function load() {
     loading.value = false;
   }
 }
-onMounted(() => { if (isAdmin.value) load(); });
+onMounted(load);
 
 function openCreate() {
   editingId.value = null;
@@ -96,23 +82,15 @@ async function remove(u) {
 
 <template>
   <section>
+    <RouterLink to="/admin" class="back">&larr; Administration</RouterLink>
     <div class="head">
       <div>
-        <h1>Administration</h1>
-        <p class="muted">Manage records and system access.</p>
+        <h1>Users</h1>
+        <p class="muted">Login credentials with access to the system.</p>
       </div>
-      <button v-if="isAdmin" type="button" class="primary" @click="openCreate">New account</button>
+      <button type="button" class="primary" @click="openCreate">New account</button>
     </div>
 
-    <div class="mgmt">
-      <RouterLink v-for="m in MANAGEMENT" :key="m.to" :to="m.to" class="mgmt__card">
-        <span class="mgmt__label">{{ m.label }}</span>
-        <span class="mgmt__desc">{{ m.desc }}</span>
-      </RouterLink>
-    </div>
-
-    <template v-if="isAdmin">
-    <h2 class="section-title">Credentials</h2>
     <div v-if="superAdmin" class="super-cred">
       <div class="super-cred__title">Super admin credential</div>
       <div class="super-cred__rows">
@@ -150,7 +128,6 @@ async function remove(u) {
         <tr v-if="!accounts.length"><td colspan="5" class="muted">No accounts yet.</td></tr>
       </tbody>
     </table>
-    </template>
 
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <div class="modal" role="dialog" aria-modal="true" :aria-label="isEditing ? 'Edit account' : 'New account'">
@@ -181,27 +158,10 @@ async function remove(u) {
 </template>
 
 <style scoped>
+.back { display: inline-block; margin-bottom: 0.75rem; color: var(--muted); text-decoration: none; font-size: 0.85rem; }
+.back:hover { color: var(--accent); }
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .muted { color: var(--muted); }
-.mgmt {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 0.85rem; margin: 0.5rem 0 1.75rem;
-}
-.mgmt__card {
-  display: flex; flex-direction: column; gap: 0.25rem;
-  padding: 0.95rem 1.05rem; border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-sm); background: var(--surface, #fff);
-  text-decoration: none; color: inherit; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
-}
-.mgmt__card:hover {
-  border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); transform: translateY(-1px);
-}
-.mgmt__label { font-weight: 600; color: var(--accent); }
-.mgmt__desc { font-size: 0.8rem; color: var(--muted); }
-.section-title {
-  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em;
-  color: var(--muted); margin: 0 0 0.6rem; font-weight: 700;
-}
 .super-cred {
   margin: 0.5rem 0 1.25rem; padding: 0.9rem 1.1rem;
   border: 1px solid rgba(46, 92, 173, 0.25); border-left: 3px solid #2e5cad;

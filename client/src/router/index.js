@@ -19,6 +19,7 @@ import MyUnitsView from "../views/MyUnitsView.vue";
 import RegisterUnitView from "../views/RegisterUnitView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
 import RequirementsView from "../views/RequirementsView.vue";
+import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
 
 const routes = [
@@ -50,7 +51,8 @@ const routes = [
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "approvals", component: ApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
-      { path: "admin", component: UsersView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
+      { path: "admin", component: AdminView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
+      { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
     ],
   },
 ];

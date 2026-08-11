@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("../src/lib/resource.js", () => ({
   listUsers: vi.fn(() => Promise.resolve([
@@ -13,17 +12,12 @@ vi.mock("../src/lib/resource.js", () => ({
 }));
 
 import UsersView from "../src/views/UsersView.vue";
-import { useAuthStore } from "../src/stores/auth.js";
 import { createUser, listUsers, updateUser, deleteUser } from "../src/lib/resource.js";
 
 const RouterLinkStub = { props: ["to"], template: "<a class='rl'><slot/></a>" };
-
-function mountAs(role = "ADMIN") {
-  setActivePinia(createPinia());
-  useAuthStore().setSession({ token: "t", user: { name: "Super Admin", email: "admin@rbu.local", role } });
+function mountView() {
   return mount(UsersView, { global: { stubs: { RouterLink: RouterLinkStub } } });
 }
-
 function findBtn(w, label) {
   return w.findAll("button").find((b) => b.text() === label);
 }
@@ -31,15 +25,18 @@ function findBtn(w, label) {
 describe("UsersView", () => {
   beforeEach(() => { createUser.mockClear(); listUsers.mockClear(); updateUser.mockClear(); deleteUser.mockClear(); });
 
-  it("shows friendly role labels in the list", async () => {
-    const w = mountAs();
+  it("lists credentials with friendly role labels and the super-admin credential", async () => {
+    const w = mountView();
     await flushPromises();
-    expect(w.text()).toContain("Super Admin"); // ADMIN
-    expect(w.text()).toContain("O-Lease"); // LEASING_OFFICER
+    expect(listUsers).toHaveBeenCalled();
+    expect(w.text()).toContain("Super admin credential");
+    expect(w.text()).toContain("admin@rbu.local");
+    expect(w.text()).toContain("Super Admin"); // ADMIN label
+    expect(w.text()).toContain("O-Lease"); // LEASING_OFFICER label
   });
 
   it("offers exactly the four roles in the dropdown", async () => {
-    const w = mountAs();
+    const w = mountView();
     await flushPromises();
     await findBtn(w, "New account").trigger("click");
     const opts = w.find("#role").findAll("option").map((o) => o.text());
@@ -47,7 +44,7 @@ describe("UsersView", () => {
   });
 
   it("creates a login with the default O-Lease role", async () => {
-    const w = mountAs();
+    const w = mountView();
     await flushPromises();
     await findBtn(w, "New account").trigger("click");
     await w.find("#name").setValue("Front Desk");
@@ -62,7 +59,7 @@ describe("UsersView", () => {
   });
 
   it("edits a login (blank password is omitted)", async () => {
-    const w = mountAs();
+    const w = mountView();
     await flushPromises();
     const editButtons = w.findAll("button").filter((b) => b.text() === "Edit");
     await editButtons[1].trigger("click");
@@ -74,7 +71,7 @@ describe("UsersView", () => {
 
   it("deletes a login after confirmation", async () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
-    const w = mountAs();
+    const w = mountView();
     await flushPromises();
     const delButtons = w.findAll("button").filter((b) => b.text() === "Delete");
     await delButtons[1].trigger("click");
@@ -84,27 +81,10 @@ describe("UsersView", () => {
   });
 
   it("disables Delete for the super admin", async () => {
-    const w = mountAs();
+    const w = mountView();
     await flushPromises();
     const delButtons = w.findAll("button").filter((b) => b.text() === "Delete");
     expect(delButtons[0].attributes("disabled")).toBeDefined();
     expect(delButtons[1].attributes("disabled")).toBeUndefined();
-  });
-
-  it("lists the seven management sections", async () => {
-    const w = mountAs();
-    await flushPromises();
-    for (const label of ["Approvals", "Requirements", "Owners", "Units", "Tenants", "Leases", "Payments"]) {
-      expect(w.text()).toContain(label);
-    }
-  });
-
-  it("hides credential management from non-admin staff", async () => {
-    const w = mountAs("LEASING_OFFICER");
-    await flushPromises();
-    expect(w.text()).toContain("Approvals"); // management hub still visible
-    expect(findBtn(w, "New account")).toBeUndefined();
-    expect(w.text()).not.toContain("Super admin credential");
-    expect(listUsers).not.toHaveBeenCalled();
   });
 });
