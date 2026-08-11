@@ -82,7 +82,6 @@ async function remove(u) {
 
 <template>
   <section>
-    <RouterLink to="/admin" class="back">&larr; Administration</RouterLink>
     <div class="head">
       <div>
         <h1>Users</h1>
@@ -158,8 +157,6 @@ async function remove(u) {
 </template>
 
 <style scoped>
-.back { display: inline-block; margin-bottom: 0.75rem; color: var(--muted); text-decoration: none; font-size: 0.85rem; }
-.back:hover { color: var(--accent); }
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .muted { color: var(--muted); }
 .super-cred {

@@ -1,25 +1,34 @@
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useAuthStore } from "../stores/auth.js";
+import ApprovalsView from "./ApprovalsView.vue";
+import RequirementsView from "./RequirementsView.vue";
+import OwnersView from "./OwnersView.vue";
+import UnitsView from "./UnitsView.vue";
+import TenantsView from "./TenantsView.vue";
+import LeasesView from "./LeasesView.vue";
+import PaymentsView from "./PaymentsView.vue";
+import UsersView from "./UsersView.vue";
 
 const auth = useAuthStore();
 const isAdmin = computed(() => auth.role === "ADMIN");
 
-const MANAGEMENT = [
-  { to: "/approvals", label: "Approvals", desc: "Review unit registrations" },
-  { to: "/requirements", label: "Requirements", desc: "Tenant document uploads" },
-  { to: "/owners", label: "Owners", desc: "Lessor records" },
-  { to: "/units", label: "Units", desc: "Units by estate & tower" },
-  { to: "/tenants", label: "Tenants", desc: "Lessee records" },
-  { to: "/leases", label: "Leases", desc: "Lease agreements" },
-  { to: "/payments", label: "Payments", desc: "Rent collections" },
+const BASE_TABS = [
+  { key: "approvals", label: "Approvals", component: ApprovalsView },
+  { key: "requirements", label: "Requirements", component: RequirementsView },
+  { key: "owners", label: "Owners", component: OwnersView },
+  { key: "units", label: "Units", component: UnitsView },
+  { key: "tenants", label: "Tenants", component: TenantsView },
+  { key: "leases", label: "Leases", component: LeasesView },
+  { key: "payments", label: "Payments", component: PaymentsView },
 ];
 
-const cards = computed(() =>
-  isAdmin.value
-    ? [...MANAGEMENT, { to: "/users", label: "Users", desc: "Login credentials & access" }]
-    : MANAGEMENT,
+const tabs = computed(() =>
+  isAdmin.value ? [...BASE_TABS, { key: "users", label: "Users", component: UsersView }] : BASE_TABS,
 );
+
+const activeKey = ref("approvals");
+const active = computed(() => tabs.value.find((t) => t.key === activeKey.value) || tabs.value[0]);
 </script>
 
 <template>
@@ -29,31 +38,38 @@ const cards = computed(() =>
       <p class="muted">Manage records and system access.</p>
     </div>
 
-    <div class="mgmt">
-      <RouterLink v-for="m in cards" :key="m.to" :to="m.to" class="mgmt__card">
-        <span class="mgmt__label">{{ m.label }}</span>
-        <span class="mgmt__desc">{{ m.desc }}</span>
-      </RouterLink>
+    <nav class="tabs" role="tablist">
+      <button
+        v-for="t in tabs"
+        :key="t.key"
+        type="button"
+        role="tab"
+        class="tab"
+        :class="{ active: t.key === activeKey }"
+        @click="activeKey = t.key"
+      >{{ t.label }}</button>
+    </nav>
+
+    <div class="tab-panel">
+      <component :is="active.component" />
     </div>
   </section>
 </template>
 
 <style scoped>
-.head { margin-bottom: 1.25rem; }
+.head { margin-bottom: 1rem; }
 .muted { color: var(--muted); }
-.mgmt {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.9rem;
+.tabs {
+  display: flex; flex-wrap: wrap; gap: 0.25rem;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  margin-bottom: 1.4rem;
 }
-.mgmt__card {
-  display: flex; flex-direction: column; gap: 0.3rem;
-  padding: 1.05rem 1.15rem; border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-sm); background: var(--surface, #fff);
-  text-decoration: none; color: inherit; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+.tab {
+  background: none; border: none; cursor: pointer; font: inherit; font-weight: 500;
+  color: var(--muted); padding: 0.6rem 0.95rem; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-.mgmt__card:hover {
-  border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); transform: translateY(-1px);
-}
-.mgmt__label { font-weight: 600; color: var(--accent); font-size: 1.02rem; }
-.mgmt__desc { font-size: 0.8rem; color: var(--muted); }
+.tab:hover { color: var(--ink-900, #1a2230); background: rgba(0, 0, 0, 0.03); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { min-height: 4rem; }
 </style>
