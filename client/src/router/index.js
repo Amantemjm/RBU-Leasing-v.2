@@ -4,8 +4,6 @@ import AppLayout from "../components/AppLayout.vue";
 import InquiryView from "../views/InquiryView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "../views/DashboardView.vue";
-import SummaryView from "../views/SummaryView.vue";
-import ReportsView from "../views/ReportsView.vue";
 import InquiriesView from "../views/InquiriesView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
@@ -15,15 +13,11 @@ import UnitsView from "../views/UnitsView.vue";
 import UnitFormView from "../views/UnitFormView.vue";
 import LeasesView from "../views/LeasesView.vue";
 import LeaseFormView from "../views/LeaseFormView.vue";
-import PaymentsView from "../views/PaymentsView.vue";
-import PaymentFormView from "../views/PaymentFormView.vue";
 import MyUnitsView from "../views/MyUnitsView.vue";
 import RegisterUnitView from "../views/RegisterUnitView.vue";
 import OwnerLeasesView from "../views/OwnerLeasesView.vue";
-import OwnerIncomeView from "../views/OwnerIncomeView.vue";
 import MyProfileView from "../views/MyProfileView.vue";
 import TenantLeaseView from "../views/TenantLeaseView.vue";
-import TenantPaymentsView from "../views/TenantPaymentsView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
 import InfoSheetsView from "../views/InfoSheetsView.vue";
 import OwnerInfoSheetView from "../views/OwnerInfoSheetView.vue";
@@ -45,8 +39,6 @@ const routes = [
     children: [
       // Staff
       { path: "", component: DashboardView, meta: { roles: STAFF } },
-      { path: "summary", component: SummaryView, meta: { roles: STAFF } },
-      { path: "reports", component: ReportsView, meta: { roles: STAFF } },
       { path: "inquiries", component: InquiriesView, meta: { roles: STAFF } },
       { path: "owners", component: OwnersView, meta: { roles: STAFF } },
       { path: "owners/new", component: OwnerFormView, meta: { roles: ADMIN } },
@@ -60,20 +52,15 @@ const routes = [
       { path: "leases", component: LeasesView, meta: { roles: STAFF } },
       { path: "leases/new", component: LeaseFormView, meta: { roles: ADMIN } },
       { path: "leases/:id", component: LeaseFormView, meta: { roles: ADMIN } },
-      { path: "payments", component: PaymentsView, meta: { roles: STAFF } },
-      { path: "payments/new", component: PaymentFormView, meta: { roles: ADMIN } },
-      { path: "payments/:id", component: PaymentFormView, meta: { roles: ADMIN } },
       { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
       { path: "info-sheets", component: InfoSheetsView, meta: { roles: WRITE } },
       // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "my-leases", component: OwnerLeasesView, meta: { roles: ["UNIT_OWNER"] } },
-      { path: "my-income", component: OwnerIncomeView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "info-sheet", component: OwnerInfoSheetView, meta: { roles: ["UNIT_OWNER"] } },
       // Tenant (Lessee)
       { path: "my-lease", component: TenantLeaseView, meta: { roles: ["TENANT"] } },
-      { path: "my-payments", component: TenantPaymentsView, meta: { roles: ["TENANT"] } },
       // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
       { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },

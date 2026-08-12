@@ -21,8 +21,8 @@ describe("router", () => {
     useAuthStore().setSession({ token: "t", user: { role: "UNIT_OWNER", unitOwnerId: "o1" } });
     await router.push("/app/owners");
     expect(router.currentRoute.value.path).toBe("/app/my-units");
-    await router.push("/app/my-income"); // its own route is allowed
-    expect(router.currentRoute.value.path).toBe("/app/my-income");
+    await router.push("/app/my-leases"); // its own route is allowed
+    expect(router.currentRoute.value.path).toBe("/app/my-leases");
   });
 
   it("redirects a tenant away from staff/owner routes to My Lease", async () => {

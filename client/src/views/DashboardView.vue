@@ -35,12 +35,6 @@ function pct(rate) { return `${Math.round(rate * 100)}%`; }
         <p>61–90 days: {{ data.expiring.within90 }}</p>
       </div>
 
-      <div class="card" :class="{ 'card--alert': data.overdue.overdueCount > 0 }">
-        <h2>Overdue / outstanding</h2>
-        <p class="big">{{ formatPHP(data.overdue.outstandingAmount) }}</p>
-        <p>{{ data.overdue.overdueCount }} overdue ({{ formatPHP(data.overdue.overdueAmount) }})</p>
-      </div>
-
       <div class="card">
         <h2>New leases this month</h2>
         <p class="big">{{ data.newLeasesThisMonth }}</p>

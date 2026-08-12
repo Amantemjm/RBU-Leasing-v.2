@@ -16,7 +16,6 @@ export function tenantMe() { return api.get("/tenants/me").then((r) => r.data); 
 export const units = resource("/units");
 export const tenants = resource("/tenants");
 export const leases = resource("/leases");
-export const payments = resource("/payments");
 export const estates = resource("/estates");
 export const towers = resource("/towers");
 

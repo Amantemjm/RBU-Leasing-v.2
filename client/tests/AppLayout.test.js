@@ -28,7 +28,7 @@ describe("AppLayout", () => {
     const router = makeRouter(); router.push("/"); await router.isReady();
     const w = mount(AppLayout, { global: { plugins: [router] } });
     const nav = w.find("nav.app-nav").text();
-    for (const label of ["Dashboard", "Summary", "Reports", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Payments", "Approvals"]) {
+    for (const label of ["Dashboard", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Approvals"]) {
       expect(nav).toContain(label);
     }
   });

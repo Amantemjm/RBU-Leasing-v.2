@@ -39,25 +39,20 @@ const OWNER_LINKS = [
   { to: "/app/register-unit", label: "Register Unit" },
   { to: "/app/info-sheet", label: "Information Sheet" },
   { to: "/app/my-leases", label: "My Leases" },
-  { to: "/app/my-income", label: "My Income" },
   { to: "/app/my-profile", label: "My Profile" },
 ];
 const TENANT_LINKS = [
   { to: "/app/my-lease", label: "My Lease" },
-  { to: "/app/my-payments", label: "My Payments" },
   { to: "/app/requirements", label: "Requirements" },
   { to: "/app/my-profile", label: "My Profile" },
 ];
 const STAFF_LINKS = [
   { to: "/app", label: "Dashboard" },
-  { to: "/app/summary", label: "Summary" },
-  { to: "/app/reports", label: "Reports" },
   { to: "/app/inquiries", label: "Inquiries" },
   { to: "/app/owners", label: "Owners" },
   { to: "/app/units", label: "Units" },
   { to: "/app/tenants", label: "Tenants" },
   { to: "/app/leases", label: "Leases" },
-  { to: "/app/payments", label: "Payments" },
   { to: "/app/approvals", label: "Approvals", write: true },
   { to: "/app/info-sheets", label: "Info Sheets", write: true },
   { to: "/app/requirements", label: "Requirements", write: true },

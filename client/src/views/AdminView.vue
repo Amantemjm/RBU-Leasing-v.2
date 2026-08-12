@@ -7,7 +7,6 @@ import OwnersView from "./OwnersView.vue";
 import UnitsView from "./UnitsView.vue";
 import TenantsView from "./TenantsView.vue";
 import LeasesView from "./LeasesView.vue";
-import PaymentsView from "./PaymentsView.vue";
 import UsersView from "./UsersView.vue";
 
 const auth = useAuthStore();
@@ -20,7 +19,6 @@ const BASE_TABS = [
   { key: "units", label: "Units", component: UnitsView },
   { key: "tenants", label: "Tenants", component: TenantsView },
   { key: "leases", label: "Leases", component: LeasesView },
-  { key: "payments", label: "Payments", component: PaymentsView },
 ];
 
 const tabs = computed(() =>

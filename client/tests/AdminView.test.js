@@ -9,7 +9,6 @@ vi.mock("../src/views/OwnersView.vue", () => ({ default: { template: "<div>Owner
 vi.mock("../src/views/UnitsView.vue", () => ({ default: { template: "<div>UnitsPanel</div>" } }));
 vi.mock("../src/views/TenantsView.vue", () => ({ default: { template: "<div>TenantsPanel</div>" } }));
 vi.mock("../src/views/LeasesView.vue", () => ({ default: { template: "<div>LeasesPanel</div>" } }));
-vi.mock("../src/views/PaymentsView.vue", () => ({ default: { template: "<div>PaymentsPanel</div>" } }));
 vi.mock("../src/views/UsersView.vue", () => ({ default: { template: "<div>UsersPanel</div>" } }));
 
 import AdminView from "../src/views/AdminView.vue";
@@ -27,7 +26,7 @@ function tab(w, label) {
 describe("AdminView", () => {
   it("shows a tab for each management section and defaults to Approvals inline", () => {
     const w = mountAs("LEASING_OFFICER");
-    for (const label of ["Approvals", "Requirements", "Owners", "Units", "Tenants", "Leases", "Payments"]) {
+    for (const label of ["Approvals", "Requirements", "Owners", "Units", "Tenants", "Leases"]) {
       expect(tab(w, label)).toBeTruthy();
     }
     expect(w.text()).toContain("ApprovalsPanel"); // data shown below, no navigation
