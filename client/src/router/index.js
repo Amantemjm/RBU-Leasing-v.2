@@ -25,7 +25,7 @@ import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
 
 const routes = [
-  { path: "/", component: InquiryView }, // public landing (Inquiry form)
+  { path: "/", component: InquiryView, alias: "/inquiry" }, // public landing (Inquiry form)
   { path: "/login", component: LoginView },
   {
     path: "/app",
