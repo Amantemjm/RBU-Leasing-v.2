@@ -8,7 +8,7 @@ export async function create(req, res, next) {
   } catch (e) { next(e); }
 }
 export async function list(req, res, next) {
-  try { res.json(await service.listInquiries()); } catch (e) { next(e); }
+  try { res.json(await service.listInquiries(req.user)); } catch (e) { next(e); }
 }
 export async function update(req, res, next) {
   try {

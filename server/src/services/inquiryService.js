@@ -7,8 +7,11 @@ export function createInquiry(data) {
   return prisma.inquiry.create({ data });
 }
 
-export function listInquiries() {
-  return prisma.inquiry.findMany({ orderBy: { createdAt: "desc" }, include: assigneeInclude });
+// ADMIN and VIEWER see every inquiry; an O-Lease (LEASING_OFFICER) sees only
+// the inquiries assigned to their own account.
+export function listInquiries(user) {
+  const where = user?.role === "LEASING_OFFICER" ? { assignedToId: user.userId } : {};
+  return prisma.inquiry.findMany({ where, orderBy: { createdAt: "desc" }, include: assigneeInclude });
 }
 
 // Assign an inquiry to an O-Lease (LEASING_OFFICER), or null to unassign.

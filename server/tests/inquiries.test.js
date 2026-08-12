@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
+import { issueToken } from "../src/services/authService.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -125,6 +126,27 @@ describe("Inquiries", () => {
       .set("Authorization", `Bearer ${tokens.admin()}`)
       .send({ assignedToId: viewer.id });
     expect(res.status).toBe(400);
+  });
+
+  it("an O-Lease sees only inquiries assigned to their account", async () => {
+    const mine = await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Jane" });
+    await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Nobody" });
+    const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    await request(app).patch(`/api/inquiries/${mine.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ assignedToId: jane.id });
+
+    const janeToken = issueToken({ id: jane.id, role: "LEASING_OFFICER" });
+    const res = await request(app).get("/api/inquiries").set("Authorization", `Bearer ${janeToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].fullName).toBe("For Jane");
+  });
+
+  it("admin sees every inquiry regardless of assignment", async () => {
+    await request(app).post("/api/inquiries").send({ ...valid, fullName: "A" });
+    await request(app).post("/api/inquiries").send({ ...valid, fullName: "B" });
+    const res = await request(app).get("/api/inquiries").set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(res.body).toHaveLength(2);
   });
 
   it("a non-admin cannot assign (403)", async () => {
