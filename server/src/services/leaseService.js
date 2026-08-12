@@ -11,6 +11,13 @@ async function assertTenantExists(tenantId) {
   if (!tenant) throw new InvalidReferenceError("tenantId does not reference an existing tenant");
 }
 
+// Related names so owner/tenant portals can show units/tenants/owners without
+// needing access to those (staff-only) lists.
+const withParties = {
+  unit: { select: { id: true, unitNumber: true, owner: { select: { id: true, name: true } } } },
+  tenant: { select: { id: true, name: true } },
+};
+
 export function listLeases({ unitId, tenantId, status } = {}) {
   const where = {};
   if (unitId) where.unitId = unitId;
@@ -27,7 +34,7 @@ export function listLeasesForUser(user, filters = {}) {
   if (filters.status) where.status = filters.status;
   if (user.role === "UNIT_OWNER") where.unit = { ownerId: user.unitOwnerId || "__none__" };
   if (user.role === "TENANT") where.tenantId = user.tenantId || "__none__";
-  return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
+  return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" }, include: withParties });
 }
 
 export async function getLease(id) {

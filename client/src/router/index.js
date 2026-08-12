@@ -19,10 +19,18 @@ import PaymentsView from "../views/PaymentsView.vue";
 import PaymentFormView from "../views/PaymentFormView.vue";
 import MyUnitsView from "../views/MyUnitsView.vue";
 import RegisterUnitView from "../views/RegisterUnitView.vue";
+import OwnerLeasesView from "../views/OwnerLeasesView.vue";
+import OwnerIncomeView from "../views/OwnerIncomeView.vue";
+import MyProfileView from "../views/MyProfileView.vue";
+import TenantLeaseView from "../views/TenantLeaseView.vue";
+import TenantPaymentsView from "../views/TenantPaymentsView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
 import RequirementsView from "../views/RequirementsView.vue";
 import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
+
+const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
+const WRITE = ["ADMIN", "LEASING_OFFICER"];
 
 const routes = [
   { path: "/", component: InquiryView, alias: "/inquiry" }, // public landing (Inquiry form)
@@ -32,30 +40,39 @@ const routes = [
     component: AppLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: "", component: DashboardView },
-      { path: "summary", component: SummaryView },
-      { path: "reports", component: ReportsView },
-      { path: "inquiries", component: InquiriesView, meta: { roles: ["ADMIN", "LEASING_OFFICER", "VIEWER"] } },
-      { path: "owners", component: OwnersView },
-      { path: "owners/new", component: OwnerFormView },
-      { path: "owners/:id", component: OwnerFormView },
-      { path: "tenants", component: TenantsView },
-      { path: "tenants/new", component: TenantFormView },
-      { path: "tenants/:id", component: TenantFormView },
-      { path: "units", component: UnitsView },
-      { path: "units/new", component: UnitFormView },
-      { path: "units/:id", component: UnitFormView },
-      { path: "leases", component: LeasesView },
-      { path: "leases/new", component: LeaseFormView },
-      { path: "leases/:id", component: LeaseFormView },
-      { path: "payments", component: PaymentsView },
-      { path: "payments/new", component: PaymentFormView },
-      { path: "payments/:id", component: PaymentFormView },
+      // Staff
+      { path: "", component: DashboardView, meta: { roles: STAFF } },
+      { path: "summary", component: SummaryView, meta: { roles: STAFF } },
+      { path: "reports", component: ReportsView, meta: { roles: STAFF } },
+      { path: "inquiries", component: InquiriesView, meta: { roles: STAFF } },
+      { path: "owners", component: OwnersView, meta: { roles: STAFF } },
+      { path: "owners/new", component: OwnerFormView, meta: { roles: WRITE } },
+      { path: "owners/:id", component: OwnerFormView, meta: { roles: WRITE } },
+      { path: "tenants", component: TenantsView, meta: { roles: STAFF } },
+      { path: "tenants/new", component: TenantFormView, meta: { roles: WRITE } },
+      { path: "tenants/:id", component: TenantFormView, meta: { roles: WRITE } },
+      { path: "units", component: UnitsView, meta: { roles: STAFF } },
+      { path: "units/new", component: UnitFormView, meta: { roles: WRITE } },
+      { path: "units/:id", component: UnitFormView, meta: { roles: WRITE } },
+      { path: "leases", component: LeasesView, meta: { roles: STAFF } },
+      { path: "leases/new", component: LeaseFormView, meta: { roles: WRITE } },
+      { path: "leases/:id", component: LeaseFormView, meta: { roles: WRITE } },
+      { path: "payments", component: PaymentsView, meta: { roles: STAFF } },
+      { path: "payments/new", component: PaymentFormView, meta: { roles: WRITE } },
+      { path: "payments/:id", component: PaymentFormView, meta: { roles: WRITE } },
+      { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
+      // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
-      { path: "approvals", component: ApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
+      { path: "my-leases", component: OwnerLeasesView, meta: { roles: ["UNIT_OWNER"] } },
+      { path: "my-income", component: OwnerIncomeView, meta: { roles: ["UNIT_OWNER"] } },
+      // Tenant (Lessee)
+      { path: "my-lease", component: TenantLeaseView, meta: { roles: ["TENANT"] } },
+      { path: "my-payments", component: TenantPaymentsView, meta: { roles: ["TENANT"] } },
+      // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
-      { path: "admin", component: AdminView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
+      { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
+      { path: "admin", component: AdminView, meta: { roles: WRITE } },
       { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
     ],
   },
@@ -66,7 +83,7 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
   if (!auth.isAuthenticated) return;
-  const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app";
+  const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
   // "/" is always the public Inquiry landing — even for signed-in users.
   if (to.path === "/app" && appHome !== "/app") return appHome; // owners/tenants -> their portal
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) return appHome;

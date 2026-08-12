@@ -12,7 +12,7 @@ async function submit() {
   try {
     const { data } = await api.post("/auth/login", { email: email.value, password: password.value });
     auth.setSession(data);
-    const home = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app";
+    const home = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
     router.push(home);
   } catch {
     error.value = "Invalid username or password.";

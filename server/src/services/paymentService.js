@@ -6,6 +6,17 @@ async function assertLeaseExists(leaseId) {
   if (!lease) throw new InvalidReferenceError("leaseId does not reference an existing lease");
 }
 
+// Related unit/tenant/owner names for owner/tenant portal tables.
+const withLeaseParties = {
+  lease: {
+    select: {
+      id: true,
+      unit: { select: { unitNumber: true, owner: { select: { name: true } } } },
+      tenant: { select: { name: true } },
+    },
+  },
+};
+
 export function listPayments({ leaseId, status } = {}) {
   const where = {};
   if (leaseId) where.leaseId = leaseId;
@@ -21,7 +32,7 @@ export function listPaymentsForUser(user, filters = {}) {
   if (filters.status) where.status = filters.status;
   if (user.role === "UNIT_OWNER") where.lease = { unit: { ownerId: user.unitOwnerId || "__none__" } };
   if (user.role === "TENANT") where.lease = { tenantId: user.tenantId || "__none__" };
-  return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
+  return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" }, include: withLeaseParties });
 }
 
 export async function getPayment(id) {

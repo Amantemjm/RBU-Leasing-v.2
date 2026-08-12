@@ -16,7 +16,7 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const appHome = computed(() =>
-  auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app",
+  auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app",
 );
 function goStaff() {
   router.push(auth.isAuthenticated ? appHome.value : "/login");
