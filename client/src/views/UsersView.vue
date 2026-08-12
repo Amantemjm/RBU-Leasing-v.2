@@ -111,11 +111,24 @@ async function remove(u) {
           <td class="pw">
             <template v-if="u.password">
               <span class="pw__val">{{ revealed.has(u.id) ? u.password : "••••••••" }}</span>
-              <button type="button" class="link pw__toggle" @click="toggleReveal(u.id)">
-                {{ revealed.has(u.id) ? "Hide" : "Show" }}
+              <button
+                type="button"
+                class="pw__eye"
+                :aria-label="revealed.has(u.id) ? 'Hide password' : 'Show password'"
+                :aria-pressed="revealed.has(u.id)"
+                @click="toggleReveal(u.id)"
+              >
+                <svg v-if="!revealed.has(u.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
               </button>
             </template>
-            <span v-else class="muted" title="Set the last time this login's password changed">—</span>
+            <span v-else class="muted">—</span>
           </td>
           <td>{{ formatDate(u.createdAt) }}</td>
           <td class="row-actions">
@@ -166,9 +179,15 @@ async function remove(u) {
 .pw { white-space: nowrap; }
 .pw__val {
   font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
-  font-weight: 600; letter-spacing: 0.02em;
+  font-weight: 600; letter-spacing: 0.02em; vertical-align: middle;
 }
-.pw__toggle { margin-left: 0.6rem; font-size: 0.78rem; }
+.pw__eye {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 0.55rem; padding: 0.2rem; border: none; background: none; cursor: pointer;
+  color: var(--muted); border-radius: var(--radius-sm); vertical-align: middle;
+}
+.pw__eye:hover { color: var(--accent-text); background: var(--row-hover); }
+.pw__eye svg { width: 17px; height: 17px; display: block; }
 .role-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);

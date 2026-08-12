@@ -34,15 +34,18 @@ describe("UsersView", () => {
     expect(w.text()).toContain("O-Lease"); // LEASING_OFFICER label
   });
 
-  it("masks passwords and reveals them on toggle", async () => {
+  it("masks passwords and reveals them via the eye toggle", async () => {
     const w = mountView();
     await flushPromises();
     const firstRow = w.findAll("tbody tr")[0];
     expect(firstRow.find(".pw__val").text()).toBe("••••••••");
     expect(firstRow.text()).not.toContain("admin123");
-    await firstRow.find(".pw__toggle").trigger("click");
+    const eye = firstRow.find(".pw__eye");
+    expect(eye.attributes("aria-label")).toBe("Show password");
+    await eye.trigger("click");
     expect(firstRow.find(".pw__val").text()).toBe("admin123");
-    await firstRow.find(".pw__toggle").trigger("click");
+    expect(firstRow.find(".pw__eye").attributes("aria-label")).toBe("Hide password");
+    await firstRow.find(".pw__eye").trigger("click");
     expect(firstRow.find(".pw__val").text()).toBe("••••••••");
   });
 
