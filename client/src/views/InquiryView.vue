@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth.js";
 import { createInquiry } from "../lib/inquiries.js";
 
 const CONSENT_TEXT =
@@ -12,6 +13,14 @@ const CONSENT_TEXT =
   "goods and services.";
 
 const router = useRouter();
+const auth = useAuthStore();
+
+const appHome = computed(() =>
+  auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app",
+);
+function goStaff() {
+  router.push(auth.isAuthenticated ? appHome.value : "/login");
+}
 
 const form = reactive({ category: "", fullName: "", email: "", message: "", consent: false });
 const submitting = ref(false);
@@ -106,7 +115,7 @@ async function submit() {
       </section>
 
       <div class="staff">
-        <button type="button" class="staff__btn" @click="router.push('/login')">Sign In</button>
+        <button type="button" class="staff__btn" @click="goStaff">{{ auth.isAuthenticated ? "Go to App" : "Sign In" }}</button>
         <p class="staff__hint">For Ortigas Land leasing staff</p>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
+import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("../src/lib/inquiries.js", () => ({
   createInquiry: vi.fn(() => Promise.resolve({ id: "i1", status: "NEW" })),
@@ -16,6 +17,7 @@ function makeRouter() {
   ]});
 }
 async function mountView() {
+  setActivePinia(createPinia());
   const router = makeRouter(); router.push("/"); await router.isReady();
   return mount(InquiryView, { global: { plugins: [router] } });
 }

@@ -67,7 +67,7 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
   if (!auth.isAuthenticated) return;
   const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app";
-  if (to.path === "/") return appHome; // authenticated visitors skip the public landing
+  // "/" is always the public Inquiry landing — even for signed-in users.
   if (to.path === "/app" && appHome !== "/app") return appHome; // owners/tenants -> their portal
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) return appHome;
 });
