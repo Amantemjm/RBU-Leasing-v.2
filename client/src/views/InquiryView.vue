@@ -55,7 +55,6 @@ async function submit() {
         <span class="brand__mark">RBU</span>
         <span class="brand__sub">Leasing</span>
       </div>
-      <button type="button" class="signin" @click="router.push('/login')">Sign In</button>
     </header>
 
     <main class="landing__main">
@@ -104,6 +103,11 @@ async function submit() {
           </button>
         </form>
       </section>
+
+      <div class="staff">
+        <button type="button" class="staff__btn" @click="router.push('/login')">Sign In</button>
+        <p class="staff__hint">For Ortigas Land leasing staff</p>
+      </div>
     </main>
   </div>
 </template>
@@ -117,11 +121,15 @@ async function submit() {
 .brand { display: flex; align-items: baseline; gap: 0.45rem; }
 .brand__mark { font-family: var(--display); font-weight: 600; font-size: 1.35rem; color: #fff; line-height: 1; }
 .brand__sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: #7fa08f; }
-.signin {
-  background: var(--brand-mint); color: var(--ink-900); border: none;
-  font-weight: 600; padding: 0.5rem 1.1rem; border-radius: var(--radius-sm); cursor: pointer;
+.staff { text-align: center; margin-top: 0.25rem; }
+.staff__btn {
+  display: inline-block; min-width: 240px;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 1.05rem; font-weight: 700; padding: 0.75rem 2rem;
+  border-radius: 8px; cursor: pointer; box-shadow: var(--shadow-sm);
 }
-.signin:hover { filter: brightness(1.06); }
+.staff__btn:hover { background: var(--accent-600); }
+.staff__hint { color: var(--muted); font-size: 0.8rem; margin: 0.65rem 0 0; }
 .landing__main {
   flex: 1; width: 100%; max-width: 640px; margin: 0 auto;
   padding: 2.5rem 1.5rem 3.5rem; display: flex; flex-direction: column; gap: 1.75rem;
