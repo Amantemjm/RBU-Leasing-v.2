@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { fetchDashboard } from "../lib/dashboard.js";
-import { formatPHP } from "../lib/formatters.js";
 
 const data = ref(null);
 onMounted(async () => { data.value = await fetchDashboard(); });
@@ -20,12 +19,6 @@ function pct(rate) { return `${Math.round(rate * 100)}%`; }
           <span class="meter__fill" :style="{ width: pct(data.occupancy.rate) }"></span>
         </div>
         <p>{{ data.occupancy.occupied }} of {{ data.occupancy.totalUnits }} units occupied</p>
-      </div>
-
-      <div class="card">
-        <h2>Monthly income</h2>
-        <p class="big">{{ formatPHP(data.income.monthlyIncome) }}</p>
-        <p>{{ data.income.activeLeases }} active leases</p>
       </div>
 
       <div class="card">

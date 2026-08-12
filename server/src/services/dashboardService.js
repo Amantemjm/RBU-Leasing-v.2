@@ -1,11 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { startOfMonth, startOfNextMonth, addDays } from "../lib/dates.js";
 
-// Prisma Decimal (or null) -> Number
-function num(value) {
-  return value == null ? 0 : Number(value);
-}
-
 export async function getCounts() {
   const [owners, tenants, units] = await Promise.all([
     prisma.unitOwner.count(),
@@ -23,15 +18,6 @@ export async function getOccupancy() {
   const vacant = totalUnits - occupied;
   const rate = totalUnits === 0 ? 0 : occupied / totalUnits;
   return { totalUnits, occupied, vacant, rate };
-}
-
-export async function getMonthlyIncome() {
-  const activeLeases = await prisma.lease.count({ where: { status: "ACTIVE" } });
-  const agg = await prisma.lease.aggregate({
-    _sum: { monthlyRent: true },
-    where: { status: "ACTIVE" },
-  });
-  return { activeLeases, monthlyIncome: num(agg._sum.monthlyRent) };
 }
 
 export async function getNewLeasesThisMonth(now = new Date()) {
@@ -53,12 +39,11 @@ export async function getExpiringLeases(now = new Date()) {
 }
 
 export async function getDashboard(now = new Date()) {
-  const [counts, occupancy, income, expiring, newLeasesThisMonth] = await Promise.all([
+  const [counts, occupancy, expiring, newLeasesThisMonth] = await Promise.all([
     getCounts(),
     getOccupancy(),
-    getMonthlyIncome(),
     getExpiringLeases(now),
     getNewLeasesThisMonth(now),
   ]);
-  return { counts, occupancy, income, expiring, newLeasesThisMonth };
+  return { counts, occupancy, expiring, newLeasesThisMonth };
 }

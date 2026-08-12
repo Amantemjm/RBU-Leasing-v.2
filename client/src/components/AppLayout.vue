@@ -36,7 +36,6 @@ onMounted(() => {
 
 const OWNER_LINKS = [
   { to: "/app/my-units", label: "My Units" },
-  { to: "/app/register-unit", label: "Register Unit" },
   { to: "/app/info-sheet", label: "Information Sheet" },
   { to: "/app/my-leases", label: "My Leases" },
   { to: "/app/my-profile", label: "My Profile" },

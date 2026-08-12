@@ -30,7 +30,7 @@ describe("getDashboard", () => {
   it("aggregates every metric block", async () => {
     const dash = await getDashboard(NOW);
     expect(Object.keys(dash).sort()).toEqual(
-      ["counts", "expiring", "income", "newLeasesThisMonth", "occupancy"]
+      ["counts", "expiring", "newLeasesThisMonth", "occupancy"]
     );
   });
 });
