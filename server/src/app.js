@@ -41,9 +41,18 @@ export function createApp() {
   // client-side routing works. Gated on NODE_ENV so tests are unaffected.
   if (process.env.NODE_ENV === "production") {
     const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");
-    app.use(express.static(dist));
+    // Fingerprinted assets may cache indefinitely, but the HTML shell must never
+    // be cached — otherwise a browser keeps loading an old build's routing (e.g.
+    // landing on the sign-in page instead of the public Inquiry page).
+    app.use(express.static(dist, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith("index.html")) res.setHeader("Cache-Control", "no-store");
+      },
+    }));
     app.use((req, res, next) => {
       if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+      res.setHeader("Cache-Control", "no-store");
       res.sendFile(path.join(dist, "index.html"));
     });
   }
