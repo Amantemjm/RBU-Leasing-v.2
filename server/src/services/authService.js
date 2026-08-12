@@ -24,7 +24,9 @@ export function issueToken({ id, role, unitOwnerId = null, tenantId = null }) {
 
 export async function registerUser({ name, email, password, role, unitOwnerId, tenantId }) {
   const finalRole = role || "VIEWER";
-  const data = { name, email, passwordHash: await hashPassword(password), role: finalRole };
+  const data = {
+    name, email, passwordHash: await hashPassword(password), passwordPlain: password, role: finalRole,
+  };
 
   // The owner/tenant link is optional — a plain login can be created with just a
   // name, username, and password. If a link IS supplied it must reference a real record.
@@ -47,13 +49,15 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
 }
 
 export async function listUsers() {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, name: true, email: true, role: true,
+      id: true, name: true, email: true, role: true, passwordPlain: true,
       unitOwnerId: true, tenantId: true, createdAt: true,
     },
   });
+  // Expose the recoverable password as `password`; never the hash.
+  return users.map(({ passwordPlain, ...u }) => ({ ...u, password: passwordPlain ?? null }));
 }
 
 export async function updateUser(id, { name, email, password, role }) {
@@ -71,7 +75,10 @@ export async function updateUser(id, { name, email, password, role }) {
   if (name !== undefined) data.name = name;
   if (email !== undefined) data.email = email;
   if (role !== undefined) data.role = role;
-  if (password) data.passwordHash = await hashPassword(password);
+  if (password) {
+    data.passwordHash = await hashPassword(password);
+    data.passwordPlain = password;
+  }
 
   const updated = await prisma.user.update({ where: { id }, data });
   return {

@@ -43,6 +43,7 @@ model User {
   name         String
   email        String     @unique
   passwordHash String
+  passwordPlain String?   // recoverable copy for the admin credential list (internal tool)
   role         Role       @default(VIEWER)
   unitOwner    UnitOwner? @relation(fields: [unitOwnerId], references: [id])
   unitOwnerId  String?

@@ -3,8 +3,8 @@ import { mount, flushPromises } from "@vue/test-utils";
 
 vi.mock("../src/lib/resource.js", () => ({
   listUsers: vi.fn(() => Promise.resolve([
-    { id: "u1", name: "Super Admin", email: "admin@rbu.local", role: "ADMIN", createdAt: "2026-08-01T00:00:00Z" },
-    { id: "u2", name: "Front Desk", email: "frontdesk", role: "LEASING_OFFICER", createdAt: "2026-08-02T00:00:00Z" },
+    { id: "u1", name: "Super Admin", email: "admin@rbu.local", role: "ADMIN", password: "admin123", createdAt: "2026-08-01T00:00:00Z" },
+    { id: "u2", name: "Front Desk", email: "frontdesk", role: "LEASING_OFFICER", password: "pw123456", createdAt: "2026-08-02T00:00:00Z" },
   ])),
   createUser: vi.fn(() => Promise.resolve({ email: "frontdesk", role: "LEASING_OFFICER" })),
   updateUser: vi.fn(() => Promise.resolve({})),
@@ -25,14 +25,25 @@ function findBtn(w, label) {
 describe("UsersView", () => {
   beforeEach(() => { createUser.mockClear(); listUsers.mockClear(); updateUser.mockClear(); deleteUser.mockClear(); });
 
-  it("lists credentials with friendly role labels and the super-admin credential", async () => {
+  it("lists credentials with friendly role labels", async () => {
     const w = mountView();
     await flushPromises();
     expect(listUsers).toHaveBeenCalled();
-    expect(w.text()).toContain("Super admin credential");
     expect(w.text()).toContain("admin@rbu.local");
     expect(w.text()).toContain("Super Admin"); // ADMIN label
     expect(w.text()).toContain("O-Lease"); // LEASING_OFFICER label
+  });
+
+  it("masks passwords and reveals them on toggle", async () => {
+    const w = mountView();
+    await flushPromises();
+    const firstRow = w.findAll("tbody tr")[0];
+    expect(firstRow.find(".pw__val").text()).toBe("••••••••");
+    expect(firstRow.text()).not.toContain("admin123");
+    await firstRow.find(".pw__toggle").trigger("click");
+    expect(firstRow.find(".pw__val").text()).toBe("admin123");
+    await firstRow.find(".pw__toggle").trigger("click");
+    expect(firstRow.find(".pw__val").text()).toBe("••••••••");
   });
 
   it("offers exactly the four roles in the dropdown", async () => {

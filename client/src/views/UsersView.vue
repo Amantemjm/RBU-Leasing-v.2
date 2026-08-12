@@ -4,11 +4,16 @@ import { createUser, listUsers, updateUser, deleteUser } from "../lib/resource.j
 import { formatDate, ROLE_OPTIONS, roleLabel } from "../lib/formatters.js";
 
 const SUPER_ADMIN_EMAIL = "admin@rbu.local";
-const SUPER_ADMIN_PASSWORD = "admin123"; // seeded default
 
 const accounts = ref([]);
 const loading = ref(false);
 const listError = ref("");
+const revealed = reactive(new Set()); // ids whose password is shown
+
+function toggleReveal(id) {
+  if (revealed.has(id)) revealed.delete(id);
+  else revealed.add(id);
+}
 
 const showForm = ref(false);
 const editingId = ref(null);
@@ -18,7 +23,6 @@ const form = reactive({ name: "", email: "", password: "", role: "LEASING_OFFICE
 
 const isEditing = computed(() => editingId.value !== null);
 const editingSuperAdmin = computed(() => isEditing.value && form.email === SUPER_ADMIN_EMAIL);
-const superAdmin = computed(() => accounts.value.find((u) => u.email === SUPER_ADMIN_EMAIL));
 
 async function load() {
   loading.value = true;
@@ -90,20 +94,11 @@ async function remove(u) {
       <button type="button" class="primary" @click="openCreate">New account</button>
     </div>
 
-    <div v-if="superAdmin" class="super-cred">
-      <div class="super-cred__title">Super admin credential</div>
-      <div class="super-cred__rows">
-        <div><span class="k">Username</span><span class="v">{{ superAdmin.email }}</span></div>
-        <div><span class="k">Password</span><span class="v">{{ SUPER_ADMIN_PASSWORD }}</span></div>
-      </div>
-      <small class="muted">Seeded default. If you change it with Edit, this note will be out of date.</small>
-    </div>
-
     <p v-if="listError" class="error">{{ listError }}</p>
     <p v-else-if="loading" class="muted">Loading…</p>
     <table v-else class="grid">
       <thead>
-        <tr><th>Display name</th><th>Username</th><th>Role</th><th>Created</th><th></th></tr>
+        <tr><th>Display name</th><th>Username</th><th>Role</th><th>Password</th><th>Created</th><th></th></tr>
       </thead>
       <tbody>
         <tr v-for="u in accounts" :key="u.id">
@@ -113,6 +108,15 @@ async function remove(u) {
             <span v-if="u.email === SUPER_ADMIN_EMAIL" class="super-tag">Super admin</span>
           </td>
           <td><span class="role-tag">{{ roleLabel(u.role) }}</span></td>
+          <td class="pw">
+            <template v-if="u.password">
+              <span class="pw__val">{{ revealed.has(u.id) ? u.password : "••••••••" }}</span>
+              <button type="button" class="link pw__toggle" @click="toggleReveal(u.id)">
+                {{ revealed.has(u.id) ? "Hide" : "Show" }}
+              </button>
+            </template>
+            <span v-else class="muted" title="Set the last time this login's password changed">—</span>
+          </td>
           <td>{{ formatDate(u.createdAt) }}</td>
           <td class="row-actions">
             <button type="button" class="link" @click="openEdit(u)">Edit</button>
@@ -124,7 +128,7 @@ async function remove(u) {
             >Delete</button>
           </td>
         </tr>
-        <tr v-if="!accounts.length"><td colspan="5" class="muted">No accounts yet.</td></tr>
+        <tr v-if="!accounts.length"><td colspan="6" class="muted">No accounts yet.</td></tr>
       </tbody>
     </table>
 
@@ -159,18 +163,12 @@ async function remove(u) {
 <style scoped>
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .muted { color: var(--muted); }
-.super-cred {
-  margin: 0.5rem 0 1.25rem; padding: 0.9rem 1.1rem;
-  border: 1px solid var(--line-strong); border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm); background: var(--accent-050);
+.pw { white-space: nowrap; }
+.pw__val {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-weight: 600; letter-spacing: 0.02em;
 }
-.super-cred__title {
-  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
-  color: var(--accent-text); font-weight: 700; margin-bottom: 0.5rem;
-}
-.super-cred__rows { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
-.super-cred__rows .k { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.super-cred__rows .v { font-family: ui-monospace, "Cascadia Code", "Consolas", monospace; font-weight: 600; font-size: 0.95rem; }
+.pw__toggle { margin-left: 0.6rem; font-size: 0.78rem; }
 .role-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);

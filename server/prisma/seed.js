@@ -8,8 +8,11 @@ async function main() {
   // Super admin: always guaranteed present with a known password and ADMIN role.
   await prisma.user.upsert({
     where: { email },
-    update: { passwordHash: await hashPassword("admin123"), role: "ADMIN" },
-    create: { name: "Super Admin", email, passwordHash: await hashPassword("admin123"), role: "ADMIN" },
+    update: { passwordHash: await hashPassword("admin123"), passwordPlain: "admin123", role: "ADMIN" },
+    create: {
+      name: "Super Admin", email,
+      passwordHash: await hashPassword("admin123"), passwordPlain: "admin123", role: "ADMIN",
+    },
   });
   console.log("seeded super admin admin@rbu.local / admin123");
 
