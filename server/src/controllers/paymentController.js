@@ -8,7 +8,7 @@ export async function list(req, res, next) {
   } catch (e) { next(e); }
 }
 export async function get(req, res, next) {
-  try { res.json(await service.getPayment(req.params.id)); } catch (e) { next(e); }
+  try { res.json(await service.getPaymentForUser(req.user, req.params.id)); } catch (e) { next(e); }
 }
 export async function create(req, res, next) {
   try {

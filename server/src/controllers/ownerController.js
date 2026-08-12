@@ -4,6 +4,9 @@ import { ownerCreateSchema, ownerUpdateSchema } from "../validation/owner.js";
 export async function list(req, res, next) {
   try { res.json(await service.listOwners()); } catch (e) { next(e); }
 }
+export async function me(req, res, next) {
+  try { res.json(await service.getOwnerMe(req.user)); } catch (e) { next(e); }
+}
 export async function get(req, res, next) {
   try { res.json(await service.getOwner(req.params.id)); } catch (e) { next(e); }
 }

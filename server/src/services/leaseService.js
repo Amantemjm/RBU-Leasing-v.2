@@ -19,19 +19,33 @@ export function listLeases({ unitId, tenantId, status } = {}) {
   return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
 }
 
-// A UNIT_OWNER only sees leases on units they own.
+// A UNIT_OWNER sees leases on units they own; a TENANT sees only their own leases.
 export function listLeasesForUser(user, filters = {}) {
   const where = {};
   if (filters.unitId) where.unitId = filters.unitId;
   if (filters.tenantId) where.tenantId = filters.tenantId;
   if (filters.status) where.status = filters.status;
   if (user.role === "UNIT_OWNER") where.unit = { ownerId: user.unitOwnerId || "__none__" };
+  if (user.role === "TENANT") where.tenantId = user.tenantId || "__none__";
   return prisma.lease.findMany({ where, orderBy: { createdAt: "desc" } });
 }
 
 export async function getLease(id) {
   const lease = await prisma.lease.findUnique({ where: { id } });
   if (!lease) throw new NotFoundError("Lease not found");
+  return lease;
+}
+
+// Like getLease, but an out-of-scope owner/tenant gets 404 (not another's record).
+export async function getLeaseForUser(user, id) {
+  const lease = await getLease(id);
+  if (user.role === "TENANT" && lease.tenantId !== user.tenantId) {
+    throw new NotFoundError("Lease not found");
+  }
+  if (user.role === "UNIT_OWNER") {
+    const unit = await prisma.unit.findUnique({ where: { id: lease.unitId } });
+    if (!unit || unit.ownerId !== user.unitOwnerId) throw new NotFoundError("Lease not found");
+  }
   return lease;
 }
 

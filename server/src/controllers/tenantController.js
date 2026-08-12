@@ -4,6 +4,9 @@ import { tenantCreateSchema, tenantUpdateSchema } from "../validation/tenant.js"
 export async function list(req, res, next) {
   try { res.json(await service.listTenants()); } catch (e) { next(e); }
 }
+export async function me(req, res, next) {
+  try { res.json(await service.getTenantMe(req.user)); } catch (e) { next(e); }
+}
 export async function get(req, res, next) {
   try { res.json(await service.getTenant(req.params.id)); } catch (e) { next(e); }
 }

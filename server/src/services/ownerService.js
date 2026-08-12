@@ -11,6 +11,12 @@ export async function getOwner(id) {
   return owner;
 }
 
+// The owner record linked to the calling UNIT_OWNER account.
+export async function getOwnerMe(user) {
+  if (!user.unitOwnerId) throw new NotFoundError("No owner record linked to this account");
+  return getOwner(user.unitOwnerId);
+}
+
 export function createOwner(data) {
   return prisma.unitOwner.create({ data });
 }

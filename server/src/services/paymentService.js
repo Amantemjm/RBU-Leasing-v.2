@@ -13,18 +13,35 @@ export function listPayments({ leaseId, status } = {}) {
   return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
 }
 
-// A UNIT_OWNER only sees payments on leases of units they own.
+// A UNIT_OWNER sees payments on leases of units they own; a TENANT sees only
+// payments on their own leases.
 export function listPaymentsForUser(user, filters = {}) {
   const where = {};
   if (filters.leaseId) where.leaseId = filters.leaseId;
   if (filters.status) where.status = filters.status;
   if (user.role === "UNIT_OWNER") where.lease = { unit: { ownerId: user.unitOwnerId || "__none__" } };
+  if (user.role === "TENANT") where.lease = { tenantId: user.tenantId || "__none__" };
   return prisma.payment.findMany({ where, orderBy: { dueDate: "desc" } });
 }
 
 export async function getPayment(id) {
   const payment = await prisma.payment.findUnique({ where: { id } });
   if (!payment) throw new NotFoundError("Payment not found");
+  return payment;
+}
+
+// Like getPayment, but an out-of-scope owner/tenant gets 404.
+export async function getPaymentForUser(user, id) {
+  const payment = await getPayment(id);
+  if (user.role === "UNIT_OWNER" || user.role === "TENANT") {
+    const lease = await prisma.lease.findUnique({ where: { id: payment.leaseId }, include: { unit: true } });
+    if (user.role === "TENANT" && (!lease || lease.tenantId !== user.tenantId)) {
+      throw new NotFoundError("Payment not found");
+    }
+    if (user.role === "UNIT_OWNER" && (!lease || lease.unit?.ownerId !== user.unitOwnerId)) {
+      throw new NotFoundError("Payment not found");
+    }
+  }
   return payment;
 }
 

@@ -28,3 +28,4 @@ export function requireRole(...roles) {
 }
 
 export const requireWrite = requireRole("ADMIN", "LEASING_OFFICER");
+export const requireStaff = requireRole("ADMIN", "LEASING_OFFICER", "VIEWER");

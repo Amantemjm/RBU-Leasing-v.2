@@ -4,7 +4,8 @@ import { verifyJwt, requireWrite, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 router.use(verifyJwt);
-router.get("/", ctrl.list);
+// Staff see all (filtered); a UNIT_OWNER is auto-scoped to their own units. Tenants are blocked.
+router.get("/", requireRole("ADMIN", "LEASING_OFFICER", "VIEWER", "UNIT_OWNER"), ctrl.list);
 router.get("/:id", ctrl.get);
 router.post("/", requireRole("ADMIN", "LEASING_OFFICER", "UNIT_OWNER"), ctrl.create);
 router.patch("/:id/approve", requireWrite, ctrl.approve);

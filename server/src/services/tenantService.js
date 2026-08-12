@@ -11,6 +11,12 @@ export async function getTenant(id) {
   return tenant;
 }
 
+// The tenant record linked to the calling TENANT account.
+export async function getTenantMe(user) {
+  if (!user.tenantId) throw new NotFoundError("No tenant record linked to this account");
+  return getTenant(user.tenantId);
+}
+
 export function createTenant(data) {
   return prisma.tenant.create({ data });
 }
