@@ -52,12 +52,19 @@ const STAFF_LINKS = [
   { to: "/app/summary", label: "Summary" },
   { to: "/app/reports", label: "Reports" },
   { to: "/app/inquiries", label: "Inquiries" },
+  { to: "/app/owners", label: "Owners" },
+  { to: "/app/units", label: "Units" },
+  { to: "/app/tenants", label: "Tenants" },
+  { to: "/app/leases", label: "Leases" },
+  { to: "/app/payments", label: "Payments" },
+  { to: "/app/approvals", label: "Approvals", write: true },
+  { to: "/app/requirements", label: "Requirements", write: true },
 ];
 
 const links = computed(() => {
   if (auth.isOwner) return OWNER_LINKS;
   if (auth.isTenant) return TENANT_LINKS;
-  return STAFF_LINKS;
+  return STAFF_LINKS.filter((l) => (l.write ? auth.canWrite : true));
 });
 
 function isActive(to) {
@@ -66,7 +73,7 @@ function isActive(to) {
 
 function logout() {
   auth.logout();
-  router.push("/login");
+  router.push("/"); // back to the public Inquiry page
 }
 </script>
 
@@ -84,7 +91,7 @@ function logout() {
       </nav>
       <div class="topbar-foot">
         <RouterLink
-          v-if="auth.canWrite"
+          v-if="auth.role === 'ADMIN'"
           to="/app/admin"
           class="master-admin"
           :class="{ active: isActive('/app/admin') }"

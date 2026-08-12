@@ -72,7 +72,7 @@ const routes = [
       // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
       { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
-      { path: "admin", component: AdminView, meta: { roles: WRITE } },
+      { path: "admin", component: AdminView, meta: { roles: ["ADMIN"] } },
       { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
     ],
   },

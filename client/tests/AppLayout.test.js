@@ -22,22 +22,26 @@ function makeRouter() {
 describe("AppLayout", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("renders the top-level staff nav links", async () => {
-    const router = makeRouter(); router.push("/"); await router.isReady();
-    const w = mount(AppLayout, { global: { plugins: [router] } });
-    for (const label of ["Dashboard", "Summary", "Reports"]) {
-      expect(w.text()).toContain(label);
-    }
-  });
-
-  it("shows the Master Admin hub link for staff who can write", async () => {
+  it("shows the management sections in the staff nav", async () => {
     const auth = useAuthStore();
     auth.setSession({ token: "t", user: { email: "o@b.c", role: "LEASING_OFFICER" } });
     const router = makeRouter(); router.push("/"); await router.isReady();
     const w = mount(AppLayout, { global: { plugins: [router] } });
-    expect(w.text()).toContain("Master Admin");
-    // management sections are no longer top-level nav
-    expect(w.find("nav.app-nav").text()).not.toContain("Owners");
+    const nav = w.find("nav.app-nav").text();
+    for (const label of ["Dashboard", "Summary", "Reports", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Payments", "Approvals"]) {
+      expect(nav).toContain(label);
+    }
+  });
+
+  it("shows Master Admin only to the super admin", async () => {
+    const auth = useAuthStore();
+    auth.setSession({ token: "t", user: { role: "LEASING_OFFICER" } });
+    let router = makeRouter(); router.push("/"); await router.isReady();
+    expect(mount(AppLayout, { global: { plugins: [router] } }).text()).not.toContain("Master Admin");
+
+    auth.setSession({ token: "t", user: { role: "ADMIN" } });
+    router = makeRouter(); router.push("/"); await router.isReady();
+    expect(mount(AppLayout, { global: { plugins: [router] } }).text()).toContain("Master Admin");
   });
 
   it("toggles the color theme via data-theme", async () => {
