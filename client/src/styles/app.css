@@ -192,6 +192,28 @@ button:disabled {
   border-color: var(--muted);
 }
 
+/* Primary / ghost — used by the Administration (Users) actions and modal */
+.app-main button.primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-main button.primary:hover {
+  background: var(--accent-600);
+}
+
+.app-main button.ghost {
+  background: var(--surface);
+  color: var(--ink-700);
+  border-color: var(--line-strong);
+}
+
+.app-main button.ghost:hover {
+  background: var(--paper);
+  border-color: var(--muted);
+}
+
 /* --------------------------------------------------------------------------
    App shell — sidebar + main
    -------------------------------------------------------------------------- */
