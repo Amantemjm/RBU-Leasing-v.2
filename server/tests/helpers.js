@@ -11,6 +11,7 @@ export async function resetCrudTables() {
   await prisma.user.deleteMany({ where: { role: { not: "ADMIN" } } });
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();
+  await prisma.unitOwnerInfoSheet.deleteMany();
   await prisma.unitOwner.deleteMany();
   await prisma.tower.deleteMany();
   await prisma.estate.deleteMany();

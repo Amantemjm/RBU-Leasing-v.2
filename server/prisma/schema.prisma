@@ -49,6 +49,13 @@ enum InquiryStatus {
   CLOSED
 }
 
+enum InfoSheetStatus {
+  REQUESTED
+  SUBMITTED
+  APPROVED
+  RETURNED
+}
+
 model User {
   id           String     @id @default(cuid())
   name         String
@@ -66,15 +73,51 @@ model User {
 }
 
 model UnitOwner {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  units     Unit[]
-  users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String                @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  units      Unit[]
+  users      User[]
+  infoSheets UnitOwnerInfoSheet[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model UnitOwnerInfoSheet {
+  id                 String          @id @default(cuid())
+  unitOwner          UnitOwner       @relation(fields: [unitOwnerId], references: [id])
+  unitOwnerId        String
+  status             InfoSheetStatus @default(REQUESTED)
+  // Owner personal
+  fullName           String?
+  email              String?
+  mobile             String?
+  telephone          String?
+  mailingAddress     String?
+  nationality        String?
+  civilStatus        String?
+  tin                String?
+  governmentIdType   String?
+  governmentIdNumber String?
+  birthdate          DateTime?
+  spouseName         String?
+  // Authorized representative / contact person
+  repName            String?
+  repContact         String?
+  repEmail           String?
+  // Bank details (for rent remittance)
+  bankName           String?
+  accountName        String?
+  accountNumber      String?
+  bankBranch         String?
+  // Workflow
+  remarks            String?
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 }
 
 model Estate {
