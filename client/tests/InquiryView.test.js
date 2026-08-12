@@ -35,13 +35,15 @@ describe("InquiryView (public landing)", () => {
     );
   });
 
-  it("keeps submit disabled until consent is checked and fields are filled", async () => {
+  it("keeps submit disabled until category, fields, and consent are set", async () => {
     const w = await mountView();
     const submit = () => w.find('button[type="submit"]');
     expect(submit().attributes("disabled")).toBeDefined();
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
     await w.find("#message").setValue("Interested in a 2BR");
+    expect(submit().attributes("disabled")).toBeDefined(); // category + consent still unset
+    await w.find("#category").setValue("RESIDENCES");
     expect(submit().attributes("disabled")).toBeDefined(); // consent still unchecked
     await w.find('input[type="checkbox"]').setValue(true);
     expect(submit().attributes("disabled")).toBeUndefined();
@@ -49,6 +51,7 @@ describe("InquiryView (public landing)", () => {
 
   it("submits the inquiry and shows a thank-you state", async () => {
     const w = await mountView();
+    await w.find("#category").setValue("RESIDENCES");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
     await w.find("#message").setValue("Interested in a 2BR");

@@ -13,7 +13,7 @@ const CONSENT_TEXT =
 
 const router = useRouter();
 
-const form = reactive({ category: "RESIDENCES", fullName: "", email: "", message: "", consent: false });
+const form = reactive({ category: "", fullName: "", email: "", message: "", consent: false });
 const submitting = ref(false);
 const submitted = ref(false);
 const error = ref("");
@@ -39,7 +39,7 @@ async function submit() {
       consent: true,
     });
     submitted.value = true;
-    form.fullName = ""; form.email = ""; form.message = ""; form.consent = false; form.category = "RESIDENCES";
+    form.fullName = ""; form.email = ""; form.message = ""; form.consent = false; form.category = "";
   } catch (e) {
     error.value = e.response?.data?.error || "Something went wrong. Please try again.";
   } finally {
@@ -60,7 +60,7 @@ async function submit() {
     <main class="landing__main">
       <section class="intro">
         <p class="eyebrow">Ortigas Land · Residential &amp; Office Leasing</p>
-        <h1>Find your next space</h1>
+        <h1>Quick Inquiry</h1>
         <p class="lede">Tell us what you're looking for and our leasing team will get in touch.</p>
       </section>
 
@@ -73,22 +73,23 @@ async function submit() {
 
         <form v-else @submit.prevent="submit">
           <div class="field">
-            <label for="category">I'm interested in</label>
+            <label for="category">Category <span class="req">*</span></label>
             <select id="category" v-model="form.category">
+              <option value="" disabled>-</option>
               <option value="RESIDENCES">Residences</option>
               <option value="OFFICES">Offices</option>
             </select>
           </div>
           <div class="field">
-            <label for="fullName">Full name</label>
+            <label for="fullName">Full name <span class="req">*</span></label>
             <input id="fullName" type="text" v-model="form.fullName" autocomplete="name" />
           </div>
           <div class="field">
-            <label for="email">Email</label>
+            <label for="email">Email <span class="req">*</span></label>
             <input id="email" type="email" v-model="form.email" autocomplete="email" />
           </div>
           <div class="field">
-            <label for="message">Message</label>
+            <label for="message">Message <span class="req">*</span></label>
             <textarea id="message" rows="4" v-model="form.message"></textarea>
           </div>
 
@@ -99,7 +100,7 @@ async function submit() {
 
           <p v-if="error" class="error">{{ error }}</p>
           <button type="submit" class="primary submit" :disabled="!canSubmit || submitting">
-            {{ submitting ? "Submitting…" : "Submit inquiry" }}
+            {{ submitting ? "Submitting…" : "Submit" }}
           </button>
         </form>
       </section>
@@ -144,6 +145,7 @@ async function submit() {
 form { display: flex; flex-direction: column; gap: 1.05rem; }
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
 .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted); }
+.req { color: var(--danger); font-weight: 700; }
 .field input, .field select, .field textarea {
   font-family: inherit; font-size: 0.95rem; color: var(--text); background: var(--surface);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.6rem 0.7rem; width: 100%;
