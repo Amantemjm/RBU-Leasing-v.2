@@ -12,3 +12,8 @@ export const inquiryCreateSchema = z.object({
 export const inquiryUpdateSchema = z.object({
   status: z.enum(["NEW", "IN_PROGRESS", "CLOSED"]),
 });
+
+export const inquiryAssignSchema = z.object({
+  // A user id to assign to, or null to unassign.
+  assignedToId: z.string().min(1).nullable(),
+});

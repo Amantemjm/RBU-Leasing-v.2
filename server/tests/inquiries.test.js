@@ -89,6 +89,52 @@ describe("Inquiries", () => {
     expect(del.status).toBe(403);
   });
 
+  async function makeUser(role, email) {
+    const res = await request(app).post("/api/auth/register")
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ name: `User ${role}`, email, password: "pw123456", role });
+    return res.body;
+  }
+
+  it("admin assigns an inquiry to an O-Lease (200)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const officer = await makeUser("LEASING_OFFICER", "jane@x.com");
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ assignedToId: officer.id });
+    expect(res.status).toBe(200);
+    expect(res.body.assignedToId).toBe(officer.id);
+    expect(res.body.assignedTo.name).toBe("User LEASING_OFFICER");
+  });
+
+  it("admin can unassign an inquiry (200)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const officer = await makeUser("LEASING_OFFICER", "jane@x.com");
+    await request(app).patch(`/api/inquiries/${created.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ assignedToId: officer.id });
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ assignedToId: null });
+    expect(res.status).toBe(200);
+    expect(res.body.assignedToId).toBeNull();
+  });
+
+  it("rejects assigning to a non-O-Lease user (400)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const viewer = await makeUser("VIEWER", "val@x.com");
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ assignedToId: viewer.id });
+    expect(res.status).toBe(400);
+  });
+
+  it("a non-admin cannot assign (403)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.officer()}`)
+      .send({ assignedToId: "anything" });
+    expect(res.status).toBe(403);
+  });
+
   it("write role deletes an inquiry (204)", async () => {
     const created = await request(app).post("/api/inquiries").send(valid);
     const res = await request(app).delete(`/api/inquiries/${created.body.id}`)

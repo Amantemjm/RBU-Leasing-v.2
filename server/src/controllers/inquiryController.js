@@ -1,5 +1,5 @@
 import * as service from "../services/inquiryService.js";
-import { inquiryCreateSchema, inquiryUpdateSchema } from "../validation/inquiry.js";
+import { inquiryCreateSchema, inquiryUpdateSchema, inquiryAssignSchema } from "../validation/inquiry.js";
 
 export async function create(req, res, next) {
   try {
@@ -14,6 +14,12 @@ export async function update(req, res, next) {
   try {
     const { status } = inquiryUpdateSchema.parse(req.body);
     res.json(await service.updateInquiryStatus(req.params.id, status));
+  } catch (e) { next(e); }
+}
+export async function assign(req, res, next) {
+  try {
+    const { assignedToId } = inquiryAssignSchema.parse(req.body);
+    res.json(await service.assignInquiry(req.params.id, assignedToId));
   } catch (e) { next(e); }
 }
 export async function remove(req, res, next) {

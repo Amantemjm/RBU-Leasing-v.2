@@ -1,13 +1,16 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../stores/auth.js";
-import { listInquiries, updateInquiryStatus, deleteInquiry } from "../lib/inquiries.js";
+import { listInquiries, updateInquiryStatus, deleteInquiry, assignInquiry } from "../lib/inquiries.js";
+import { listUsers } from "../lib/resource.js";
 import { formatDate } from "../lib/formatters.js";
 
 const auth = useAuthStore();
 const canWrite = computed(() => ["ADMIN", "LEASING_OFFICER"].includes(auth.role));
+const isAdmin = computed(() => auth.role === "ADMIN");
 
 const rows = ref([]);
+const officers = ref([]); // O-Lease users an admin can assign to
 const error = ref("");
 const STATUSES = ["NEW", "IN_PROGRESS", "CLOSED"];
 const CATEGORY_LABEL = { RESIDENCES: "Residences", OFFICES: "Offices" };
@@ -21,7 +24,25 @@ async function load() {
     error.value = e.response?.data?.error || "Could not load inquiries";
   }
 }
-onMounted(load);
+onMounted(async () => {
+  await load();
+  if (isAdmin.value) {
+    try {
+      const users = await listUsers();
+      officers.value = users.filter((u) => u.role === "LEASING_OFFICER");
+    } catch { /* ignore — assignment options just stay empty */ }
+  }
+});
+
+async function assign(row, assignedToId) {
+  try {
+    const updated = await assignInquiry(row.id, assignedToId || null);
+    row.assignedToId = updated.assignedToId;
+    row.assignedTo = updated.assignedTo;
+  } catch (e) {
+    error.value = e.response?.data?.error || "Could not assign inquiry";
+  }
+}
 
 async function changeStatus(row, status) {
   try {
@@ -54,7 +75,7 @@ async function remove(row) {
       <thead>
         <tr>
           <th>Received</th><th>Category</th><th>Full name</th><th>Email</th>
-          <th>Message</th><th>Status</th><th v-if="canWrite"></th>
+          <th>Message</th><th>Status</th><th>Assigned to</th><th v-if="canWrite"></th>
         </tr>
       </thead>
       <tbody>
@@ -75,12 +96,24 @@ async function remove(row) {
             </select>
             <span v-else :class="['status-tag', r.status.toLowerCase()]">{{ STATUS_LABEL[r.status] || r.status }}</span>
           </td>
+          <td>
+            <select
+              v-if="isAdmin"
+              class="assignee"
+              :value="r.assignedToId || ''"
+              @change="(e) => assign(r, e.target.value)"
+            >
+              <option value="">— Unassigned —</option>
+              <option v-for="o in officers" :key="o.id" :value="o.id">{{ o.name }}</option>
+            </select>
+            <span v-else>{{ r.assignedTo?.name || "—" }}</span>
+          </td>
           <td v-if="canWrite">
             <button type="button" class="delete" @click="remove(r)">Delete</button>
           </td>
         </tr>
         <tr v-if="rows.length === 0">
-          <td :colspan="canWrite ? 7 : 6" class="muted">No inquiries yet.</td>
+          <td :colspan="canWrite ? 8 : 7" class="muted">No inquiries yet.</td>
         </tr>
       </tbody>
     </table>
@@ -95,7 +128,7 @@ async function remove(row) {
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
   background: var(--accent-050); color: var(--accent-text);
 }
-.status { font-family: inherit; font-size: 0.85rem; padding: 0.35rem 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.status, .assignee { font-family: inherit; font-size: 0.85rem; padding: 0.35rem 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 .status-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
   padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);

@@ -14,6 +14,9 @@ export function listInquiries() {
 export function updateInquiryStatus(id, status) {
   return api.patch(`/inquiries/${id}`, { status }).then((r) => r.data);
 }
+export function assignInquiry(id, assignedToId) {
+  return api.patch(`/inquiries/${id}/assign`, { assignedToId }).then((r) => r.data);
+}
 export function deleteInquiry(id) {
   return api.delete(`/inquiries/${id}`).then((r) => r.data);
 }
