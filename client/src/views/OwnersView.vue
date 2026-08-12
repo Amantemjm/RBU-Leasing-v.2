@@ -2,13 +2,14 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { owners } from "../lib/resource.js";
-import { useAuthStore } from "../stores/auth.js";
 import ResourceTable from "../components/ResourceTable.vue";
 
+// Write controls only appear in the Master Admin hub (admin=true). In the main
+// nav these views are read-only for everyone, including the Super Admin.
+const props = defineProps({ admin: { type: Boolean, default: false } });
 const rows = ref([]);
 const router = useRouter();
-const auth = useAuthStore();
-const canWrite = computed(() => ["ADMIN", "LEASING_OFFICER"].includes(auth.role));
+const canWrite = computed(() => props.admin);
 const columns = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },

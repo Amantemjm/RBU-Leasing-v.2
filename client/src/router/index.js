@@ -31,6 +31,7 @@ import UsersView from "../views/UsersView.vue";
 
 const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 const WRITE = ["ADMIN", "LEASING_OFFICER"];
+const ADMIN = ["ADMIN"];
 
 const routes = [
   { path: "/", component: InquiryView, alias: "/inquiry" }, // public landing (Inquiry form)
@@ -46,20 +47,20 @@ const routes = [
       { path: "reports", component: ReportsView, meta: { roles: STAFF } },
       { path: "inquiries", component: InquiriesView, meta: { roles: STAFF } },
       { path: "owners", component: OwnersView, meta: { roles: STAFF } },
-      { path: "owners/new", component: OwnerFormView, meta: { roles: WRITE } },
-      { path: "owners/:id", component: OwnerFormView, meta: { roles: WRITE } },
+      { path: "owners/new", component: OwnerFormView, meta: { roles: ADMIN } },
+      { path: "owners/:id", component: OwnerFormView, meta: { roles: ADMIN } },
       { path: "tenants", component: TenantsView, meta: { roles: STAFF } },
-      { path: "tenants/new", component: TenantFormView, meta: { roles: WRITE } },
-      { path: "tenants/:id", component: TenantFormView, meta: { roles: WRITE } },
+      { path: "tenants/new", component: TenantFormView, meta: { roles: ADMIN } },
+      { path: "tenants/:id", component: TenantFormView, meta: { roles: ADMIN } },
       { path: "units", component: UnitsView, meta: { roles: STAFF } },
-      { path: "units/new", component: UnitFormView, meta: { roles: WRITE } },
-      { path: "units/:id", component: UnitFormView, meta: { roles: WRITE } },
+      { path: "units/new", component: UnitFormView, meta: { roles: ADMIN } },
+      { path: "units/:id", component: UnitFormView, meta: { roles: ADMIN } },
       { path: "leases", component: LeasesView, meta: { roles: STAFF } },
-      { path: "leases/new", component: LeaseFormView, meta: { roles: WRITE } },
-      { path: "leases/:id", component: LeaseFormView, meta: { roles: WRITE } },
+      { path: "leases/new", component: LeaseFormView, meta: { roles: ADMIN } },
+      { path: "leases/:id", component: LeaseFormView, meta: { roles: ADMIN } },
       { path: "payments", component: PaymentsView, meta: { roles: STAFF } },
-      { path: "payments/new", component: PaymentFormView, meta: { roles: WRITE } },
-      { path: "payments/:id", component: PaymentFormView, meta: { roles: WRITE } },
+      { path: "payments/new", component: PaymentFormView, meta: { roles: ADMIN } },
+      { path: "payments/:id", component: PaymentFormView, meta: { roles: ADMIN } },
       { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
       // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },

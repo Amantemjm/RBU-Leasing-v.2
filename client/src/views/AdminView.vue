@@ -51,7 +51,7 @@ const active = computed(() => tabs.value.find((t) => t.key === activeKey.value) 
     </nav>
 
     <div class="tab-panel">
-      <component :is="active.component" />
+      <component :is="active.component" :admin="true" />
     </div>
   </section>
 </template>

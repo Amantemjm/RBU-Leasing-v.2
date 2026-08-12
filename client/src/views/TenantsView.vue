@@ -2,13 +2,13 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { tenants } from "../lib/resource.js";
-import { useAuthStore } from "../stores/auth.js";
 import ResourceTable from "../components/ResourceTable.vue";
 
+// Write controls only in the Master Admin hub (admin=true); read-only in main nav.
+const props = defineProps({ admin: { type: Boolean, default: false } });
 const rows = ref([]);
 const router = useRouter();
-const auth = useAuthStore();
-const canWrite = computed(() => ["ADMIN", "LEASING_OFFICER"].includes(auth.role));
+const canWrite = computed(() => props.admin);
 const columns = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },

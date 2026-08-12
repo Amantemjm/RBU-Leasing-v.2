@@ -3,6 +3,8 @@ import { ref, onMounted } from "vue";
 import { units, approveUnit, rejectUnit } from "../lib/resource.js";
 import { formatPHP } from "../lib/formatters.js";
 
+// Approve/reject only in the Master Admin hub (admin=true); read-only in main nav.
+defineProps({ admin: { type: Boolean, default: false } });
 const rows = ref([]);
 async function load() { rows.value = await units.list({ approvalStatus: "PENDING" }); }
 onMounted(load);
@@ -23,7 +25,7 @@ async function decide(id, approve) {
     <p v-if="rows.length === 0" class="muted">No units awaiting approval.</p>
     <table v-else>
       <thead>
-        <tr><th>Unit #</th><th>Tower</th><th>Owner</th><th>Base rent</th><th>Actions</th></tr>
+        <tr><th>Unit #</th><th>Tower</th><th>Owner</th><th>Base rent</th><th v-if="admin">Actions</th></tr>
       </thead>
       <tbody>
         <tr v-for="u in rows" :key="u.id">
@@ -31,7 +33,7 @@ async function decide(id, approve) {
           <td>{{ u.tower?.name || "—" }}</td>
           <td>{{ u.owner?.name || "—" }}</td>
           <td>{{ formatPHP(u.baseRent) }}</td>
-          <td>
+          <td v-if="admin">
             <button type="button" class="approve" @click="decide(u.id, true)">Approve</button>
             <button type="button" class="reject" @click="decide(u.id, false)">Reject</button>
           </td>

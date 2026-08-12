@@ -21,11 +21,11 @@ function makeRouter() {
     { path: "/payments/:id", component: stub },
   ]});
 }
-async function mountView(role) {
+async function mountView(role, admin = false) {
   setActivePinia(createPinia());
   if (role) useAuthStore().setSession({ token: "t", user: { role } });
   const router = makeRouter(); router.push("/payments"); await router.isReady();
-  const w = mount(PaymentsView, { global: { plugins: [router] } });
+  const w = mount(PaymentsView, { global: { plugins: [router] }, props: { admin } });
   await flushPromises();
   return w;
 }
@@ -37,12 +37,12 @@ describe("PaymentsView", () => {
     expect(w.text()).toContain("30,000");
     expect(w.text()).toContain("PAID");
   });
-  it("shows New for an officer", async () => {
-    const w = await mountView("LEASING_OFFICER");
+  it("shows write controls in the Master Admin hub (admin)", async () => {
+    const w = await mountView("ADMIN", true);
     expect(w.text()).toContain("New payment");
   });
-  it("hides New for a viewer", async () => {
-    const w = await mountView("VIEWER");
+  it("is read-only in the main nav even for a write role", async () => {
+    const w = await mountView("LEASING_OFFICER");
     expect(w.text()).not.toContain("New payment");
   });
 });
