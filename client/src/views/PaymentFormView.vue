@@ -40,7 +40,7 @@ async function submit(values) {
   if (!payload.paidDate) delete payload.paidDate;
   try {
     if (isEdit) await payments.update(id, payload); else await payments.create(payload);
-    router.push("/payments");
+    router.push("/app/payments");
   } catch (e) {
     error.value = e.response?.data?.error || "Save failed";
   } finally { submitting.value = false; }
@@ -51,6 +51,6 @@ async function submit(values) {
   <section>
     <h1>{{ isEdit ? "Edit" : "New" }} payment</h1>
     <ResourceForm :fields="fields" :model-value="record" :error="error" :submitting="submitting"
-      @submit="submit" @cancel="router.push('/payments')" />
+      @submit="submit" @cancel="router.push('/app/payments')" />
   </section>
 </template>

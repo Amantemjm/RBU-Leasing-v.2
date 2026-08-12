@@ -1,0 +1,19 @@
+import axios from "axios";
+import { api } from "./api.js";
+
+// Public landing-page submission — intentionally uses a bare axios call so no
+// auth token is ever attached.
+export function createInquiry(payload) {
+  return axios.post("/api/inquiries", payload).then((r) => r.data);
+}
+
+// Staff operations go through the authenticated client.
+export function listInquiries() {
+  return api.get("/inquiries").then((r) => r.data);
+}
+export function updateInquiryStatus(id, status) {
+  return api.patch(`/inquiries/${id}`, { status }).then((r) => r.data);
+}
+export function deleteInquiry(id) {
+  return api.delete(`/inquiries/${id}`).then((r) => r.data);
+}

@@ -35,16 +35,17 @@ onMounted(() => {
 });
 
 const OWNER_LINKS = [
-  { to: "/my-units", label: "My Units" },
-  { to: "/register-unit", label: "Register Unit" },
-  { to: "/leases", label: "Leases" },
-  { to: "/payments", label: "Payments" },
+  { to: "/app/my-units", label: "My Units" },
+  { to: "/app/register-unit", label: "Register Unit" },
+  { to: "/app/leases", label: "Leases" },
+  { to: "/app/payments", label: "Payments" },
 ];
-const TENANT_LINKS = [{ to: "/requirements", label: "Requirements" }];
+const TENANT_LINKS = [{ to: "/app/requirements", label: "Requirements" }];
 const STAFF_LINKS = [
-  { to: "/", label: "Dashboard" },
-  { to: "/summary", label: "Summary" },
-  { to: "/reports", label: "Reports" },
+  { to: "/app", label: "Dashboard" },
+  { to: "/app/summary", label: "Summary" },
+  { to: "/app/reports", label: "Reports" },
+  { to: "/app/inquiries", label: "Inquiries" },
 ];
 
 const links = computed(() => {
@@ -54,7 +55,7 @@ const links = computed(() => {
 });
 
 function isActive(to) {
-  return to === "/" ? route.path === "/" : route.path.startsWith(to);
+  return to === "/app" ? route.path === "/app" : route.path.startsWith(to);
 }
 
 function logout() {
@@ -78,9 +79,9 @@ function logout() {
       <div class="topbar-foot">
         <RouterLink
           v-if="auth.canWrite"
-          to="/admin"
+          to="/app/admin"
           class="master-admin"
-          :class="{ active: isActive('/admin') }"
+          :class="{ active: isActive('/app/admin') }"
         >Master Admin</RouterLink>
         <div class="who">
           <span class="name">{{ auth.user?.name || auth.user?.email }}</span>

@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import AppLayout from "../components/AppLayout.vue";
+import InquiryView from "../views/InquiryView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "../views/DashboardView.vue";
 import SummaryView from "../views/SummaryView.vue";
 import ReportsView from "../views/ReportsView.vue";
+import InquiriesView from "../views/InquiriesView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
 import TenantsView from "../views/TenantsView.vue";
@@ -23,15 +25,17 @@ import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
 
 const routes = [
+  { path: "/", component: InquiryView }, // public landing (Inquiry form)
   { path: "/login", component: LoginView },
   {
-    path: "/",
+    path: "/app",
     component: AppLayout,
     meta: { requiresAuth: true },
     children: [
       { path: "", component: DashboardView },
       { path: "summary", component: SummaryView },
       { path: "reports", component: ReportsView },
+      { path: "inquiries", component: InquiriesView, meta: { roles: ["ADMIN", "LEASING_OFFICER", "VIEWER"] } },
       { path: "owners", component: OwnersView },
       { path: "owners/new", component: OwnerFormView },
       { path: "owners/:id", component: OwnerFormView },
@@ -62,8 +66,9 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
   if (!auth.isAuthenticated) return;
-  const home = auth.isOwner ? "/my-units" : auth.isTenant ? "/requirements" : "/";
-  if (to.path === "/" && home !== "/") return home;
-  if (to.meta.roles && !to.meta.roles.includes(auth.role)) return home;
+  const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/requirements" : "/app";
+  if (to.path === "/") return appHome; // authenticated visitors skip the public landing
+  if (to.path === "/app" && appHome !== "/app") return appHome; // owners/tenants -> their portal
+  if (to.meta.roles && !to.meta.roles.includes(auth.role)) return appHome;
 });
 export default router;

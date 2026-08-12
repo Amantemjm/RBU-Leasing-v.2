@@ -77,7 +77,7 @@ function remove(row) {
   <section class="units">
     <header>
       <h1>Units</h1>
-      <button v-if="canWrite" type="button" @click="router.push('/units/new')">New unit</button>
+      <button v-if="canWrite" type="button" @click="router.push('/app/units/new')">New unit</button>
     </header>
 
     <div class="filters">
@@ -90,7 +90,7 @@ function remove(row) {
       :columns="columns"
       :rows="rows"
       :can-write="canWrite"
-      @edit="(row) => router.push(`/units/${row.id}`)"
+      @edit="(row) => router.push(`/app/units/${row.id}`)"
       @delete="remove"
     />
   </section>

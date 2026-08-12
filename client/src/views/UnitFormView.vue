@@ -70,7 +70,7 @@ async function submit() {
   try {
     if (isEdit) await units.update(id, payload);
     else await units.create(payload);
-    router.push("/units");
+    router.push("/app/units");
   } catch (e) {
     error.value = e.response?.data?.error || "Save failed";
   } finally {
@@ -141,7 +141,7 @@ async function submit() {
 
       <p v-if="error" class="error">{{ error }}</p>
       <button type="submit" :disabled="submitting">Save</button>
-      <button type="button" class="cancel" @click="router.push('/units')">Cancel</button>
+      <button type="button" class="cancel" @click="router.push('/app/units')">Cancel</button>
     </form>
   </section>
 </template>

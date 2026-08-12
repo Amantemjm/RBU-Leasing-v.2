@@ -24,7 +24,7 @@ async function submit(values) {
   error.value = ""; submitting.value = true;
   try {
     if (isEdit) await owners.update(id, values); else await owners.create(values);
-    router.push("/owners");
+    router.push("/app/owners");
   } catch (e) {
     error.value = e.response?.data?.error || "Save failed";
   } finally { submitting.value = false; }
@@ -35,6 +35,6 @@ async function submit(values) {
   <section>
     <h1>{{ isEdit ? "Edit" : "New" }} owner</h1>
     <ResourceForm :fields="fields" :model-value="record" :error="error" :submitting="submitting"
-      @submit="submit" @cancel="router.push('/owners')" />
+      @submit="submit" @cancel="router.push('/app/owners')" />
   </section>
 </template>

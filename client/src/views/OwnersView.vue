@@ -28,9 +28,9 @@ function remove(row) {
   <section>
     <header>
       <h1>Owners</h1>
-      <button v-if="canWrite" type="button" @click="router.push('/owners/new')">New owner</button>
+      <button v-if="canWrite" type="button" @click="router.push('/app/owners/new')">New owner</button>
     </header>
     <ResourceTable :columns="columns" :rows="rows" :can-write="canWrite"
-      @edit="(row) => router.push(`/owners/${row.id}`)" @delete="remove" />
+      @edit="(row) => router.push(`/app/owners/${row.id}`)" @delete="remove" />
   </section>
 </template>

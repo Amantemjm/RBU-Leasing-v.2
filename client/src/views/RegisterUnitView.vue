@@ -41,7 +41,7 @@ async function submit() {
   try {
     await units.create(payload);
     done.value = true;
-    setTimeout(() => router.push("/my-units"), 1200);
+    setTimeout(() => router.push("/app/my-units"), 1200);
   } catch (e) {
     error.value = e.response?.data?.error || "Submit failed";
   } finally {
@@ -85,7 +85,7 @@ async function submit() {
       </div>
       <p v-if="error" class="error">{{ error }}</p>
       <button type="submit" :disabled="submitting">Submit for approval</button>
-      <button type="button" class="cancel" @click="router.push('/my-units')">Cancel</button>
+      <button type="button" class="cancel" @click="router.push('/app/my-units')">Cancel</button>
     </form>
   </section>
 </template>

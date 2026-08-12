@@ -24,7 +24,7 @@ onMounted(load);
   <section>
     <header>
       <h1>My Units</h1>
-      <button type="button" @click="router.push('/register-unit')">Register a unit</button>
+      <button type="button" @click="router.push('/app/register-unit')">Register a unit</button>
     </header>
     <ResourceTable :columns="columns" :rows="rows" :can-write="false" />
   </section>
