@@ -32,12 +32,6 @@ enum LeaseStatus {
   TERMINATED
 }
 
-enum PaymentStatus {
-  PAID
-  PENDING
-  OVERDUE
-}
-
 enum InquiryCategory {
   RESIDENCES
   OFFICES
@@ -203,23 +197,8 @@ model Lease {
   renewalPeriod   String?
   remarks         String?
   managedBy       String?
-  payments    Payment[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-}
-
-model Payment {
-  id          String        @id @default(cuid())
-  lease       Lease         @relation(fields: [leaseId], references: [id])
-  leaseId     String
-  periodMonth DateTime
-  amount      Decimal
-  dueDate     DateTime
-  paidDate    DateTime?
-  status      PaymentStatus @default(PENDING)
-  method      String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
 }
 
 model Inquiry {

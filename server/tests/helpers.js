@@ -5,7 +5,6 @@ import { issueToken } from "../src/services/authService.js";
 // login (the seeded ADMIN is the only ADMIN, so it survives).
 export async function resetCrudTables() {
   await prisma.inquiry.deleteMany();
-  await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.requirement.deleteMany();
   await prisma.user.deleteMany({ where: { role: { not: "ADMIN" } } });
@@ -43,13 +42,6 @@ export const factory = {
         unitId, tenantId,
         startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"),
         monthlyRent: 25000, ...over,
-      },
-    }),
-  payment: (leaseId, over = {}) =>
-    prisma.payment.create({
-      data: {
-        leaseId, periodMonth: new Date("2026-01-01"),
-        amount: 25000, dueDate: new Date("2026-01-05"), ...over,
       },
     }),
 };

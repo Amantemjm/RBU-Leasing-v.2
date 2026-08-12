@@ -52,28 +52,13 @@ export async function getExpiringLeases(now = new Date()) {
   return { within30, within60, within90 };
 }
 
-export async function getOverdue(now = new Date()) {
-  const overdueWhere = { paidDate: null, dueDate: { lt: now } };
-  const [overdueCount, overdueAgg, outstandingAgg] = await Promise.all([
-    prisma.payment.count({ where: overdueWhere }),
-    prisma.payment.aggregate({ _sum: { amount: true }, where: overdueWhere }),
-    prisma.payment.aggregate({ _sum: { amount: true }, where: { paidDate: null } }),
-  ]);
-  return {
-    overdueCount,
-    overdueAmount: num(overdueAgg._sum.amount),
-    outstandingAmount: num(outstandingAgg._sum.amount),
-  };
-}
-
 export async function getDashboard(now = new Date()) {
-  const [counts, occupancy, income, expiring, overdue, newLeasesThisMonth] = await Promise.all([
+  const [counts, occupancy, income, expiring, newLeasesThisMonth] = await Promise.all([
     getCounts(),
     getOccupancy(),
     getMonthlyIncome(),
     getExpiringLeases(now),
-    getOverdue(now),
     getNewLeasesThisMonth(now),
   ]);
-  return { counts, occupancy, income, expiring, overdue, newLeasesThisMonth };
+  return { counts, occupancy, income, expiring, newLeasesThisMonth };
 }

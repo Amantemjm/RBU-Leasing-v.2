@@ -61,14 +61,13 @@ describe("Leases CRUD", () => {
     expect(res.status).toBe(403);
   });
 
-  it("blocks delete when lease has payments (409)", async () => {
+  it("deletes a lease (204)", async () => {
     const owner = await factory.owner();
     const unit = await factory.unit(owner.id);
     const tenant = await factory.tenant();
     const lease = await factory.lease(unit.id, tenant.id);
-    await factory.payment(lease.id);
     const res = await request(app).delete(`/api/leases/${lease.id}`)
       .set("Authorization", `Bearer ${tokens.admin()}`);
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(204);
   });
 });

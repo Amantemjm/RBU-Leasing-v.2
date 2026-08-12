@@ -17,7 +17,6 @@ async function main() {
   if (!ws) throw new Error("Sheet '2026' not found");
 
   console.log("Wiping existing CRUD tables…");
-  await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.unit.deleteMany();
   await prisma.tenant.deleteMany();

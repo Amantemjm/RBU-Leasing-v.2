@@ -16,7 +16,7 @@ describe("GET /api/dashboard", () => {
     expect(res.body.counts.units).toBe(1);
     expect(res.body.occupancy.totalUnits).toBe(1);
     expect(res.body).toHaveProperty("expiring");
-    expect(res.body).toHaveProperty("overdue");
+    expect(res.body).toHaveProperty("occupancy");
   });
 
   it("rejects an unauthenticated request with 401", async () => {

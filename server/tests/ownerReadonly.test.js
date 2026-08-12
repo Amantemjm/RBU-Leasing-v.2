@@ -21,21 +21,6 @@ describe("owner read-only leases/payments", () => {
     expect(res.body).toHaveLength(1);
   });
 
-  it("owner sees only payments on their own units' leases", async () => {
-    const o1 = await factory.owner();
-    const o2 = await factory.owner({ name: "O2" });
-    const u1 = await factory.unit(o1.id);
-    const u2 = await factory.unit(o2.id, { unitNumber: "202" });
-    const t = await factory.tenant();
-    const l1 = await factory.lease(u1.id, t.id);
-    const l2 = await factory.lease(u2.id, t.id);
-    await factory.payment(l1.id);
-    await factory.payment(l2.id);
-
-    const res = await request(app).get("/api/payments").set("Authorization", `Bearer ${tokens.owner(o1.id)}`);
-    expect(res.body).toHaveLength(1);
-  });
-
   it("owner cannot create a lease (403)", async () => {
     const o1 = await factory.owner();
     const res = await request(app).post("/api/leases")

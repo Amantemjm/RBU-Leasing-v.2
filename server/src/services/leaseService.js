@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, ConflictError, InvalidReferenceError } from "../lib/errors.js";
+import { NotFoundError, InvalidReferenceError } from "../lib/errors.js";
 
 async function assertUnitExists(unitId) {
   const unit = await prisma.unit.findUnique({ where: { id: unitId } });
@@ -71,7 +71,5 @@ export async function updateLease(id, data) {
 
 export async function removeLease(id) {
   await getLease(id);
-  const payments = await prisma.payment.count({ where: { leaseId: id } });
-  if (payments > 0) throw new ConflictError(`Lease has ${payments} payment(s); remove them first`);
   await prisma.lease.delete({ where: { id } });
 }

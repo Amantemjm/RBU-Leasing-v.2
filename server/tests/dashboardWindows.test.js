@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { resetCrudTables, factory } from "./helpers.js";
-import { getExpiringLeases, getOverdue, getDashboard } from "../src/services/dashboardService.js";
+import { getExpiringLeases, getDashboard } from "../src/services/dashboardService.js";
 
 beforeEach(async () => { await resetCrudTables(); });
 
@@ -26,28 +26,11 @@ describe("getExpiringLeases", () => {
   });
 });
 
-describe("getOverdue", () => {
-  it("sums overdue (unpaid, past due) and all outstanding amounts", async () => {
-    const { unitId, tenantId } = await unitAndTenant();
-    const lease = await factory.lease(unitId, tenantId);
-    // overdue: unpaid + dueDate before NOW
-    await factory.payment(lease.id, { amount: 25000, dueDate: new Date("2026-06-01T00:00:00Z"), paidDate: null });
-    // unpaid but not yet due -> outstanding only
-    await factory.payment(lease.id, { amount: 10000, dueDate: new Date("2026-07-01T00:00:00Z"), paidDate: null });
-    // paid -> neither
-    await factory.payment(lease.id, { amount: 99999, dueDate: new Date("2026-05-01T00:00:00Z"), paidDate: new Date("2026-05-02T00:00:00Z"), status: "PAID" });
-    const od = await getOverdue(NOW);
-    expect(od.overdueCount).toBe(1);
-    expect(od.overdueAmount).toBe(25000);
-    expect(od.outstandingAmount).toBe(35000);
-  });
-});
-
 describe("getDashboard", () => {
   it("aggregates every metric block", async () => {
     const dash = await getDashboard(NOW);
     expect(Object.keys(dash).sort()).toEqual(
-      ["counts", "expiring", "income", "newLeasesThisMonth", "occupancy", "overdue"]
+      ["counts", "expiring", "income", "newLeasesThisMonth", "occupancy"]
     );
   });
 });

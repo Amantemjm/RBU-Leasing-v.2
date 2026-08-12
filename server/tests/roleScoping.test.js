@@ -20,20 +20,6 @@ describe("role-scoped access", () => {
     expect(res.body[0].tenantId).toBe(t1.id);
   });
 
-  it("a tenant sees only their own payments", async () => {
-    const o = await factory.owner();
-    const u = await factory.unit(o.id);
-    const t1 = await factory.tenant({ name: "T1" });
-    const t2 = await factory.tenant({ name: "T2" });
-    const l1 = await factory.lease(u.id, t1.id);
-    const l2 = await factory.lease(u.id, t2.id);
-    await factory.payment(l1.id);
-    await factory.payment(l2.id);
-    const res = await request(app).get("/api/payments").set("Authorization", `Bearer ${tokens.tenant(t1.id)}`);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].leaseId).toBe(l1.id);
-  });
-
   it("a tenant requesting another tenant's lease gets 404", async () => {
     const o = await factory.owner();
     const u = await factory.unit(o.id);
@@ -51,17 +37,6 @@ describe("role-scoped access", () => {
     const t = await factory.tenant();
     const l2 = await factory.lease(u2.id, t.id);
     const res = await request(app).get(`/api/leases/${l2.id}`).set("Authorization", `Bearer ${tokens.owner(o1.id)}`);
-    expect(res.status).toBe(404);
-  });
-
-  it("a tenant requesting another tenant's payment gets 404", async () => {
-    const o = await factory.owner();
-    const u = await factory.unit(o.id);
-    const t1 = await factory.tenant({ name: "T1" });
-    const t2 = await factory.tenant({ name: "T2" });
-    const l2 = await factory.lease(u.id, t2.id);
-    const p2 = await factory.payment(l2.id);
-    const res = await request(app).get(`/api/payments/${p2.id}`).set("Authorization", `Bearer ${tokens.tenant(t1.id)}`);
     expect(res.status).toBe(404);
   });
 
