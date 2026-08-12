@@ -25,6 +25,8 @@ import MyProfileView from "../views/MyProfileView.vue";
 import TenantLeaseView from "../views/TenantLeaseView.vue";
 import TenantPaymentsView from "../views/TenantPaymentsView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
+import InfoSheetsView from "../views/InfoSheetsView.vue";
+import OwnerInfoSheetView from "../views/OwnerInfoSheetView.vue";
 import RequirementsView from "../views/RequirementsView.vue";
 import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
@@ -62,11 +64,13 @@ const routes = [
       { path: "payments/new", component: PaymentFormView, meta: { roles: ADMIN } },
       { path: "payments/:id", component: PaymentFormView, meta: { roles: ADMIN } },
       { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
+      { path: "info-sheets", component: InfoSheetsView, meta: { roles: WRITE } },
       // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "my-leases", component: OwnerLeasesView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "my-income", component: OwnerIncomeView, meta: { roles: ["UNIT_OWNER"] } },
+      { path: "info-sheet", component: OwnerInfoSheetView, meta: { roles: ["UNIT_OWNER"] } },
       // Tenant (Lessee)
       { path: "my-lease", component: TenantLeaseView, meta: { roles: ["TENANT"] } },
       { path: "my-payments", component: TenantPaymentsView, meta: { roles: ["TENANT"] } },
