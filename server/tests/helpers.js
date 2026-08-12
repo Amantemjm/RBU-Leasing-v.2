@@ -4,6 +4,7 @@ import { issueToken } from "../src/services/authService.js";
 // Delete in FK-safe order (children before parents). Removes every test-created
 // login (the seeded ADMIN is the only ADMIN, so it survives).
 export async function resetCrudTables() {
+  await prisma.inquiry.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.requirement.deleteMany();
