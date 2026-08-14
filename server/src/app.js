@@ -13,6 +13,8 @@ import towerRoutes from "./routes/towerRoutes.js";
 import requirementRoutes from "./routes/requirementRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 import infoSheetRoutes from "./routes/infoSheetRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
+import { auditMiddleware } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/error.js";
 
 export function createApp() {
@@ -20,6 +22,7 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
   app.get("/api/health", (req, res) => res.json({ ok: true }));
+  app.use(auditMiddleware); // records every successful mutating action
   app.use("/api/auth", authRoutes);
   app.use("/api/owners", ownerRoutes);
   app.use("/api/tenants", tenantRoutes);
@@ -31,6 +34,7 @@ export function createApp() {
   app.use("/api/requirements", requirementRoutes);
   app.use("/api/inquiries", inquiryRoutes);
   app.use("/api/info-sheets", infoSheetRoutes);
+  app.use("/api/audit", auditRoutes);
 
   // Production: serve the built Vue client as a single deployable. The API
   // routes above take precedence; any other GET falls back to index.html so

@@ -1,0 +1,103 @@
+import { prisma } from "../lib/prisma.js";
+
+// Track in-flight audit writes so tests can await them deterministically.
+const pending = new Set();
+
+const ENTITY = {
+  owners: "Owner",
+  tenants: "Tenant",
+  units: "Unit",
+  leases: "Lease",
+  inquiries: "Inquiry",
+  "info-sheets": "Info Sheet",
+  requirements: "Requirement",
+  auth: "Account",
+  estates: "Estate",
+  towers: "Tower",
+};
+
+// Derive a human action + entity from the request path/method.
+function classify(path, method) {
+  const segs = path.replace(/^\/api\//, "").split("/"); // e.g. ["units", "<id>", "approve"]
+  const group = segs[0];
+  const entity = ENTITY[group] || group;
+
+  if (group === "auth") {
+    const kind = segs[1];
+    if (kind === "login") return { entity: "Account", action: "login", entityId: null };
+    if (kind === "register") return { entity: "Account", action: "register", entityId: null };
+    if (kind === "users") return { entity: "Account", action: method === "DELETE" ? "delete" : "update", entityId: segs[2] || null };
+    return { entity: "Account", action: method.toLowerCase(), entityId: null };
+  }
+
+  const sub = segs[2]; // approve | reject | assign | submit | review
+  let action;
+  if (sub) action = sub;
+  else if (method === "POST") action = "create";
+  else if (method === "PATCH" || method === "PUT") action = "update";
+  else if (method === "DELETE") action = "delete";
+  else action = method.toLowerCase();
+
+  const entityId = segs[1] && segs[1] !== "me" ? segs[1] : null;
+  return { entity, action, entityId };
+}
+
+async function record(req, res, body, path) {
+  const { entity, action, entityId } = classify(path, req.method);
+
+  // Actor: the authenticated user, or — for login — the account that just signed in.
+  let actorId = req.user?.userId || null;
+  let actorRole = req.user?.role || null;
+  let actorName = null;
+
+  if (action === "login" && body?.user) {
+    actorId = body.user.id;
+    actorRole = body.user.role;
+    actorName = body.user.name || body.user.email || null;
+  } else if (actorId) {
+    const u = await prisma.user.findUnique({ where: { id: actorId }, select: { name: true, email: true } });
+    actorName = u?.name || u?.email || null;
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorId, actorName, actorRole, action, entity,
+      entityId: entityId || body?.id || null,
+      method: req.method,
+      path,
+    },
+  });
+}
+
+// Records every successful mutating API call. The write is kicked off (but not
+// awaited) as the response is sent, so it never blocks or fails a request; the
+// returned promise is tracked so tests can flush it deterministically.
+export function auditMiddleware(req, res, next) {
+  if (!req.path.startsWith("/api") || req.path === "/api/health") return next();
+  if (!["POST", "PATCH", "PUT", "DELETE"].includes(req.method)) return next();
+
+  // Capture the original path now — once inside the mounted router, req.path is stripped.
+  const fullPath = (req.originalUrl || req.url).split("?")[0];
+
+  let body;
+  let done = false;
+  function trigger() {
+    if (done) return;
+    done = true;
+    if (res.statusCode >= 400) return; // only successful actions
+    const p = record(req, res, body, fullPath).catch(() => {});
+    pending.add(p);
+    p.finally(() => pending.delete(p));
+  }
+
+  const origJson = res.json.bind(res);
+  res.json = (payload) => { body = payload; return origJson(payload); };
+  const origEnd = res.end.bind(res);
+  res.end = (...args) => { const r = origEnd(...args); trigger(); return r; };
+
+  next();
+}
+
+export async function flushAudits() {
+  await Promise.allSettled([...pending]);
+}
