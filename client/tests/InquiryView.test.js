@@ -37,32 +37,49 @@ describe("InquiryView (public landing)", () => {
     );
   });
 
-  it("keeps submit disabled until category, fields, and consent are set", async () => {
+  it("cascades Inquiry Type from the 'I am a' choice and resets on change", async () => {
+    const w = await mountView();
+    const typeOpts = () => w.find("#inquiryType").findAll("option").map((o) => o.text());
+    expect(w.find("#inquiryType").attributes("disabled")).toBeDefined(); // disabled until chosen
+    await w.find("#inquirerType").setValue("LESSEE");
+    expect(typeOpts()).toContain("Unit Availability");
+    expect(typeOpts()).not.toContain("Find a Tenant");
+    await w.find("#inquiryType").setValue("Unit Availability");
+    // switching inquirer resets the type and swaps the option set
+    await w.find("#inquirerType").setValue("LESSOR");
+    expect(w.find("#inquiryType").element.value).toBe("");
+    expect(typeOpts()).toContain("Find a Tenant");
+    expect(typeOpts()).not.toContain("Unit Availability");
+  });
+
+  it("keeps submit disabled until category, type, fields, and consent are set", async () => {
     const w = await mountView();
     const submit = () => w.find('button[type="submit"]');
     expect(submit().attributes("disabled")).toBeDefined();
+    await w.find("#category").setValue("RESIDENCES");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
-    await w.find("#message").setValue("Interested in a 2BR");
-    expect(submit().attributes("disabled")).toBeDefined(); // category + consent still unset
-    await w.find("#category").setValue("RESIDENCES");
+    expect(submit().attributes("disabled")).toBeDefined(); // inquirer/type + consent unset
+    await w.find("#inquirerType").setValue("LESSEE");
+    await w.find("#inquiryType").setValue("Rental Rate");
     expect(submit().attributes("disabled")).toBeDefined(); // consent still unchecked
     await w.find('input[type="checkbox"]').setValue(true);
     expect(submit().attributes("disabled")).toBeUndefined();
   });
 
-  it("submits the inquiry and shows a thank-you state", async () => {
+  it("submits the inquiry (message optional) and shows a thank-you state", async () => {
     const w = await mountView();
     await w.find("#category").setValue("RESIDENCES");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
-    await w.find("#message").setValue("Interested in a 2BR");
+    await w.find("#inquirerType").setValue("LESSEE");
+    await w.find("#inquiryType").setValue("Unit Availability");
     await w.find('input[type="checkbox"]').setValue(true);
     await w.find("form").trigger("submit.prevent");
     await flushPromises();
     expect(createInquiry).toHaveBeenCalledWith({
-      category: "RESIDENCES", fullName: "Maria Santos", email: "maria@example.com",
-      message: "Interested in a 2BR", consent: true,
+      category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability",
+      fullName: "Maria Santos", email: "maria@example.com", consent: true,
     });
     expect(w.text()).toContain("Thank you!");
   });

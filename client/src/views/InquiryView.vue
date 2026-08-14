@@ -1,8 +1,9 @@
 <script setup>
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { createInquiry } from "../lib/inquiries.js";
+import { INQUIRER_TYPES, INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
 
 const CONSENT_TEXT =
   "By clicking the button below, I give my consent to all divisions and organizations " +
@@ -22,16 +23,23 @@ function goStaff() {
   router.push(auth.isAuthenticated ? appHome.value : "/login");
 }
 
-const form = reactive({ category: "", fullName: "", email: "", message: "", consent: false });
+const form = reactive({
+  category: "", inquirerType: "", inquiryType: "", fullName: "", email: "", message: "", consent: false,
+});
 const submitting = ref(false);
 const submitted = ref(false);
 const error = ref("");
 
+// Inquiry Type options depend on the "I am a" choice; reset the type when it changes.
+const inquiryTypeOptions = computed(() => (form.inquirerType ? INQUIRY_TYPES[form.inquirerType] : []));
+watch(() => form.inquirerType, () => { form.inquiryType = ""; });
+
 const canSubmit = computed(() =>
   !!form.category &&
+  !!form.inquirerType &&
+  !!form.inquiryType &&
   form.fullName.trim() !== "" &&
   form.email.trim() !== "" &&
-  form.message.trim() !== "" &&
   form.consent === true,
 );
 
@@ -40,15 +48,19 @@ async function submit() {
   error.value = "";
   submitting.value = true;
   try {
-    await createInquiry({
+    const payload = {
       category: form.category,
+      inquirerType: form.inquirerType,
+      inquiryType: form.inquiryType,
       fullName: form.fullName.trim(),
       email: form.email.trim(),
-      message: form.message.trim(),
       consent: true,
-    });
+    };
+    if (form.message.trim()) payload.message = form.message.trim();
+    await createInquiry(payload);
     submitted.value = true;
-    form.fullName = ""; form.email = ""; form.message = ""; form.consent = false; form.category = "";
+    form.category = ""; form.inquirerType = ""; form.inquiryType = "";
+    form.fullName = ""; form.email = ""; form.message = ""; form.consent = false;
   } catch (e) {
     error.value = e.response?.data?.error || "Something went wrong. Please try again.";
   } finally {
@@ -98,8 +110,22 @@ async function submit() {
             <input id="email" type="email" v-model="form.email" autocomplete="email" />
           </div>
           <div class="field">
-            <label for="message">Message <span class="req">*</span></label>
-            <textarea id="message" rows="4" v-model="form.message"></textarea>
+            <label for="inquirerType">I am a <span class="req">*</span></label>
+            <select id="inquirerType" v-model="form.inquirerType">
+              <option value="" disabled>-</option>
+              <option v-for="t in INQUIRER_TYPES" :key="t" :value="t">{{ INQUIRER_LABEL[t] }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="inquiryType">Inquiry Type <span class="req">*</span></label>
+            <select id="inquiryType" v-model="form.inquiryType" :disabled="!form.inquirerType">
+              <option value="" disabled>{{ form.inquirerType ? "-" : "Select \"I am a\" first" }}</option>
+              <option v-for="opt in inquiryTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="message">Additional details <span class="optional">(optional)</span></label>
+            <textarea id="message" rows="3" v-model="form.message"></textarea>
           </div>
 
           <label class="consent">
@@ -155,6 +181,8 @@ form { display: flex; flex-direction: column; gap: 1.05rem; }
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
 .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted); }
 .req { color: var(--danger); font-weight: 700; }
+.optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.field select:disabled { opacity: 0.6; cursor: not-allowed; }
 .field input, .field select, .field textarea {
   font-family: inherit; font-size: 0.95rem; color: var(--text); background: var(--surface);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.6rem 0.7rem; width: 100%;

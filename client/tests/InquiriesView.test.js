@@ -4,7 +4,8 @@ import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("../src/lib/inquiries.js", () => ({
   listInquiries: vi.fn(() => Promise.resolve([
-    { id: "i1", category: "RESIDENCES", fullName: "Maria Santos", email: "maria@example.com",
+    { id: "i1", category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability",
+      fullName: "Maria Santos", email: "maria@example.com",
       message: "Interested in a 2BR", assignedToId: null, assignedTo: null,
       createdAt: "2026-08-12T00:00:00Z" },
   ])),
@@ -33,14 +34,18 @@ function mountAs(role) {
 describe("InquiriesView (staff)", () => {
   beforeEach(() => { deleteInquiry.mockClear(); assignInquiry.mockClear(); listUsers.mockClear(); });
 
-  it("lists inquiries and has no Status column", async () => {
+  it("lists inquiries with I-am-a and Inquiry Type columns", async () => {
     const w = mountAs("VIEWER");
     await flushPromises();
     expect(w.text()).toContain("Maria Santos");
     expect(w.text()).toContain("Residences");
+    expect(w.text()).toContain("Lessee");
+    expect(w.text()).toContain("Unit Availability");
     const headers = w.findAll("th").map((h) => h.text());
-    expect(headers).not.toContain("Status");
+    expect(headers).toContain("I am a");
+    expect(headers).toContain("Inquiry Type");
     expect(headers).toContain("Assigned to");
+    expect(headers).not.toContain("Status");
   });
 
   it("is read-only for a viewer (no assign control, no delete)", async () => {

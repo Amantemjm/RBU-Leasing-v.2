@@ -14,6 +14,7 @@ const rows = ref([]);
 const officers = ref([]); // O-Lease users an admin can assign to
 const error = ref("");
 const CATEGORY_LABEL = { RESIDENCES: "Residences", OFFICES: "Offices" };
+const INQUIRER_LABEL = { LESSOR: "Lessor", LESSEE: "Lessee" };
 
 const officerOptions = computed(() => officers.value.map((o) => ({ value: o.id, label: o.name })));
 
@@ -66,7 +67,7 @@ async function remove(row) {
     <table>
       <thead>
         <tr>
-          <th>Received</th><th>Category</th><th>Full name</th><th>Email</th>
+          <th>Received</th><th>Category</th><th>I am a</th><th>Inquiry Type</th><th>Full name</th><th>Email</th>
           <th>Message</th><th>Assigned to</th><th v-if="canWrite"></th>
         </tr>
       </thead>
@@ -74,6 +75,8 @@ async function remove(row) {
         <tr v-for="r in rows" :key="r.id">
           <td>{{ formatDate(r.createdAt) }}</td>
           <td><span class="cat-tag">{{ CATEGORY_LABEL[r.category] || r.category }}</span></td>
+          <td>{{ INQUIRER_LABEL[r.inquirerType] || r.inquirerType }}</td>
+          <td>{{ r.inquiryType }}</td>
           <td>{{ r.fullName }}</td>
           <td><a :href="`mailto:${r.email}`">{{ r.email }}</a></td>
           <td class="msg">{{ r.message }}</td>
@@ -94,7 +97,7 @@ async function remove(row) {
           </td>
         </tr>
         <tr v-if="rows.length === 0">
-          <td :colspan="canWrite ? 7 : 6" class="muted">No inquiries yet.</td>
+          <td :colspan="canWrite ? 9 : 8" class="muted">No inquiries yet.</td>
         </tr>
       </tbody>
     </table>

@@ -9,6 +9,8 @@ beforeEach(async () => { await resetCrudTables(); });
 
 const valid = {
   category: "RESIDENCES",
+  inquirerType: "LESSEE",
+  inquiryType: "Unit Availability",
   fullName: "Maria Santos",
   email: "maria@example.com",
   message: "I'm interested in a 2BR unit.",
@@ -16,11 +18,48 @@ const valid = {
 };
 
 describe("Inquiries", () => {
-  it("accepts a public inquiry with no auth (201)", async () => {
+  it("accepts a public LESSEE inquiry with no auth (201)", async () => {
     const res = await request(app).post("/api/inquiries").send(valid);
     expect(res.status).toBe(201);
     expect(res.body.id).toBeTruthy();
-    expect(res.body.status).toBe("NEW");
+    expect(res.body).toMatchObject({ inquirerType: "LESSEE", inquiryType: "Unit Availability" });
+  });
+
+  it("accepts a public LESSOR inquiry (201)", async () => {
+    const res = await request(app).post("/api/inquiries")
+      .send({ ...valid, inquirerType: "LESSOR", inquiryType: "Find a Tenant" });
+    expect(res.status).toBe(201);
+    expect(res.body.inquirerType).toBe("LESSOR");
+  });
+
+  it("accepts a submission with no message (message is optional) (201)", async () => {
+    const { message, ...noMessage } = valid;
+    const res = await request(app).post("/api/inquiries").send(noMessage);
+    expect(res.status).toBe(201);
+  });
+
+  it("rejects an inquiryType not allowed for the inquirerType (400)", async () => {
+    // "Find a Tenant" is a LESSOR type, not valid for a LESSEE
+    const res = await request(app).post("/api/inquiries")
+      .send({ ...valid, inquirerType: "LESSEE", inquiryType: "Find a Tenant" });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a missing inquirerType (400)", async () => {
+    const { inquirerType, ...rest } = valid;
+    const res = await request(app).post("/api/inquiries").send(rest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a missing inquiryType (400)", async () => {
+    const { inquiryType, ...rest } = valid;
+    const res = await request(app).post("/api/inquiries").send(rest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an invalid inquirerType (400)", async () => {
+    const res = await request(app).post("/api/inquiries").send({ ...valid, inquirerType: "AGENT" });
+    expect(res.status).toBe(400);
   });
 
   it("rejects when consent is false (400)", async () => {

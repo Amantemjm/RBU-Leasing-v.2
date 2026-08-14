@@ -37,6 +37,11 @@ enum InquiryCategory {
   OFFICES
 }
 
+enum InquirerType {
+  LESSOR
+  LESSEE
+}
+
 enum InquiryStatus {
   NEW
   IN_PROGRESS
@@ -204,9 +209,11 @@ model Lease {
 model Inquiry {
   id           String          @id @default(cuid())
   category     InquiryCategory
+  inquirerType InquirerType
+  inquiryType  String
   fullName     String
   email        String
-  message      String
+  message      String?
   consent      Boolean
   status       InquiryStatus   @default(NEW)
   assignedTo   User?           @relation("InquiryAssignee", fields: [assignedToId], references: [id])
