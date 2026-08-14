@@ -435,17 +435,24 @@ button:disabled {
    `.modal > form`, not `section > form` — keep the single-column flex layout. */
 .app-main section > form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.05rem 1.25rem;
-  max-width: 680px;
-  margin: 0.25rem auto 0;
-  padding: 1.9rem 2rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem 1.75rem;
+  width: 100%;
+  max-width: none;
+  margin-top: 0.35rem;
+  padding: 1.9rem 2.1rem;
 }
 
 .app-main section > form > .error,
 .app-main section > form > .form-actions,
 .app-main section > form > .field.field--wide {
   grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  .app-main section > form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {

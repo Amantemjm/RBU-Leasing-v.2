@@ -13,7 +13,6 @@ const submitting = ref(false);
 const ownerOptions = ref([]);
 const estateOptions = ref([]);
 const towerOptions = ref([]);
-const STATUS = ["VACANT", "OCCUPIED"];
 
 const form = reactive({
   ownerId: "",
@@ -23,9 +22,6 @@ const form = reactive({
   floor: "",
   slotNo: "",
   type: "",
-  sizeSqm: "",
-  baseRent: "",
-  status: "",
 });
 
 async function loadTowers(estateId) {
@@ -52,9 +48,6 @@ onMounted(async () => {
     form.floor = u.floor || "";
     form.slotNo = u.slotNo || "";
     form.type = u.type || "";
-    form.sizeSqm = u.sizeSqm ?? "";
-    form.baseRent = u.baseRent ?? "";
-    form.status = u.status || "";
     if (form.estateId) await loadTowers(form.estateId);
   }
 });
@@ -122,21 +115,6 @@ async function submit() {
       <div class="field">
         <label for="type">Unit type</label>
         <input id="type" type="text" v-model="form.type" />
-      </div>
-      <div class="field">
-        <label for="sizeSqm">Size (sqm)</label>
-        <input id="sizeSqm" type="number" v-model="form.sizeSqm" />
-      </div>
-      <div class="field">
-        <label for="baseRent">Base rent (PHP)</label>
-        <input id="baseRent" type="number" v-model="form.baseRent" />
-      </div>
-      <div class="field">
-        <label for="status">Status</label>
-        <select id="status" v-model="form.status">
-          <option value="">— select —</option>
-          <option v-for="s in STATUS" :key="s" :value="s">{{ s }}</option>
-        </select>
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
