@@ -9,45 +9,43 @@ const stub = { template: "<div/>" };
 function makeRouter() {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: "/", component: stub }, { path: "/login", component: stub },
-      { path: "/summary", component: stub }, { path: "/reports", component: stub },
-      { path: "/admin", component: stub }, { path: "/owners", component: stub },
-      { path: "/units", component: stub }, { path: "/tenants", component: stub },
-      { path: "/leases", component: stub }, { path: "/payments", component: stub },
-    ],
+    routes: [{ path: "/:pathMatch(.*)*", component: stub }],
   });
 }
+function mountAs(role) {
+  const auth = useAuthStore();
+  if (role) auth.setSession({ token: "t", user: { name: "Test User", role } });
+  const router = makeRouter(); router.push("/app"); router.isReady();
+  return mount(AppLayout, { global: { plugins: [router] } });
+}
 
-describe("AppLayout", () => {
+describe("AppLayout (sidebar shell)", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("shows the management sections in the staff nav", async () => {
-    const auth = useAuthStore();
-    auth.setSession({ token: "t", user: { email: "o@b.c", role: "LEASING_OFFICER" } });
-    const router = makeRouter(); router.push("/"); await router.isReady();
-    const w = mount(AppLayout, { global: { plugins: [router] } });
-    const nav = w.find("nav.app-nav").text();
-    for (const label of ["Dashboard", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Approvals"]) {
+  it("lists the staff functions in the sidebar", async () => {
+    const nav = mountAs("LEASING_OFFICER").find(".sidebar__nav").text();
+    for (const label of ["Dashboard", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Approvals", "Info Sheets"]) {
       expect(nav).toContain(label);
     }
   });
 
-  it("shows Master Admin only to the super admin", async () => {
-    const auth = useAuthStore();
-    auth.setSession({ token: "t", user: { role: "LEASING_OFFICER" } });
-    let router = makeRouter(); router.push("/"); await router.isReady();
-    expect(mount(AppLayout, { global: { plugins: [router] } }).text()).not.toContain("Master Admin");
+  it("shows System Users and Audit Trail only to the super admin", () => {
+    expect(mountAs("LEASING_OFFICER").find(".sidebar__nav").text()).not.toContain("Audit Trail");
+    const adminNav = mountAs("ADMIN").find(".sidebar__nav").text();
+    expect(adminNav).toContain("System Users");
+    expect(adminNav).toContain("Audit Trail");
+  });
 
-    auth.setSession({ token: "t", user: { role: "ADMIN" } });
-    router = makeRouter(); router.push("/"); await router.isReady();
-    expect(mount(AppLayout, { global: { plugins: [router] } }).text()).toContain("Master Admin");
+  it("gives owners and tenants their own sidebar", () => {
+    expect(mountAs("UNIT_OWNER").find(".sidebar__nav").text()).toContain("My Units");
+    const tenantNav = mountAs("TENANT").find(".sidebar__nav").text();
+    expect(tenantNav).toContain("My Lease");
+    expect(tenantNav).not.toContain("Owners");
   });
 
   it("toggles the color theme via data-theme", async () => {
-    const router = makeRouter(); router.push("/"); await router.isReady();
-    const w = mount(AppLayout, { global: { plugins: [router] } });
-    const btn = w.find("button.theme-toggle");
+    const w = mountAs("ADMIN");
+    const btn = w.find("button.icon-btn");
     await btn.trigger("click");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     await btn.trigger("click");
@@ -57,9 +55,7 @@ describe("AppLayout", () => {
 
   it("logout clears the auth store", async () => {
     const auth = useAuthStore();
-    auth.setSession({ token: "t", user: { email: "a@b.c", role: "ADMIN" } });
-    const router = makeRouter(); router.push("/"); await router.isReady();
-    const w = mount(AppLayout, { global: { plugins: [router] } });
+    const w = mountAs("ADMIN");
     await w.find("button.logout").trigger("click");
     expect(auth.isAuthenticated).toBe(false);
   });

@@ -32,11 +32,11 @@ function makeRouter() {
     { path: "/units/:id", component: stub },
   ]});
 }
-async function mountView(role, admin = false) {
+async function mountView(role) {
   setActivePinia(createPinia());
   if (role) useAuthStore().setSession({ token: "t", user: { role } });
   const router = makeRouter(); router.push("/units"); await router.isReady();
-  const w = mount(UnitsView, { global: { plugins: [router] }, props: { admin } });
+  const w = mount(UnitsView, { global: { plugins: [router] } });
   await flushPromises();
   return w;
 }
@@ -75,11 +75,11 @@ describe("UnitsView", () => {
     expect(bodyText).not.toContain("7B");
   });
 
-  it("shows write controls in the Master Admin hub (admin)", async () => {
-    const w = await mountView("ADMIN", true);
+  it("shows write controls for the Super Admin", async () => {
+    const w = await mountView("ADMIN");
     expect(w.text()).toContain("New unit");
   });
-  it("is read-only in the main nav even for a write role", async () => {
+  it("is read-only for a non-admin (even a write role)", async () => {
     const w = await mountView("LEASING_OFFICER");
     expect(w.text()).not.toContain("New unit");
   });

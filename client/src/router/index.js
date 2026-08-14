@@ -22,8 +22,8 @@ import ApprovalsView from "../views/ApprovalsView.vue";
 import InfoSheetsView from "../views/InfoSheetsView.vue";
 import OwnerInfoSheetView from "../views/OwnerInfoSheetView.vue";
 import RequirementsView from "../views/RequirementsView.vue";
-import AdminView from "../views/AdminView.vue";
 import UsersView from "../views/UsersView.vue";
+import AuditView from "../views/AuditView.vue";
 
 const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 const WRITE = ["ADMIN", "LEASING_OFFICER"];
@@ -64,8 +64,9 @@ const routes = [
       // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
       { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
-      { path: "admin", component: AdminView, meta: { roles: ["ADMIN"] } },
+      // Super Admin
       { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
+      { path: "audit", component: AuditView, meta: { roles: ["ADMIN"] } },
     ],
   },
 ];

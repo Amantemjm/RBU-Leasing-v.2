@@ -22,11 +22,11 @@ function makeRouter() {
   ]});
 }
 
-async function mountView(role, admin = false) {
+async function mountView(role) {
   setActivePinia(createPinia());
   if (role) useAuthStore().setSession({ token: "t", user: { role } });
   const router = makeRouter(); router.push("/tenants"); await router.isReady();
-  const w = mount(TenantsView, { global: { plugins: [router] }, props: { admin } });
+  const w = mount(TenantsView, { global: { plugins: [router] } });
   await flushPromises();
   return w;
 }
@@ -37,11 +37,11 @@ describe("TenantsView", () => {
     const w = await mountView("VIEWER");
     expect(w.text()).toContain("Juan");
   });
-  it("shows write controls in the Master Admin hub (admin)", async () => {
-    const w = await mountView("ADMIN", true);
+  it("shows write controls for the Super Admin", async () => {
+    const w = await mountView("ADMIN");
     expect(w.text()).toContain("New tenant");
   });
-  it("is read-only in the main nav even for a write role", async () => {
+  it("is read-only for a non-admin (even a write role)", async () => {
     const w = await mountView("LEASING_OFFICER");
     expect(w.text()).not.toContain("New tenant");
   });

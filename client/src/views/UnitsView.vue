@@ -3,13 +3,14 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { units, estates } from "../lib/resource.js";
 import { formatPHP } from "../lib/formatters.js";
+import { useAuthStore } from "../stores/auth.js";
 import ResourceTable from "../components/ResourceTable.vue";
 import MultiSelect from "../components/MultiSelect.vue";
 
 const router = useRouter();
-// Write controls only in the Master Admin hub (admin=true); read-only in main nav.
-const props = defineProps({ admin: { type: Boolean, default: false } });
-const canWrite = computed(() => props.admin);
+// Only the Super Admin can modify records; everyone else sees a read-only view.
+const auth = useAuthStore();
+const canWrite = computed(() => auth.role === "ADMIN");
 
 const allUnits = ref([]); // every unit, filtered client-side
 const estateList = ref([]); // [{ id, name, towers:[{id,name}] }]

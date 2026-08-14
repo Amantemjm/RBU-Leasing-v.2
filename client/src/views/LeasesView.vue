@@ -3,13 +3,14 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { leases } from "../lib/resource.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
+import { useAuthStore } from "../stores/auth.js";
 import ResourceTable from "../components/ResourceTable.vue";
 
-// Write controls only in the Master Admin hub (admin=true); read-only in main nav.
-const props = defineProps({ admin: { type: Boolean, default: false } });
+// Only the Super Admin can modify records; everyone else sees a read-only view.
+const auth = useAuthStore();
 const rows = ref([]);
 const router = useRouter();
-const canWrite = computed(() => props.admin);
+const canWrite = computed(() => auth.role === "ADMIN");
 const columns = [
   { key: "unitId", label: "Unit ID" },
   { key: "tenantId", label: "Tenant ID" },

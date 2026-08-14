@@ -3,14 +3,14 @@ import { computed, ref, onMounted } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
+import AppIcon from "./AppIcon.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-// Theme: unset follows the OS; toggling stores an explicit light/dark choice.
+// --- Theme toggle (unset follows the OS; toggling stores an explicit choice) ---
 const theme = ref(null);
-
 function applyTheme(t) {
   const el = document.documentElement;
   if (t) el.setAttribute("data-theme", t);
@@ -25,48 +25,68 @@ function toggleTheme() {
   applyTheme(theme.value);
   try { localStorage.setItem("rbu-theme", theme.value); } catch { /* ignore */ }
 }
+
+// --- Sidebar state: open on desktop, overlay on mobile ---
+const isNarrow = typeof window !== "undefined" && window.matchMedia
+  ? window.matchMedia("(max-width: 860px)").matches : false;
+const sidebarOpen = ref(!isNarrow);
+
 onMounted(() => {
   let saved = null;
   try { saved = localStorage.getItem("rbu-theme"); } catch { /* ignore */ }
-  if (saved === "dark" || saved === "light") {
-    theme.value = saved;
-    applyTheme(saved);
-  }
+  if (saved === "dark" || saved === "light") { theme.value = saved; applyTheme(saved); }
 });
 
-const OWNER_LINKS = [
-  { to: "/app/my-units", label: "My Units" },
-  { to: "/app/info-sheet", label: "Information Sheet" },
-  { to: "/app/my-leases", label: "My Leases" },
-  { to: "/app/my-profile", label: "My Profile" },
+// Flat sidebar items (Costa-style). Staff items filter by role: `admin` = Super
+// Admin only, `write` = write staff (ADMIN/LEASING_OFFICER), otherwise all staff.
+const STAFF_NAV = [
+  { to: "/app", label: "Dashboard", icon: "grid" },
+  { to: "/app/inquiries", label: "Inquiries", icon: "message" },
+  { to: "/app/owners", label: "Owners", icon: "users" },
+  { to: "/app/units", label: "Units", icon: "building" },
+  { to: "/app/tenants", label: "Tenants", icon: "user" },
+  { to: "/app/leases", label: "Leases", icon: "file" },
+  { to: "/app/approvals", label: "Approvals", icon: "check", write: true },
+  { to: "/app/info-sheets", label: "Info Sheets", icon: "clipboard", write: true },
+  { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
+  { to: "/app/users", label: "System Users", icon: "shield", admin: true },
+  { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
 ];
-const TENANT_LINKS = [
-  { to: "/app/my-lease", label: "My Lease" },
-  { to: "/app/requirements", label: "Requirements" },
-  { to: "/app/my-profile", label: "My Profile" },
+const OWNER_NAV = [
+  { to: "/app/my-units", label: "My Units", icon: "building" },
+  { to: "/app/info-sheet", label: "Information Sheet", icon: "clipboard" },
+  { to: "/app/my-leases", label: "My Leases", icon: "file" },
+  { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ];
-const STAFF_LINKS = [
-  { to: "/app", label: "Dashboard" },
-  { to: "/app/inquiries", label: "Inquiries" },
-  { to: "/app/owners", label: "Owners" },
-  { to: "/app/units", label: "Units" },
-  { to: "/app/tenants", label: "Tenants" },
-  { to: "/app/leases", label: "Leases" },
-  { to: "/app/approvals", label: "Approvals", write: true },
-  { to: "/app/info-sheets", label: "Info Sheets", write: true },
-  { to: "/app/requirements", label: "Requirements", write: true },
+const TENANT_NAV = [
+  { to: "/app/my-lease", label: "My Lease", icon: "file" },
+  { to: "/app/requirements", label: "Requirements", icon: "folder" },
+  { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ];
 
-const links = computed(() => {
-  if (auth.isOwner) return OWNER_LINKS;
-  if (auth.isTenant) return TENANT_LINKS;
-  return STAFF_LINKS.filter((l) => (l.write ? auth.canWrite : true));
+const items = computed(() => {
+  if (auth.isOwner) return OWNER_NAV;
+  if (auth.isTenant) return TENANT_NAV;
+  return STAFF_NAV.filter((i) => (i.admin ? auth.role === "ADMIN" : i.write ? auth.canWrite : true));
 });
 
 function isActive(to) {
   return to === "/app" ? route.path === "/app" : route.path.startsWith(to);
 }
+const currentLabel = computed(() => {
+  const all = [...STAFF_NAV, ...OWNER_NAV, ...TENANT_NAV];
+  const match = all.find((i) => isActive(i.to));
+  return match ? match.label : "";
+});
 
+const initials = computed(() => {
+  const n = auth.user?.name || auth.user?.email || "U";
+  return n.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+});
+
+function onNav() {
+  if (window.matchMedia && window.matchMedia("(max-width: 860px)").matches) sidebarOpen.value = false;
+}
 function logout() {
   auth.logout();
   router.push("/"); // back to the public Inquiry page
@@ -74,32 +94,64 @@ function logout() {
 </script>
 
 <template>
-  <div class="layout">
-    <header class="app-topbar">
-      <div class="brand">
-        <span class="brand__mark">RBU</span>
-        <span class="brand__sub">Leasing</span>
+  <div class="shell" :class="{ 'sidebar-collapsed': !sidebarOpen }">
+    <div v-if="sidebarOpen" class="scrim" @click="sidebarOpen = false"></div>
+
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark">RBU</span>
+        <div v-if="sidebarOpen" class="sidebar__brandtext">
+          <span class="sidebar__name">RBU Leasing</span>
+          <span class="sidebar__sub">Back Office</span>
+        </div>
+        <button type="button" class="sidebar__collapse" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
+          <AppIcon :name="sidebarOpen ? 'chevron' : 'menu'" :size="16" />
+        </button>
       </div>
-      <nav class="app-nav">
-        <RouterLink v-for="l in links" :key="l.to" :to="l.to" :class="{ active: isActive(l.to) }">
-          {{ l.label }}
+
+      <nav class="sidebar__nav">
+        <RouterLink
+          v-for="l in items"
+          :key="l.to"
+          :to="l.to"
+          class="navlink"
+          :class="{ active: isActive(l.to) }"
+          :title="!sidebarOpen ? l.label : undefined"
+          @click="onNav"
+        >
+          <AppIcon :name="l.icon" :size="18" />
+          <span v-if="sidebarOpen" class="navlink__label">{{ l.label }}</span>
         </RouterLink>
       </nav>
-      <div class="topbar-foot">
-        <RouterLink
-          v-if="auth.role === 'ADMIN'"
-          to="/app/admin"
-          class="master-admin"
-          :class="{ active: isActive('/app/admin') }"
-        >Master Admin</RouterLink>
-        <div class="who">
-          <span class="name">{{ auth.user?.name || auth.user?.email }}</span>
-          <span v-if="auth.role" class="role">{{ roleLabel(auth.role) }}</span>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <button type="button" class="topbar__menu" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
+          <AppIcon name="menu" :size="20" />
+        </button>
+        <div class="crumbs">
+          <span class="crumbs__root">RBU Leasing</span>
+          <AppIcon name="chevron" :size="13" class="crumbs__sep" />
+          <span class="crumbs__here">{{ currentLabel }}</span>
         </div>
-        <button type="button" class="theme-toggle" @click="toggleTheme" aria-label="Toggle light or dark theme" title="Toggle theme">◐</button>
-        <button type="button" class="logout" @click="logout">Log out</button>
-      </div>
-    </header>
-    <main class="app-main"><RouterView /></main>
+
+        <div class="topbar__right">
+          <button type="button" class="icon-btn" @click="toggleTheme" aria-label="Toggle light or dark theme" title="Toggle theme">◐</button>
+          <div class="who">
+            <span class="who__avatar">{{ initials }}</span>
+            <span class="who__meta">
+              <span class="who__name">{{ auth.user?.name || auth.user?.email }}</span>
+              <span v-if="auth.role" class="who__role">{{ roleLabel(auth.role) }}</span>
+            </span>
+          </div>
+          <button type="button" class="logout" @click="logout">
+            <AppIcon name="logout" :size="15" /> <span class="logout__label">Log out</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="app-main"><RouterView /></main>
+    </div>
   </div>
 </template>

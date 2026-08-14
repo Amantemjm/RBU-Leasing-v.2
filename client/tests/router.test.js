@@ -39,13 +39,13 @@ describe("router", () => {
     expect(router.currentRoute.value.path).toBe("/app/owners");
   });
 
-  it("restricts Master Admin to the super admin", async () => {
+  it("restricts Users and Audit to the super admin", async () => {
     useAuthStore().setSession({ token: "t", user: { role: "LEASING_OFFICER" } });
-    await router.push("/app/admin");
+    await router.push("/app/audit");
     expect(router.currentRoute.value.path).toBe("/app"); // officer redirected home
 
     useAuthStore().setSession({ token: "t", user: { role: "ADMIN" } });
-    await router.push("/app/admin");
-    expect(router.currentRoute.value.path).toBe("/app/admin");
+    await router.push("/app/audit");
+    expect(router.currentRoute.value.path).toBe("/app/audit");
   });
 });
