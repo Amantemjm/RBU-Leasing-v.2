@@ -1,47 +1,48 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { listInfoSheets, createInfoSheet, reviewInfoSheet } from "../lib/infoSheets.js";
-import { owners } from "../lib/resource.js";
-import { INFO_SHEET_GROUPS } from "../lib/infoSheetFields.js";
+import { ref, onMounted } from "vue";
+import ConfigurableForm from "./ConfigurableForm.vue";
+import SearchableSelect from "./SearchableSelect.vue";
 import { formatDate } from "../lib/formatters.js";
-import SearchableSelect from "../components/SearchableSelect.vue";
+
+const props = defineProps({
+  client: { type: Object, required: true },
+  parentList: { type: Function, required: true }, // () => Promise<[{id,name}]>
+  parentKey: { type: String, required: true }, // "unitOwner" | "tenant"
+  parentLabel: { type: String, required: true }, // "Owner" | "Tenant"
+  filePrefix: { type: String, required: true },
+  title: { type: String, required: true },
+});
 
 const STATUS_LABEL = { REQUESTED: "Requested", SUBMITTED: "Submitted", APPROVED: "Approved", RETURNED: "Returned" };
 
+const config = ref(null);
 const rows = ref([]);
-const ownerOptions = ref([]);
-const selectedOwnerId = ref(null);
+const parentOptions = ref([]);
+const selectedParentId = ref(null);
 const error = ref("");
 const requesting = ref(false);
 
-const active = ref(null); // sheet being reviewed
+const active = ref(null);
 const remarks = ref("");
 const reviewing = ref(false);
 
-const canReview = computed(() => active.value && active.value.status === "SUBMITTED");
-
 async function load() {
   error.value = "";
-  try {
-    rows.value = await listInfoSheets();
-  } catch (e) {
-    error.value = e.response?.data?.error || "Could not load information sheets";
-  }
+  try { rows.value = await props.client.list(); } catch (e) { error.value = e.response?.data?.error || "Could not load sheets"; }
 }
 onMounted(async () => {
   await load();
-  try {
-    ownerOptions.value = (await owners.list()).map((o) => ({ value: o.id, label: o.name }));
-  } catch { /* ignore — request picker just stays empty */ }
+  try { config.value = await props.client.config(); } catch { /* ignore */ }
+  try { parentOptions.value = (await props.parentList()).map((p) => ({ value: p.id, label: p.name })); } catch { /* ignore */ }
 });
 
 async function requestSheet() {
-  if (!selectedOwnerId.value) return;
+  if (!selectedParentId.value) return;
   error.value = "";
   requesting.value = true;
   try {
-    await createInfoSheet(selectedOwnerId.value);
-    selectedOwnerId.value = null;
+    await props.client.create(selectedParentId.value);
+    selectedParentId.value = null;
     await load();
   } catch (e) {
     error.value = e.response?.data?.error || "Could not request a sheet";
@@ -50,18 +51,12 @@ async function requestSheet() {
   }
 }
 
-function openReview(row) {
-  active.value = row;
-  remarks.value = row.remarks || "";
-}
-function closeReview() {
-  if (!reviewing.value) active.value = null;
-}
-
+function openReview(row) { active.value = row; remarks.value = row.remarks || ""; }
+function closeReview() { if (!reviewing.value) active.value = null; }
 async function decide(status) {
   reviewing.value = true;
   try {
-    await reviewInfoSheet(active.value.id, { status, remarks: remarks.value || undefined });
+    await props.client.review(active.value.id, { status, remarks: remarks.value || undefined });
     active.value = null;
     await load();
   } catch (e) {
@@ -70,21 +65,24 @@ async function decide(status) {
     reviewing.value = false;
   }
 }
+function download(row) {
+  props.client.downloadPdf(row.id, `${props.filePrefix}-${row.id}.pdf`);
+}
 </script>
 
 <template>
   <section>
-    <header><h1>Information Sheets</h1></header>
+    <header><h1>{{ title }}</h1></header>
 
     <div class="request">
       <SearchableSelect
-        v-model="selectedOwnerId"
-        :options="ownerOptions"
-        placeholder="Select an owner…"
-        search-placeholder="Search owner…"
+        v-model="selectedParentId"
+        :options="parentOptions"
+        :placeholder="`Select ${parentLabel.toLowerCase()}…`"
+        :search-placeholder="`Search ${parentLabel.toLowerCase()}…`"
         clear-label="— None —"
       />
-      <button type="button" class="primary" :disabled="!selectedOwnerId || requesting" @click="requestSheet">
+      <button type="button" class="primary" :disabled="!selectedParentId || requesting" @click="requestSheet">
         Request sheet
       </button>
     </div>
@@ -92,38 +90,30 @@ async function decide(status) {
     <p v-if="error" class="error">{{ error }}</p>
     <table>
       <thead>
-        <tr><th>Owner</th><th>Status</th><th>Submitted</th><th></th></tr>
+        <tr><th>{{ parentLabel }}</th><th>Status</th><th>Submitted</th><th></th></tr>
       </thead>
       <tbody>
         <tr v-for="s in rows" :key="s.id">
-          <td>{{ s.unitOwner?.name || "—" }}</td>
+          <td>{{ s[parentKey]?.name || "—" }}</td>
           <td><span :class="['status-tag', s.status.toLowerCase()]">{{ STATUS_LABEL[s.status] }}</span></td>
           <td>{{ formatDate(s.submittedAt) || "—" }}</td>
-          <td><button type="button" @click="openReview(s)">{{ s.status === "SUBMITTED" ? "Review" : "View" }}</button></td>
+          <td class="actions">
+            <button type="button" @click="openReview(s)">{{ s.status === "SUBMITTED" ? "Review" : "View" }}</button>
+            <button type="button" @click="download(s)">PDF</button>
+          </td>
         </tr>
         <tr v-if="rows.length === 0"><td colspan="4" class="muted">No information sheets yet.</td></tr>
       </tbody>
     </table>
 
     <div v-if="active" class="modal-backdrop" @click.self="closeReview">
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Review information sheet">
-        <h2>{{ active.unitOwner?.name }} — <span :class="['status-tag', active.status.toLowerCase()]">{{ STATUS_LABEL[active.status] }}</span></h2>
+      <div class="modal" role="dialog" aria-modal="true">
+        <h2>{{ active[parentKey]?.name }} — <span :class="['status-tag', active.status.toLowerCase()]">{{ STATUS_LABEL[active.status] }}</span></h2>
 
-        <p v-if="active.status === 'REQUESTED'" class="muted">Awaiting the owner's submission.</p>
+        <p v-if="active.status === 'REQUESTED'" class="muted">Awaiting submission.</p>
+        <ConfigurableForm v-else-if="config" :config="config" :model-value="active.data || {}" readonly />
 
-        <div v-else class="ro">
-          <div v-for="g in INFO_SHEET_GROUPS" :key="g.title" class="group">
-            <h3>{{ g.title }}</h3>
-            <dl class="grid">
-              <div v-for="f in g.fields" :key="f.key" class="ro-field">
-                <dt>{{ f.label }}</dt>
-                <dd>{{ f.type === "date" ? (formatDate(active[f.key]) || "—") : (active[f.key] || "—") }}</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-
-        <div v-if="canReview" class="field">
+        <div v-if="active.status === 'SUBMITTED'" class="field">
           <label for="remarks">Remarks (required when returning)</label>
           <textarea id="remarks" rows="2" v-model="remarks"></textarea>
         </div>
@@ -131,7 +121,8 @@ async function decide(status) {
 
         <div class="modal-actions">
           <button type="button" class="ghost" @click="closeReview" :disabled="reviewing">Close</button>
-          <template v-if="canReview">
+          <button type="button" class="ghost" @click="download(active)">Download PDF</button>
+          <template v-if="active.status === 'SUBMITTED'">
             <button type="button" class="danger" :disabled="reviewing || !remarks.trim()" @click="decide('RETURNED')">Return</button>
             <button type="button" class="primary" :disabled="reviewing" @click="decide('APPROVED')">Approve</button>
           </template>
@@ -144,6 +135,7 @@ async function decide(status) {
 <style scoped>
 .muted { color: var(--muted); }
 .request { display: flex; align-items: center; gap: 0.6rem; margin: 0.75rem 0 1.25rem; }
+.actions { display: flex; gap: 0.5rem; }
 .status-tag {
   font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
   padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);
@@ -158,28 +150,17 @@ async function decide(status) {
 }
 .modal {
   background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
-  width: 100%; max-width: 44rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  width: 100%; max-width: 52rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 .modal h2 { margin: 0 0 1rem; }
-.group { margin-bottom: 1.25rem; }
-.group h3 {
-  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-text);
-  font-weight: 700; margin: 0 0 0.6rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--line);
-}
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.85rem; margin: 0; }
-.ro-field dt { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
-.ro-field dd { margin: 0.1rem 0 0; font-size: 0.92rem; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.5rem 0; }
 .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--muted); }
 .field textarea {
   font-family: inherit; font-size: 0.95rem; color: var(--text); background: var(--surface);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.55rem 0.65rem; width: 100%; resize: vertical;
 }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.75rem; }
-.primary {
-  background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-sm); padding: 0.55rem 1rem; font: inherit; font-weight: 550; cursor: pointer;
-}
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.primary { background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.55rem 1rem; font: inherit; font-weight: 550; cursor: pointer; }
 .primary:hover { background: var(--accent-600); }
 .primary:disabled, .danger:disabled { opacity: 0.55; cursor: not-allowed; }
 .ghost { background: var(--surface); color: var(--ink-700); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.55rem 1rem; font: inherit; cursor: pointer; }

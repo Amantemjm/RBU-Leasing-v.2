@@ -19,8 +19,10 @@ import OwnerLeasesView from "../views/OwnerLeasesView.vue";
 import MyProfileView from "../views/MyProfileView.vue";
 import TenantLeaseView from "../views/TenantLeaseView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
-import InfoSheetsView from "../views/InfoSheetsView.vue";
+import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
+import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
 import OwnerInfoSheetView from "../views/OwnerInfoSheetView.vue";
+import TenantInfoSheetView from "../views/TenantInfoSheetView.vue";
 import RequirementsView from "../views/RequirementsView.vue";
 import UsersView from "../views/UsersView.vue";
 import AuditView from "../views/AuditView.vue";
@@ -53,7 +55,8 @@ const routes = [
       { path: "leases/new", component: LeaseFormView, meta: { roles: ADMIN } },
       { path: "leases/:id", component: LeaseFormView, meta: { roles: ADMIN } },
       { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
-      { path: "info-sheets", component: InfoSheetsView, meta: { roles: WRITE } },
+      { path: "lessor-sheets", component: LessorInfoSheetsView, meta: { roles: WRITE } },
+      { path: "lessee-sheets", component: LesseeInfoSheetsView, meta: { roles: WRITE } },
       // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
@@ -61,6 +64,7 @@ const routes = [
       { path: "info-sheet", component: OwnerInfoSheetView, meta: { roles: ["UNIT_OWNER"] } },
       // Tenant (Lessee)
       { path: "my-lease", component: TenantLeaseView, meta: { roles: ["TENANT"] } },
+      { path: "info-sheet-tenant", component: TenantInfoSheetView, meta: { roles: ["TENANT"] } },
       // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
       { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },

@@ -24,7 +24,7 @@ describe("AppLayout (sidebar shell)", () => {
 
   it("lists the staff functions in the sidebar", async () => {
     const nav = mountAs("LEASING_OFFICER").find(".sidebar__nav").text();
-    for (const label of ["Dashboard", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Approvals", "Info Sheets"]) {
+    for (const label of ["Dashboard", "Inquiries", "Owners", "Units", "Tenants", "Leases", "Approvals", "Lessor Sheets", "Lessee Sheets"]) {
       expect(nav).toContain(label);
     }
   });

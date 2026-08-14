@@ -47,7 +47,8 @@ const STAFF_NAV = [
   { to: "/app/tenants", label: "Tenants", icon: "user" },
   { to: "/app/leases", label: "Leases", icon: "file" },
   { to: "/app/approvals", label: "Approvals", icon: "check", write: true },
-  { to: "/app/info-sheets", label: "Info Sheets", icon: "clipboard", write: true },
+  { to: "/app/lessor-sheets", label: "Lessor Sheets", icon: "clipboard", write: true },
+  { to: "/app/lessee-sheets", label: "Lessee Sheets", icon: "clipboard", write: true },
   { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
   { to: "/app/users", label: "System Users", icon: "shield", admin: true },
   { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
@@ -60,6 +61,7 @@ const OWNER_NAV = [
 ];
 const TENANT_NAV = [
   { to: "/app/my-lease", label: "My Lease", icon: "file" },
+  { to: "/app/info-sheet-tenant", label: "Information Sheet", icon: "clipboard" },
   { to: "/app/requirements", label: "Requirements", icon: "folder" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ];
