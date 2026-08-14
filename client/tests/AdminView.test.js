@@ -10,6 +10,7 @@ vi.mock("../src/views/UnitsView.vue", () => ({ default: { template: "<div>UnitsP
 vi.mock("../src/views/TenantsView.vue", () => ({ default: { template: "<div>TenantsPanel</div>" } }));
 vi.mock("../src/views/LeasesView.vue", () => ({ default: { template: "<div>LeasesPanel</div>" } }));
 vi.mock("../src/views/UsersView.vue", () => ({ default: { template: "<div>UsersPanel</div>" } }));
+vi.mock("../src/views/AuditView.vue", () => ({ default: { template: "<div>AuditPanel</div>" } }));
 
 import AdminView from "../src/views/AdminView.vue";
 import { useAuthStore } from "../src/stores/auth.js";
@@ -39,11 +40,15 @@ describe("AdminView", () => {
     expect(w.text()).not.toContain("ApprovalsPanel");
   });
 
-  it("adds a Users tab for the super admin", () => {
-    expect(tab(mountAs("ADMIN"), "Users")).toBeTruthy();
+  it("adds Users and Audit tabs for the super admin", () => {
+    const w = mountAs("ADMIN");
+    expect(tab(w, "Users")).toBeTruthy();
+    expect(tab(w, "Audit")).toBeTruthy();
   });
 
-  it("hides the Users tab from non-admin staff", () => {
-    expect(tab(mountAs("LEASING_OFFICER"), "Users")).toBeUndefined();
+  it("hides the Users and Audit tabs from non-admin staff", () => {
+    const w = mountAs("LEASING_OFFICER");
+    expect(tab(w, "Users")).toBeUndefined();
+    expect(tab(w, "Audit")).toBeUndefined();
   });
 });

@@ -8,6 +8,7 @@ import UnitsView from "./UnitsView.vue";
 import TenantsView from "./TenantsView.vue";
 import LeasesView from "./LeasesView.vue";
 import UsersView from "./UsersView.vue";
+import AuditView from "./AuditView.vue";
 
 const auth = useAuthStore();
 const isAdmin = computed(() => auth.role === "ADMIN");
@@ -22,7 +23,13 @@ const BASE_TABS = [
 ];
 
 const tabs = computed(() =>
-  isAdmin.value ? [...BASE_TABS, { key: "users", label: "Users", component: UsersView }] : BASE_TABS,
+  isAdmin.value
+    ? [
+        ...BASE_TABS,
+        { key: "users", label: "Users", component: UsersView },
+        { key: "audit", label: "Audit", component: AuditView },
+      ]
+    : BASE_TABS,
 );
 
 const activeKey = ref("approvals");
