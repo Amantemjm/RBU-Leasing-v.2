@@ -41,7 +41,9 @@ function onSubmit() {
       <input v-else :id="f.key" :type="f.type" v-model="form[f.key]" />
     </div>
     <p v-if="error" class="error">{{ error }}</p>
-    <button type="submit" :disabled="submitting">Save</button>
-    <button type="button" class="cancel" @click="emit('cancel')">Cancel</button>
+    <div class="form-actions">
+      <button type="submit" :disabled="submitting">Save</button>
+      <button type="button" class="cancel" @click="emit('cancel')">Cancel</button>
+    </div>
   </form>
 </template>

@@ -140,8 +140,10 @@ async function submit() {
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
-      <button type="submit" :disabled="submitting">Save</button>
-      <button type="button" class="cancel" @click="router.push('/app/units')">Cancel</button>
+      <div class="form-actions">
+        <button type="submit" :disabled="submitting">Save</button>
+        <button type="button" class="cancel" @click="router.push('/app/units')">Cancel</button>
+      </div>
     </form>
   </section>
 </template>

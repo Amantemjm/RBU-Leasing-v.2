@@ -184,7 +184,6 @@ button:disabled {
   background: var(--surface);
   color: var(--ink-700);
   border-color: var(--line-strong);
-  margin-left: 0.5rem;
 }
 
 .app-main form button.cancel:hover {
@@ -431,6 +430,31 @@ button:disabled {
   gap: 1.05rem;
 }
 
+/* Page-level forms (Register unit, Owner/Tenant/Unit/Lease editors) render as a
+   centered card with a responsive two-column field grid. Modal forms — which are
+   `.modal > form`, not `section > form` — keep the single-column flex layout. */
+.app-main section > form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.05rem 1.25rem;
+  max-width: 680px;
+  margin: 0.25rem auto 0;
+  padding: 1.9rem 2rem;
+}
+
+.app-main section > form > .error,
+.app-main section > form > .form-actions,
+.app-main section > form > .field.field--wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 620px) {
+  .app-main section > form {
+    grid-template-columns: 1fr;
+    padding: 1.5rem 1.25rem;
+  }
+}
+
 .app-main .field {
   display: flex;
   flex-direction: column;
@@ -475,14 +499,17 @@ button:disabled {
   font-size: 0.88rem;
 }
 
-.app-main form button[type="submit"] {
-  align-self: flex-start;
+/* Action row: submit + cancel sit side by side (no negative-margin overlap). */
+.app-main form .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.35rem;
 }
 
-/* keep submit + cancel on one row */
-.app-main form button[type="submit"] + button.cancel {
-  margin-top: -3.1rem;
-  align-self: flex-start;
+.app-main form .form-actions button {
+  min-width: 8.5rem;
 }
 
 /* --------------------------------------------------------------------------
