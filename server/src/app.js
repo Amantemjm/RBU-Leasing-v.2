@@ -12,7 +12,8 @@ import estateRoutes from "./routes/estateRoutes.js";
 import towerRoutes from "./routes/towerRoutes.js";
 import requirementRoutes from "./routes/requirementRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
-import infoSheetRoutes from "./routes/infoSheetRoutes.js";
+import lessorInfoSheetRoutes from "./routes/lessorInfoSheetRoutes.js";
+import lesseeInfoSheetRoutes from "./routes/lesseeInfoSheetRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
 import { auditMiddleware } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/error.js";
@@ -33,7 +34,8 @@ export function createApp() {
   app.use("/api/towers", towerRoutes);
   app.use("/api/requirements", requirementRoutes);
   app.use("/api/inquiries", inquiryRoutes);
-  app.use("/api/info-sheets", infoSheetRoutes);
+  app.use("/api/lessor-info-sheets", lessorInfoSheetRoutes);
+  app.use("/api/lessee-info-sheets", lesseeInfoSheetRoutes);
   app.use("/api/audit", auditRoutes);
 
   // Production: serve the built Vue client as a single deployable. The API

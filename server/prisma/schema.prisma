@@ -79,44 +79,35 @@ model UnitOwner {
   address    String?
   units      Unit[]
   users      User[]
-  infoSheets UnitOwnerInfoSheet[]
+  lessorInfoSheets LessorInfoSheet[]
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
 }
 
-model UnitOwnerInfoSheet {
-  id                 String          @id @default(cuid())
-  unitOwner          UnitOwner       @relation(fields: [unitOwnerId], references: [id])
-  unitOwnerId        String
-  status             InfoSheetStatus @default(REQUESTED)
-  // Owner personal
-  fullName           String?
-  email              String?
-  mobile             String?
-  telephone          String?
-  mailingAddress     String?
-  nationality        String?
-  civilStatus        String?
-  tin                String?
-  governmentIdType   String?
-  governmentIdNumber String?
-  birthdate          DateTime?
-  spouseName         String?
-  // Authorized representative / contact person
-  repName            String?
-  repContact         String?
-  repEmail           String?
-  // Bank details (for rent remittance)
-  bankName           String?
-  accountName        String?
-  accountNumber      String?
-  bankBranch         String?
-  // Workflow
-  remarks            String?
-  submittedAt        DateTime?
-  reviewedAt         DateTime?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+model LessorInfoSheet {
+  id          String          @id @default(cuid())
+  unitOwner   UnitOwner       @relation(fields: [unitOwnerId], references: [id])
+  unitOwnerId String
+  status      InfoSheetStatus @default(REQUESTED)
+  data        Json            @default("{}")
+  remarks     String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model LesseeInfoSheet {
+  id          String          @id @default(cuid())
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  tenantId    String
+  status      InfoSheetStatus @default(REQUESTED)
+  data        Json            @default("{}")
+  remarks     String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model Estate {
@@ -168,6 +159,7 @@ model Tenant {
   leases       Lease[]
   users        User[]
   requirements Requirement[]
+  lesseeInfoSheets LesseeInfoSheet[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
