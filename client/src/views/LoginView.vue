@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../lib/api.js";
 import { useAuthStore } from "../stores/auth.js";
+import logoUrl from "../assets/ortigas-logo.svg";
 
 const email = ref(""); const password = ref(""); const error = ref("");
 const router = useRouter(); const auth = useAuthStore();
@@ -23,6 +24,7 @@ async function submit() {
 <template>
   <div class="auth">
     <div class="auth__card">
+      <img :src="logoUrl" class="auth__logo" alt="Ortigas Land" style="width:52px;height:52px;display:block;margin:0 auto 0.6rem;" />
       <div class="auth__brand">RBU Leasing</div>
       <p class="auth__eyebrow">Residential Business Unit</p>
       <h1>Sign in to your account</h1>

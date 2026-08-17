@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
 import AppIcon from "./AppIcon.vue";
+import logoUrl from "../assets/ortigas-logo.svg";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -81,6 +82,12 @@ const currentLabel = computed(() => {
   return match ? match.label : "";
 });
 
+// Lessor (owner) and Lessee (tenant) portals brand as "Ortigas Land"; O-Lease
+// and back-office staff see the internal "RBU Leasing" brand.
+const isClientPortal = computed(() => auth.isOwner || auth.isTenant);
+const brandName = computed(() => (isClientPortal.value ? "Ortigas Land" : "RBU Leasing"));
+const brandSub = computed(() => (isClientPortal.value ? "" : "Back Office"));
+
 const initials = computed(() => {
   const n = auth.user?.name || auth.user?.email || "U";
   return n.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -109,12 +116,12 @@ function logout() {
           :aria-expanded="sidebarOpen"
           :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
         >
-          <span class="sidebar__mark-text">RBU</span>
+          <img :src="logoUrl" class="sidebar__mark-logo" alt="Ortigas Land" />
           <AppIcon name="chevron" :size="16" class="sidebar__mark-expand" />
         </button>
         <div v-if="sidebarOpen" class="sidebar__brandtext">
-          <span class="sidebar__name">RBU Leasing</span>
-          <span class="sidebar__sub">Back Office</span>
+          <span class="sidebar__name">{{ brandName }}</span>
+          <span v-if="brandSub" class="sidebar__sub">{{ brandSub }}</span>
         </div>
         <button
           v-if="sidebarOpen"
@@ -150,7 +157,7 @@ function logout() {
           <AppIcon name="menu" :size="20" />
         </button>
         <div class="crumbs">
-          <span class="crumbs__root">RBU Leasing</span>
+          <span class="crumbs__root">{{ brandName }}</span>
           <AppIcon name="chevron" :size="13" class="crumbs__sep" />
           <span class="crumbs__here">{{ currentLabel }}</span>
         </div>

@@ -254,9 +254,10 @@ button:disabled {
 }
 .sidebar__mark:hover { filter: brightness(1.05); box-shadow: 0 0 0 3px rgba(140, 199, 168, 0.3); }
 .sidebar__mark:active { transform: scale(0.93); }
+.sidebar__mark-logo { width: 26px; height: 26px; display: block; }
 .sidebar__mark-expand { display: none; }
-/* When collapsed, hovering the logo swaps "RBU" for an expand chevron (›). */
-.sidebar-collapsed .sidebar__mark:hover .sidebar__mark-text { display: none; }
+/* When collapsed, hovering the logo swaps it for an expand chevron (›). */
+.sidebar-collapsed .sidebar__mark:hover .sidebar__mark-logo { display: none; }
 .sidebar-collapsed .sidebar__mark:hover .sidebar__mark-expand { display: inline-flex; }
 
 .sidebar__brandtext { display: flex; flex-direction: column; overflow: hidden; line-height: 1.2; }
