@@ -7,5 +7,8 @@ export default defineConfig({
     // parallel workers would let them wipe each other's data mid-test, so files
     // must run serially. The suite is small; the cost is a few extra seconds.
     fileParallelism: false,
+    // Force the dedicated test database (rbu_leasing_test) before any test or
+    // Prisma client loads, so the destructive suite never touches Dev data.
+    setupFiles: ["./tests/setup.env.js"],
   },
 });

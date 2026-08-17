@@ -4,3 +4,6 @@ dist/
 *.log
 daemon/
 .playwright-mcp/
+
+.env.test
+.env.*.local
