@@ -101,13 +101,30 @@ function logout() {
 
     <aside class="sidebar">
       <div class="sidebar__brand">
-        <span class="sidebar__mark">RBU</span>
+        <button
+          type="button"
+          class="sidebar__mark"
+          @click="sidebarOpen = !sidebarOpen"
+          :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+          :aria-expanded="sidebarOpen"
+          :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+        >
+          <span class="sidebar__mark-text">RBU</span>
+          <AppIcon name="chevron" :size="16" class="sidebar__mark-expand" />
+        </button>
         <div v-if="sidebarOpen" class="sidebar__brandtext">
           <span class="sidebar__name">RBU Leasing</span>
           <span class="sidebar__sub">Back Office</span>
         </div>
-        <button type="button" class="sidebar__collapse" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
-          <AppIcon :name="sidebarOpen ? 'chevron' : 'menu'" :size="16" />
+        <button
+          v-if="sidebarOpen"
+          type="button"
+          class="sidebar__collapse"
+          @click="sidebarOpen = false"
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar"
+        >
+          <AppIcon name="chevron" :size="16" />
         </button>
       </div>
 

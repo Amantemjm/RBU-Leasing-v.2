@@ -244,20 +244,34 @@ button:disabled {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .sidebar__mark {
+  position: relative;
   width: 34px; height: 34px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--brand-mint); color: var(--ink-900);
+  border: none; padding: 0; cursor: pointer;
   border-radius: 8px; font-family: var(--display); font-weight: 700; font-size: 0.9rem;
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
+.sidebar__mark:hover { filter: brightness(1.05); box-shadow: 0 0 0 3px rgba(140, 199, 168, 0.3); }
+.sidebar__mark:active { transform: scale(0.93); }
+.sidebar__mark-expand { display: none; }
+/* When collapsed, hovering the logo swaps "RBU" for an expand chevron (›). */
+.sidebar-collapsed .sidebar__mark:hover .sidebar__mark-text { display: none; }
+.sidebar-collapsed .sidebar__mark:hover .sidebar__mark-expand { display: inline-flex; }
+
 .sidebar__brandtext { display: flex; flex-direction: column; overflow: hidden; line-height: 1.2; }
 .sidebar__name { font-weight: 600; font-size: 0.85rem; color: #fff; white-space: nowrap; }
 .sidebar__sub { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--brand-mint); }
 .sidebar__collapse {
   margin-left: auto; background: transparent; border: none; color: #8ca79b;
   padding: 0.3rem; cursor: pointer; display: inline-flex;
+  border-radius: var(--radius-sm);
 }
-.sidebar__collapse:hover { color: #fff; }
-.sidebar-collapsed .sidebar__collapse { margin-left: 0; }
+.sidebar__collapse svg { transform: rotate(180deg); }
+.sidebar__collapse:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+
+/* Collapsed rail: center the logo in the 60px rail (it becomes the expand toggle). */
+.sidebar-collapsed .sidebar__brand { justify-content: center; padding: 0; }
 
 .sidebar__nav {
   flex: 1; overflow-y: auto; padding: 0.7rem 0.5rem;
