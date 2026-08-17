@@ -43,16 +43,6 @@ describe("AppLayout (sidebar shell)", () => {
     expect(tenantNav).not.toContain("Owners");
   });
 
-  it("toggles the color theme via data-theme", async () => {
-    const w = mountAs("ADMIN");
-    const btn = w.find("button.icon-btn");
-    await btn.trigger("click");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    await btn.trigger("click");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-    document.documentElement.removeAttribute("data-theme");
-  });
-
   it("logout clears the auth store", async () => {
     const auth = useAuthStore();
     const w = mountAs("ADMIN");

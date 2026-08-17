@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from "vue";
+import { computed, ref } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
@@ -10,35 +10,14 @@ const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-// --- Theme toggle (unset follows the OS; toggling stores an explicit choice) ---
-const theme = ref(null);
-function applyTheme(t) {
-  const el = document.documentElement;
-  if (t) el.setAttribute("data-theme", t);
-  else el.removeAttribute("data-theme");
-}
-function prefersDark() {
-  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-}
-function toggleTheme() {
-  const current = theme.value || (prefersDark() ? "dark" : "light");
-  theme.value = current === "dark" ? "light" : "dark";
-  applyTheme(theme.value);
-  try { localStorage.setItem("rbu-theme", theme.value); } catch { /* ignore */ }
-}
-const isDark = computed(() => theme.value === "dark" || (theme.value === null && prefersDark()));
+// Light/dark follows the browser's prefers-color-scheme purely via CSS — no
+// in-app override — so the app matches the OS/browser exactly.
 
 // --- Sidebar + user menu state ---
 const isNarrow = typeof window !== "undefined" && window.matchMedia
   ? window.matchMedia("(max-width: 860px)").matches : false;
 const sidebarOpen = ref(!isNarrow);
 const menuOpen = ref(false);
-
-onMounted(() => {
-  let saved = null;
-  try { saved = localStorage.getItem("rbu-theme"); } catch { /* ignore */ }
-  if (saved === "dark" || saved === "light") { theme.value = saved; applyTheme(saved); }
-});
 
 // Grouped navigation. `admin` = Super Admin only, `write` = write staff.
 const STAFF_GROUPS = [
@@ -162,14 +141,6 @@ function logout() {
         </div>
 
         <div class="topbar__right">
-          <button type="button" class="tbar-icon" title="Notifications" aria-label="Notifications">
-            <AppIcon name="bell" :size="18" /><span class="tbar-dot"></span>
-          </button>
-          <button type="button" class="tbar-icon" title="Help" aria-label="Help">
-            <AppIcon name="help" :size="18" />
-          </button>
-          <button type="button" class="icon-btn" @click="toggleTheme" :title="isDark ? 'Switch to light' : 'Switch to dark'" aria-label="Toggle theme">◐</button>
-
           <div class="usermenu">
             <button type="button" class="userchip" :class="{ open: menuOpen }" @click="menuOpen = !menuOpen" aria-haspopup="menu" :aria-expanded="menuOpen">
               <span class="userchip__avatar">{{ initials }}</span>
@@ -188,9 +159,6 @@ function logout() {
                   <span v-if="auth.role" class="menu__role">{{ roleLabel(auth.role) }}</span>
                 </div>
               </div>
-              <button type="button" class="menu__item" @click="toggleTheme">
-                <AppIcon name="grid" :size="15" /> {{ isDark ? "Light theme" : "Dark theme" }}
-              </button>
               <button type="button" class="menu__item logout" @click="logout">
                 <AppIcon name="logout" :size="15" /> Log out
               </button>

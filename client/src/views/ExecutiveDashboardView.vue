@@ -365,6 +365,15 @@ function cellValue(r, c) {
   font-family: var(--ui); display: flex; flex-direction: column; gap: 1.15rem;
   --good: #157a3e; --good-bg: #e7f3ec; --warn: #b5751a; --warn-bg: #f8efdd; --crit: #b23a2e; --crit-bg: #f7e0dc; --neutral: #6b7a72; --neutral-bg: var(--paper);
 }
+/* Status colours track the browser theme too (parity with light) */
+@media (prefers-color-scheme: dark) {
+  .dash {
+    --good: #5cc492; --good-bg: rgba(21, 122, 62, 0.22);
+    --warn: #d6a24f; --warn-bg: rgba(181, 117, 26, 0.22);
+    --crit: #e0897c; --crit-bg: rgba(178, 58, 46, 0.22);
+    --neutral: #9fb3a8; --neutral-bg: rgba(255, 255, 255, 0.05);
+  }
+}
 .muted { color: var(--muted); } .small { font-size: .85rem; }
 .error { color: var(--danger); background: var(--danger-050); border-radius: var(--radius-sm); padding: .6rem .8rem; }
 .dot-sep { color: var(--faint); margin: 0 .15rem; }
