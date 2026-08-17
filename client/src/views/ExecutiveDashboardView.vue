@@ -1,11 +1,12 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
 
 const data = ref(null);
 const loading = ref(true);
 const error = ref("");
+const anim = ref(false); // drives the chart grow-in animation
 const cat = ref("all");
 const query = ref("");
 const propFilter = ref("");
@@ -17,6 +18,8 @@ onMounted(async () => {
   try { data.value = await fetchExecutiveDashboard(); }
   catch (e) { error.value = e.response?.data?.error || "Could not load dashboard"; }
   finally { loading.value = false; }
+  await nextTick();
+  requestAnimationFrame(() => requestAnimationFrame(() => { anim.value = true; }));
 });
 
 async function doDownload() {
@@ -128,7 +131,7 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
   <section class="exec">
     <header class="exec__head">
       <div>
-        <h1>Executive Dashboard</h1>
+        <h1>Dashboard</h1>
         <p v-if="data" class="muted">Leasing portfolio · as of {{ data.meta.asOf }}</p>
       </div>
       <button type="button" class="dl" :disabled="downloading || !data" @click="doDownload">
@@ -161,12 +164,18 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
         <div class="card">
           <h2>Occupancy</h2>
           <div class="donut">
-            <svg width="120" height="120" viewBox="0 0 130 130">
-              <circle cx="65" cy="65" :r="donut.r" fill="none" stroke="var(--surface-2, #eef2ef)" stroke-width="16" />
-              <circle cx="65" cy="65" :r="donut.r" fill="none" stroke="var(--good)" stroke-width="16" stroke-linecap="round"
-                :stroke-dasharray="donut.dash" transform="rotate(-90 65 65)" />
-              <text x="65" y="62" text-anchor="middle" font-family="var(--display)" font-size="22" font-weight="600" fill="var(--text)">{{ S.occupancyRate }}%</text>
-              <text x="65" y="80" text-anchor="middle" font-size="9" fill="var(--muted)">occupied</text>
+            <svg width="140" height="140" viewBox="0 0 140 140" class="donutsvg">
+              <defs>
+                <linearGradient id="occGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="var(--accent)" />
+                  <stop offset="100%" stop-color="#3ca06b" />
+                </linearGradient>
+              </defs>
+              <circle cx="70" cy="70" :r="donut.r" fill="none" stroke="var(--paper)" stroke-width="15" />
+              <circle cx="70" cy="70" :r="donut.r" fill="none" stroke="url(#occGrad)" stroke-width="15" stroke-linecap="round"
+                class="donut__arc" :stroke-dasharray="anim ? donut.dash : ('0 ' + donut.C)" transform="rotate(-90 70 70)" />
+              <text x="70" y="66" text-anchor="middle" class="donut__pct">{{ S.occupancyRate }}%</text>
+              <text x="70" y="84" text-anchor="middle" class="donut__cap">occupied</text>
             </svg>
             <div class="legend">
               <span><i class="dot" style="background:var(--good)"></i>Leased · <b>{{ S.leased }}</b></span>
@@ -177,7 +186,7 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
           <div class="bars">
             <div v-for="b in buckets" :key="b.l" class="bar">
               <span class="bar__label">{{ b.l }}</span>
-              <span class="bar__track"><span class="bar__fill" :style="{ width: b.w + '%', background: b.c }"></span></span>
+              <span class="bar__track"><span class="bar__fill" :style="{ width: (anim ? b.w : 0) + '%', background: b.c }"></span></span>
               <span class="bar__val">{{ b.v }}</span>
             </div>
           </div>
@@ -190,9 +199,9 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
           <div class="bars">
             <div v-for="p in byProp" :key="p.property" class="bar">
               <span class="bar__label" :title="p.property">{{ p.property }}</span>
-              <span class="bar__track">
-                <span class="bar__fill" :style="{ width: p.lw + '%', background: 'var(--good)' }"></span>
-                <span class="bar__fill" :style="{ width: p.nw + '%', background: 'var(--crit)' }"></span>
+              <span class="bar__track stack">
+                <span class="bar__fill seg-l" :style="{ width: (anim ? p.lw : 0) + '%' }"></span>
+                <span class="bar__fill seg-n" :style="{ width: (anim ? p.nw : 0) + '%' }"></span>
               </span>
               <span class="bar__val">{{ p.leased }}/{{ p.total }}</span>
             </div>
@@ -204,7 +213,7 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
           <div v-if="byMonth.length" class="bars">
             <div v-for="m in byMonth" :key="m.k" class="bar">
               <span class="bar__label">{{ m.k }}</span>
-              <span class="bar__track"><span class="bar__fill" :style="{ width: m.w + '%', background: 'var(--accent)' }"></span></span>
+              <span class="bar__track"><span class="bar__fill grad-accent" :style="{ width: (anim ? m.w : 0) + '%' }"></span></span>
               <span class="bar__val">{{ m.v }}</span>
             </div>
           </div>
@@ -277,15 +286,25 @@ function vacClass(v) { return v >= 180 ? "p-crit" : v >= 90 ? "p-warn" : "p-mut"
 .insights { display: flex; flex-direction: column; gap: .6rem; }
 .ins { display: flex; gap: .55rem; font-size: .9rem; align-items: flex-start; }
 .ins__dot { width: 8px; height: 8px; border-radius: 50%; margin-top: .45rem; flex-shrink: 0; }
-.donut { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.legend { display: flex; flex-direction: column; gap: .35rem; font-size: .82rem; color: var(--muted); }
-.legend .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: .35rem; }
-.bars { display: flex; flex-direction: column; gap: .45rem; }
-.bar { display: grid; grid-template-columns: 120px 1fr auto; gap: .55rem; align-items: center; font-size: .82rem; }
+.donut { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.donutsvg { flex-shrink: 0; filter: drop-shadow(0 3px 6px rgba(20,40,28,.12)); }
+.donut__arc { transition: stroke-dasharray .95s cubic-bezier(.22,.61,.36,1); }
+.donut__pct { font-family: var(--display); font-size: 25px; font-weight: 600; fill: var(--text); }
+.donut__cap { font-size: 9px; fill: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.legend { display: flex; flex-direction: column; gap: .4rem; font-size: .83rem; color: var(--muted); }
+.legend b { color: var(--text); }
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: .4rem; }
+.bars { display: flex; flex-direction: column; gap: .55rem; }
+.bar { display: grid; grid-template-columns: 118px 1fr auto; gap: .65rem; align-items: center; font-size: .82rem; }
 .bar__label { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar__track { background: var(--paper); border-radius: 5px; height: 15px; overflow: hidden; display: flex; }
-.bar__fill { height: 100%; }
-.bar__val { font-weight: 600; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.bar__track { background: var(--paper); border-radius: 999px; height: 18px; overflow: hidden; display: flex; box-shadow: inset 0 0 0 1px var(--line); }
+.bar__fill { height: 100%; border-radius: 999px; transition: width .85s cubic-bezier(.22,.61,.36,1); }
+.bar__track.stack .bar__fill { border-radius: 0; }
+.seg-l { background: linear-gradient(90deg, var(--good), #3ca06b); }
+.seg-n { background: linear-gradient(90deg, #c85644, var(--crit)); }
+.grad-accent { background: linear-gradient(90deg, var(--accent), #3ca06b); }
+.bar__val { font-weight: 700; color: var(--text); min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .bar__fill, .donut__arc { transition: none; } }
 
 .detail { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; }
 .detail__head { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-bottom: 1px solid var(--line); }

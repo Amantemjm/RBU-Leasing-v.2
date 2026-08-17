@@ -42,7 +42,6 @@ onMounted(() => {
 // Admin only, `write` = write staff (ADMIN/LEASING_OFFICER), otherwise all staff.
 const STAFF_NAV = [
   { to: "/app", label: "Dashboard", icon: "grid" },
-  { to: "/app/executive", label: "Executive Dashboard", icon: "list", write: true },
   { to: "/app/inquiries", label: "Inquiries", icon: "message" },
   { to: "/app/owners", label: "Owners", icon: "users" },
   { to: "/app/units", label: "Units", icon: "building" },

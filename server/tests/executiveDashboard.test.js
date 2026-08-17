@@ -23,11 +23,12 @@ describe("Executive Dashboard (/api/dashboard/executive)", () => {
     expect((await request(app).get("/api/dashboard/executive")).status).toBe(401);
   });
 
-  it("is visible only to ADMIN and LEASING_OFFICER (403 for others)", async () => {
-    expect((await request(app).get("/api/dashboard/executive").set("Authorization", `Bearer ${tokens.viewer()}`)).status).toBe(403);
-    expect((await request(app).get("/api/dashboard/executive").set("Authorization", `Bearer ${tokens.owner("x")}`)).status).toBe(403);
+  it("is visible to staff (admin/officer/viewer) and blocks owners/tenants", async () => {
     await scenario();
     expect((await request(app).get("/api/dashboard/executive").set(authAdmin)).status).toBe(200);
+    expect((await request(app).get("/api/dashboard/executive").set("Authorization", `Bearer ${tokens.viewer()}`)).status).toBe(200);
+    expect((await request(app).get("/api/dashboard/executive").set("Authorization", `Bearer ${tokens.owner("x")}`)).status).toBe(403);
+    expect((await request(app).get("/api/dashboard/executive").set("Authorization", `Bearer ${tokens.tenant("x")}`)).status).toBe(403);
   });
 
   it("returns portfolio metrics for ADMIN", async () => {
@@ -54,13 +55,13 @@ describe("Executive Dashboard (/api/dashboard/executive)", () => {
     expect(res.body.all[0].unit).toBe("M1");
   });
 
-  it("downloads a formatted Excel for ADMIN, forbids VIEWER", async () => {
+  it("downloads a formatted Excel for staff, forbids non-staff", async () => {
     await scenario();
     const ok = await request(app).get("/api/dashboard/executive.xlsx").set(authAdmin);
     expect(ok.status).toBe(200);
     expect(ok.headers["content-type"]).toContain("spreadsheetml");
     expect(ok.headers["content-disposition"]).toContain("RBU-Leasing-Executive-Report.xlsx");
-    const no = await request(app).get("/api/dashboard/executive.xlsx").set("Authorization", `Bearer ${tokens.viewer()}`);
+    const no = await request(app).get("/api/dashboard/executive.xlsx").set("Authorization", `Bearer ${tokens.owner("x")}`);
     expect(no.status).toBe(403);
   });
 });

@@ -4,7 +4,6 @@ import AppLayout from "../components/AppLayout.vue";
 import InquiryStartView from "../views/InquiryStartView.vue";
 import InquiryView from "../views/InquiryView.vue";
 import LoginView from "../views/LoginView.vue";
-import DashboardView from "../views/DashboardView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
 import InquiriesView from "../views/InquiriesView.vue";
 import OwnersView from "../views/OwnersView.vue";
@@ -43,8 +42,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       // Staff
-      { path: "", component: DashboardView, meta: { roles: STAFF } },
-      { path: "executive", component: ExecutiveDashboardView, meta: { roles: WRITE } },
+      { path: "", component: ExecutiveDashboardView, meta: { roles: STAFF } },
       { path: "inquiries", component: InquiriesView, meta: { roles: STAFF } },
       { path: "owners", component: OwnersView, meta: { roles: STAFF } },
       { path: "owners/new", component: OwnerFormView, meta: { roles: ADMIN } },
