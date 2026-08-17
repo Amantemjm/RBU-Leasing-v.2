@@ -19,6 +19,9 @@ export const leases = resource("/leases");
 export const estates = resource("/estates");
 export const towers = resource("/towers");
 
+export function assignOwner(id, assignedOfficerId) {
+  return api.patch(`/owners/${id}/assign`, { assignedOfficerId }).then((r) => r.data);
+}
 export function approveUnit(id) {
   return api.patch(`/units/${id}/approve`).then((r) => r.data);
 }

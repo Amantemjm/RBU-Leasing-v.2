@@ -13,20 +13,23 @@ async function assertTowerExists(towerId) {
   if (!tower) throw new InvalidReferenceError("towerId does not reference an existing tower");
 }
 
-export function listUnits({ ownerId, status, estateId, towerId, approvalStatus } = {}) {
+export function listUnits({ ownerId, status, estateId, towerId, approvalStatus, assignedOfficerId } = {}) {
   const where = {};
   if (ownerId) where.ownerId = ownerId;
   if (status) where.status = status;
   if (towerId) where.towerId = towerId;
   if (estateId) where.tower = { estateId };
   if (approvalStatus) where.approvalStatus = approvalStatus;
+  if (assignedOfficerId) where.owner = { assignedOfficerId };
   return prisma.unit.findMany({ where, include: withHierarchy, orderBy: { createdAt: "desc" } });
 }
 
-// A UNIT_OWNER only ever sees their own owner's units (all approval statuses).
+// A UNIT_OWNER only ever sees their own owner's units. A LEASING_OFFICER sees
+// units belonging to owners assigned to them.
 export function listUnitsForUser(user, filters = {}) {
   const f = { ...filters };
   if (user.role === "UNIT_OWNER") f.ownerId = user.unitOwnerId || "__none__";
+  else if (user.role === "LEASING_OFFICER") f.assignedOfficerId = user.userId;
   return listUnits(f);
 }
 

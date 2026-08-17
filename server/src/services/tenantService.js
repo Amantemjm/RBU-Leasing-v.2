@@ -1,8 +1,13 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, ConflictError } from "../lib/errors.js";
 
-export function listTenants() {
-  return prisma.tenant.findMany({ orderBy: { createdAt: "desc" } });
+// ADMIN/VIEWER see every tenant; a LEASING_OFFICER sees only tenants who lease a
+// unit belonging to one of their assigned owners.
+export function listTenants(user) {
+  const where = user?.role === "LEASING_OFFICER"
+    ? { leases: { some: { unit: { owner: { assignedOfficerId: user.userId } } } } }
+    : {};
+  return prisma.tenant.findMany({ where, orderBy: { createdAt: "desc" } });
 }
 
 export async function getTenant(id) {

@@ -67,6 +67,7 @@ model User {
   tenant       Tenant?    @relation(fields: [tenantId], references: [id])
   tenantId     String?
   assignedInquiries Inquiry[] @relation("InquiryAssignee")
+  assignedOwners UnitOwner[] @relation("OwnerOfficer")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -77,6 +78,8 @@ model UnitOwner {
   email      String?
   phone      String?
   address    String?
+  assignedOfficer   User?          @relation("OwnerOfficer", fields: [assignedOfficerId], references: [id], onDelete: SetNull)
+  assignedOfficerId String?
   units      Unit[]
   users      User[]
   lessorInfoSheets LessorInfoSheet[]

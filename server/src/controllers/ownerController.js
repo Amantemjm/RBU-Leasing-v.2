@@ -1,8 +1,14 @@
 import * as service from "../services/ownerService.js";
-import { ownerCreateSchema, ownerUpdateSchema } from "../validation/owner.js";
+import { ownerCreateSchema, ownerUpdateSchema, ownerAssignSchema } from "../validation/owner.js";
 
 export async function list(req, res, next) {
-  try { res.json(await service.listOwners()); } catch (e) { next(e); }
+  try { res.json(await service.listOwners(req.user)); } catch (e) { next(e); }
+}
+export async function assign(req, res, next) {
+  try {
+    const { assignedOfficerId } = ownerAssignSchema.parse(req.body);
+    res.json(await service.assignOwner(req.params.id, assignedOfficerId));
+  } catch (e) { next(e); }
 }
 export async function me(req, res, next) {
   try { res.json(await service.getOwnerMe(req.user)); } catch (e) { next(e); }

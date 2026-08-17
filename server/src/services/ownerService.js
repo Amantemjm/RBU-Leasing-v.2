@@ -1,8 +1,25 @@
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, ConflictError } from "../lib/errors.js";
+import { NotFoundError, ConflictError, InvalidReferenceError } from "../lib/errors.js";
 
-export function listOwners() {
-  return prisma.unitOwner.findMany({ orderBy: { createdAt: "desc" } });
+const officerInclude = { assignedOfficer: { select: { id: true, name: true, email: true } } };
+
+// ADMIN/VIEWER see every owner; a LEASING_OFFICER sees only owners assigned to
+// their own account.
+export function listOwners(user) {
+  const where = user?.role === "LEASING_OFFICER" ? { assignedOfficerId: user.userId } : {};
+  return prisma.unitOwner.findMany({ where, orderBy: { createdAt: "desc" }, include: officerInclude });
+}
+
+// Assign an owner to an O-Lease (LEASING_OFFICER), or null to unassign.
+export async function assignOwner(id, assignedOfficerId) {
+  await getOwner(id);
+  if (assignedOfficerId) {
+    const officer = await prisma.user.findUnique({ where: { id: assignedOfficerId } });
+    if (!officer || officer.role !== "LEASING_OFFICER") {
+      throw new InvalidReferenceError("assignedOfficerId must reference an O-Lease (LEASING_OFFICER)");
+    }
+  }
+  return prisma.unitOwner.update({ where: { id }, data: { assignedOfficerId }, include: officerInclude });
 }
 
 export async function getOwner(id) {

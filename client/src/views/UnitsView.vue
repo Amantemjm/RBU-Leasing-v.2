@@ -19,6 +19,7 @@ const selectedTowerIds = ref([]);
 
 const columns = [
   { key: "unitNumber", label: "Unit #" },
+  { key: "ownerName", label: "Owner" },
   { key: "estateName", label: "Estate" },
   { key: "towerName", label: "Tower" },
   { key: "type", label: "Type" },
@@ -53,6 +54,7 @@ const rows = computed(() =>
     })
     .map((u) => ({
       ...u,
+      ownerName: u.owner?.name || "—",
       estateName: u.tower?.estate?.name || "—",
       towerName: u.tower?.name || "Unassigned",
     })),

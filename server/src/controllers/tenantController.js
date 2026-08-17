@@ -2,7 +2,7 @@ import * as service from "../services/tenantService.js";
 import { tenantCreateSchema, tenantUpdateSchema } from "../validation/tenant.js";
 
 export async function list(req, res, next) {
-  try { res.json(await service.listTenants()); } catch (e) { next(e); }
+  try { res.json(await service.listTenants(req.user)); } catch (e) { next(e); }
 }
 export async function me(req, res, next) {
   try { res.json(await service.getTenantMe(req.user)); } catch (e) { next(e); }

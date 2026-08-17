@@ -4,7 +4,9 @@ import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens } from "./helpers.js";
 
 const app = createApp();
-const auth = () => ({ Authorization: `Bearer ${tokens.officer()}` });
+// Admin is the natural actor for a generic CRUD round-trip: a LEASING_OFFICER's
+// lists are scoped to owners assigned to them, which a freshly-created owner is not.
+const auth = () => ({ Authorization: `Bearer ${tokens.admin()}` });
 beforeEach(async () => { await resetCrudTables(); });
 
 describe("End-to-end CRUD flow", () => {

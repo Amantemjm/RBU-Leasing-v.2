@@ -8,3 +8,8 @@ export const ownerCreateSchema = z.object({
 });
 
 export const ownerUpdateSchema = ownerCreateSchema.partial();
+
+export const ownerAssignSchema = z.object({
+  // A LEASING_OFFICER user id, or null to unassign.
+  assignedOfficerId: z.string().min(1).nullable(),
+});
