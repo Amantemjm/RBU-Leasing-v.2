@@ -26,11 +26,13 @@ function toggleTheme() {
   applyTheme(theme.value);
   try { localStorage.setItem("rbu-theme", theme.value); } catch { /* ignore */ }
 }
+const isDark = computed(() => theme.value === "dark" || (theme.value === null && prefersDark()));
 
-// --- Sidebar state: open on desktop, overlay on mobile ---
+// --- Sidebar + user menu state ---
 const isNarrow = typeof window !== "undefined" && window.matchMedia
   ? window.matchMedia("(max-width: 860px)").matches : false;
 const sidebarOpen = ref(!isNarrow);
+const menuOpen = ref(false);
 
 onMounted(() => {
   let saved = null;
@@ -38,55 +40,57 @@ onMounted(() => {
   if (saved === "dark" || saved === "light") { theme.value = saved; applyTheme(saved); }
 });
 
-// Flat sidebar items (Costa-style). Staff items filter by role: `admin` = Super
-// Admin only, `write` = write staff (ADMIN/LEASING_OFFICER), otherwise all staff.
-const STAFF_NAV = [
-  { to: "/app", label: "Dashboard", icon: "grid" },
-  { to: "/app/inquiries", label: "Inquiries", icon: "message" },
-  { to: "/app/owners", label: "Owners", icon: "users" },
-  { to: "/app/units", label: "Units", icon: "building" },
-  { to: "/app/tenants", label: "Tenants", icon: "user" },
-  { to: "/app/leases", label: "Leases", icon: "file" },
-  { to: "/app/approvals", label: "Approvals", icon: "check", write: true },
-  { to: "/app/lessor-sheets", label: "Lessor Sheets", icon: "clipboard", write: true },
-  { to: "/app/lessee-sheets", label: "Lessee Sheets", icon: "clipboard", write: true },
-  { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
-  { to: "/app/users", label: "System Users", icon: "shield", admin: true },
-  { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
+// Grouped navigation. `admin` = Super Admin only, `write` = write staff.
+const STAFF_GROUPS = [
+  { label: "Workspace", items: [
+    { to: "/app", label: "Dashboard", icon: "grid" },
+    { to: "/app/inquiries", label: "Inquiries", icon: "message" },
+    { to: "/app/owners", label: "Owners", icon: "users" },
+    { to: "/app/units", label: "Units", icon: "building" },
+    { to: "/app/tenants", label: "Tenants", icon: "user" },
+    { to: "/app/leases", label: "Leases", icon: "file" },
+    { to: "/app/approvals", label: "Approvals", icon: "check", write: true },
+    { to: "/app/lessor-sheets", label: "Lessor Sheets", icon: "clipboard", write: true },
+    { to: "/app/lessee-sheets", label: "Lessee Sheets", icon: "clipboard", write: true },
+    { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
+  ] },
+  { label: "Administration", items: [
+    { to: "/app/users", label: "System Users", icon: "shield", admin: true },
+    { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
+  ] },
 ];
-const OWNER_NAV = [
+const OWNER_GROUPS = [{ label: null, items: [
   { to: "/app/my-units", label: "My Units", icon: "building" },
   { to: "/app/info-sheet", label: "Information Sheet", icon: "clipboard" },
   { to: "/app/my-leases", label: "My Leases", icon: "file" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
-];
-const TENANT_NAV = [
+] }];
+const TENANT_GROUPS = [{ label: null, items: [
   { to: "/app/my-lease", label: "My Lease", icon: "file" },
   { to: "/app/info-sheet-tenant", label: "Information Sheet", icon: "clipboard" },
   { to: "/app/requirements", label: "Requirements", icon: "folder" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
-];
+] }];
 
-const items = computed(() => {
-  if (auth.isOwner) return OWNER_NAV;
-  if (auth.isTenant) return TENANT_NAV;
-  return STAFF_NAV.filter((i) => (i.admin ? auth.role === "ADMIN" : i.write ? auth.canWrite : true));
+const groups = computed(() => {
+  const base = auth.isOwner ? OWNER_GROUPS : auth.isTenant ? TENANT_GROUPS : STAFF_GROUPS;
+  return base
+    .map((g) => ({ label: g.label, items: g.items.filter((i) => (i.admin ? auth.role === "ADMIN" : i.write ? auth.canWrite : true)) }))
+    .filter((g) => g.items.length);
 });
+const allItems = computed(() => groups.value.flatMap((g) => g.items));
 
 function isActive(to) {
   return to === "/app" ? route.path === "/app" : route.path.startsWith(to);
 }
 const currentLabel = computed(() => {
-  const all = [...STAFF_NAV, ...OWNER_NAV, ...TENANT_NAV];
-  const match = all.find((i) => isActive(i.to));
+  const match = allItems.value.find((i) => isActive(i.to));
   return match ? match.label : "";
 });
 
-// Lessor (owner) and Lessee (tenant) portals brand as "Ortigas Land"; O-Lease
-// and back-office staff see the internal "RBU Leasing" brand.
 const isClientPortal = computed(() => auth.isOwner || auth.isTenant);
 const brandName = computed(() => (isClientPortal.value ? "Ortigas Land" : "RBU Leasing"));
-const brandSub = computed(() => (isClientPortal.value ? "" : "Back Office"));
+const brandSub = computed(() => (isClientPortal.value ? "Leasing Portal" : "Back Office"));
 
 const initials = computed(() => {
   const n = auth.user?.name || auth.user?.email || "U";
@@ -94,11 +98,12 @@ const initials = computed(() => {
 });
 
 function onNav() {
+  menuOpen.value = false;
   if (window.matchMedia && window.matchMedia("(max-width: 860px)").matches) sidebarOpen.value = false;
 }
 function logout() {
   auth.logout();
-  router.push("/"); // back to the public Inquiry page
+  router.push("/");
 }
 </script>
 
@@ -109,45 +114,39 @@ function logout() {
     <aside class="sidebar">
       <div class="sidebar__brand">
         <button
-          type="button"
-          class="sidebar__mark"
+          type="button" class="sidebar__mark"
           @click="sidebarOpen = !sidebarOpen"
           :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-          :aria-expanded="sidebarOpen"
           :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
         >
           <img :src="logoUrl" class="sidebar__mark-logo" alt="Ortigas Land" />
-          <AppIcon name="chevron" :size="16" class="sidebar__mark-expand" />
+          <AppIcon name="chevron" :size="15" class="sidebar__mark-expand" />
         </button>
         <div v-if="sidebarOpen" class="sidebar__brandtext">
           <span class="sidebar__name">{{ brandName }}</span>
-          <span v-if="brandSub" class="sidebar__sub">{{ brandSub }}</span>
+          <span class="sidebar__sub">{{ brandSub }}</span>
         </div>
         <button
-          v-if="sidebarOpen"
-          type="button"
-          class="sidebar__collapse"
-          @click="sidebarOpen = false"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          v-if="sidebarOpen" type="button" class="sidebar__collapse"
+          @click="sidebarOpen = false" aria-label="Collapse sidebar" title="Collapse sidebar"
         >
           <AppIcon name="chevron" :size="16" />
         </button>
       </div>
 
       <nav class="sidebar__nav">
-        <RouterLink
-          v-for="l in items"
-          :key="l.to"
-          :to="l.to"
-          class="navlink"
-          :class="{ active: isActive(l.to) }"
-          :title="!sidebarOpen ? l.label : undefined"
-          @click="onNav"
-        >
-          <AppIcon :name="l.icon" :size="18" />
-          <span v-if="sidebarOpen" class="navlink__label">{{ l.label }}</span>
-        </RouterLink>
+        <div v-for="(g, gi) in groups" :key="gi" class="navgroup">
+          <p v-if="g.label && sidebarOpen" class="navgroup__label">{{ g.label }}</p>
+          <div v-else-if="g.label && gi > 0" class="navgroup__rule"></div>
+          <RouterLink
+            v-for="l in g.items" :key="l.to" :to="l.to"
+            class="navlink" :class="{ active: isActive(l.to) }"
+            :title="!sidebarOpen ? l.label : undefined" @click="onNav"
+          >
+            <span class="navlink__icon"><AppIcon :name="l.icon" :size="18" /></span>
+            <span v-if="sidebarOpen" class="navlink__label">{{ l.label }}</span>
+          </RouterLink>
+        </div>
       </nav>
     </aside>
 
@@ -163,17 +162,41 @@ function logout() {
         </div>
 
         <div class="topbar__right">
-          <button type="button" class="icon-btn" @click="toggleTheme" aria-label="Toggle light or dark theme" title="Toggle theme">◐</button>
-          <div class="who">
-            <span class="who__avatar">{{ initials }}</span>
-            <span class="who__meta">
-              <span class="who__name">{{ auth.user?.name || auth.user?.email }}</span>
-              <span v-if="auth.role" class="who__role">{{ roleLabel(auth.role) }}</span>
-            </span>
-          </div>
-          <button type="button" class="logout" @click="logout">
-            <AppIcon name="logout" :size="15" /> <span class="logout__label">Log out</span>
+          <button type="button" class="tbar-icon" title="Notifications" aria-label="Notifications">
+            <AppIcon name="bell" :size="18" /><span class="tbar-dot"></span>
           </button>
+          <button type="button" class="tbar-icon" title="Help" aria-label="Help">
+            <AppIcon name="help" :size="18" />
+          </button>
+          <button type="button" class="icon-btn" @click="toggleTheme" :title="isDark ? 'Switch to light' : 'Switch to dark'" aria-label="Toggle theme">◐</button>
+
+          <div class="usermenu">
+            <button type="button" class="userchip" :class="{ open: menuOpen }" @click="menuOpen = !menuOpen" aria-haspopup="menu" :aria-expanded="menuOpen">
+              <span class="userchip__avatar">{{ initials }}</span>
+              <span class="userchip__meta">
+                <span class="userchip__name">{{ auth.user?.name || auth.user?.email }}</span>
+                <span v-if="auth.role" class="userchip__role">{{ roleLabel(auth.role) }}</span>
+              </span>
+              <AppIcon name="chevron-down" :size="15" class="userchip__caret" />
+            </button>
+            <div class="menu" v-show="menuOpen" role="menu">
+              <div class="menu__head">
+                <span class="userchip__avatar lg">{{ initials }}</span>
+                <div>
+                  <div class="menu__name">{{ auth.user?.name || auth.user?.email }}</div>
+                  <div class="menu__email">{{ auth.user?.email }}</div>
+                  <span v-if="auth.role" class="menu__role">{{ roleLabel(auth.role) }}</span>
+                </div>
+              </div>
+              <button type="button" class="menu__item" @click="toggleTheme">
+                <AppIcon name="grid" :size="15" /> {{ isDark ? "Light theme" : "Dark theme" }}
+              </button>
+              <button type="button" class="menu__item logout" @click="logout">
+                <AppIcon name="logout" :size="15" /> Log out
+              </button>
+            </div>
+            <div v-show="menuOpen" class="menu-scrim" @click="menuOpen = false"></div>
+          </div>
         </div>
       </header>
 

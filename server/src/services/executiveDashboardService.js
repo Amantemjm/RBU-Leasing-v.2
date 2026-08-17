@@ -78,6 +78,22 @@ export async function getExecutiveDashboard(user, now = new Date()) {
     }
   }
 
+  // Every individual lease (all history), for the Excel "Lease Details" sheet.
+  const leaseDetails = [];
+  for (const u of units) {
+    for (const l of u.leases) {
+      const active = l.endDate.getTime() >= nowMs && l.status !== "TERMINATED";
+      leaseDetails.push({
+        property: u.tower?.name || u.building || "Unassigned",
+        unit: u.unitNumber, tenant: l.tenant?.name || "—",
+        start: iso(l.startDate), end: iso(l.endDate), monthlyRent: num(l.monthlyRent),
+        status: l.status === "TERMINATED" ? "TERMINATED" : active ? "ACTIVE" : "EXPIRED",
+        owner: u.owner?.name || "—",
+      });
+    }
+  }
+  leaseDetails.sort((a, b) => (b.end || "").localeCompare(a.end || ""));
+
   return {
     meta: { asOf: iso(now), nearExpiryWindowDays: NEAR },
     summary: {
@@ -91,6 +107,6 @@ export async function getExecutiveDashboard(user, now = new Date()) {
       },
       longVacant: notLeased.filter((u) => u.unleasedDays != null && u.unleasedDays >= 180).length,
     },
-    all, leased, notLeased, nearExpiry, byProperty, expiryByMonth,
+    all, leased, notLeased, nearExpiry, byProperty, expiryByMonth, leaseDetails,
   };
 }

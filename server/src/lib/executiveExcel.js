@@ -89,5 +89,11 @@ export async function buildExecutiveExcel(data) {
     { h: "Last Monthly Rate", k: "monthlyRent", w: 16, money: true }, { h: "Recommended Action", k: "recommendedAction", w: 30 },
   ], data.notLeased, { flag: { key: "unleasedDays", test: (v) => v >= 180, argb: "FFF7D6D2" } });
 
+  sheet(wb, "Lease Details", [
+    { h: "Property", k: "property", w: 30 }, { h: "Unit", k: "unit", w: 10 }, { h: "Tenant", k: "tenant", w: 26 },
+    { h: "Lease Start", k: "start", w: 13 }, { h: "Lease End", k: "end", w: 13 },
+    { h: "Monthly Rent", k: "monthlyRent", w: 15, money: true }, { h: "Status", k: "status", w: 12 }, { h: "Owner", k: "owner", w: 24 },
+  ], data.leaseDetails || []);
+
   return wb.xlsx.writeBuffer();
 }
