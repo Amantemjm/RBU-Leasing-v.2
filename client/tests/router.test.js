@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import router from "../src/router/index.js";
+import InquiryStartView from "../src/views/InquiryStartView.vue";
 import InquiryView from "../src/views/InquiryView.vue";
 import { useAuthStore } from "../src/stores/auth.js";
 
 describe("router", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("serves the Inquiry page at both / and /inquiry", () => {
-    expect(router.resolve("/").matched[0].components.default).toBe(InquiryView);
+  it("serves the user-type start page at / and the Inquiry form at /inquiry", () => {
+    expect(router.resolve("/").matched[0].components.default).toBe(InquiryStartView);
     expect(router.resolve("/inquiry").matched[0].components.default).toBe(InquiryView);
   });
 

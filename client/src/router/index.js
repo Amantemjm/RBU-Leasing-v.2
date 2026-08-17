@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import AppLayout from "../components/AppLayout.vue";
+import InquiryStartView from "../views/InquiryStartView.vue";
 import InquiryView from "../views/InquiryView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "../views/DashboardView.vue";
@@ -32,7 +33,8 @@ const WRITE = ["ADMIN", "LEASING_OFFICER"];
 const ADMIN = ["ADMIN"];
 
 const routes = [
-  { path: "/", component: InquiryView, alias: "/inquiry" }, // public landing (Inquiry form)
+  { path: "/", component: InquiryStartView }, // public landing: "I am a…" user-type selection
+  { path: "/inquiry", component: InquiryView }, // Quick Inquiry form (user type via ?as=)
   { path: "/login", component: LoginView },
   {
     path: "/app",

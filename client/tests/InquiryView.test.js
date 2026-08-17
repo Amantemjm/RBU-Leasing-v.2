@@ -16,13 +16,14 @@ function makeRouter() {
     { path: "/", component: InquiryView }, { path: "/login", component: stub },
   ]});
 }
-async function mountView() {
+// The user type is chosen on the front page and arrives via ?as=LESSOR|LESSEE.
+async function mountView(as = "LESSEE") {
   setActivePinia(createPinia());
-  const router = makeRouter(); router.push("/"); await router.isReady();
+  const router = makeRouter(); router.push({ path: "/", query: { as } }); await router.isReady();
   return mount(InquiryView, { global: { plugins: [router] } });
 }
 
-describe("InquiryView (public landing)", () => {
+describe("InquiryView (Quick Inquiry form)", () => {
   beforeEach(() => createInquiry.mockClear());
 
   it("shows the exact OCLP consent text", async () => {
@@ -37,42 +38,44 @@ describe("InquiryView (public landing)", () => {
     );
   });
 
-  it("cascades Inquiry Type from the 'I am a' choice and resets on change", async () => {
-    const w = await mountView();
-    const typeOpts = () => w.find("#inquiryType").findAll("option").map((o) => o.text());
-    expect(w.find("#inquiryType").attributes("disabled")).toBeDefined(); // disabled until chosen
-    await w.find("#inquirerType").setValue("LESSEE");
-    expect(typeOpts()).toContain("Unit Availability");
-    expect(typeOpts()).not.toContain("Find a Tenant");
-    await w.find("#inquiryType").setValue("Unit Availability");
-    // switching inquirer resets the type and swaps the option set
-    await w.find("#inquirerType").setValue("LESSOR");
-    expect(w.find("#inquiryType").element.value).toBe("");
-    expect(typeOpts()).toContain("Find a Tenant");
-    expect(typeOpts()).not.toContain("Unit Availability");
+  it("has no 'I am a' field and reflects the carried-over user type", async () => {
+    const w = await mountView("LESSOR");
+    expect(w.find("#inquirerType").exists()).toBe(false);
+    expect(w.text()).toContain("Inquiring as");
+    expect(w.text()).toContain("Lessor (Unit Owner)");
+  });
+
+  it("shows Inquiry Type options for the selected user type", async () => {
+    const lessee = await mountView("LESSEE");
+    const lesseeOpts = lessee.find("#inquiryType").findAll("option").map((o) => o.text());
+    expect(lesseeOpts).toContain("Unit Availability");
+    expect(lesseeOpts).not.toContain("Find a Tenant");
+
+    const lessor = await mountView("LESSOR");
+    const lessorOpts = lessor.find("#inquiryType").findAll("option").map((o) => o.text());
+    expect(lessorOpts).toContain("Find a Tenant");
+    expect(lessorOpts).not.toContain("Unit Availability");
   });
 
   it("keeps submit disabled until category, type, fields, and consent are set", async () => {
-    const w = await mountView();
+    const w = await mountView("LESSEE");
     const submit = () => w.find('button[type="submit"]');
     expect(submit().attributes("disabled")).toBeDefined();
     await w.find("#category").setValue("RESIDENCES");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
-    expect(submit().attributes("disabled")).toBeDefined(); // inquirer/type + consent unset
-    await w.find("#inquirerType").setValue("LESSEE");
+    expect(submit().attributes("disabled")).toBeDefined(); // type + consent unset
     await w.find("#inquiryType").setValue("Rental Rate");
-    expect(submit().attributes("disabled")).toBeDefined(); // consent still unchecked
+    expect(submit().attributes("disabled")).toBeDefined(); // consent unchecked
     await w.find('input[type="checkbox"]').setValue(true);
     expect(submit().attributes("disabled")).toBeUndefined();
   });
 
-  it("submits the inquiry (message optional) and shows a thank-you state", async () => {
-    const w = await mountView();
+  it("submits with the carried-over user type and shows a thank-you state", async () => {
+    const w = await mountView("LESSEE");
     await w.find("#category").setValue("RESIDENCES");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
-    await w.find("#inquirerType").setValue("LESSEE");
     await w.find("#inquiryType").setValue("Unit Availability");
     await w.find('input[type="checkbox"]').setValue(true);
     await w.find("form").trigger("submit.prevent");

@@ -1,9 +1,10 @@
 <script setup>
-import { reactive, ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { reactive, ref, computed, watch, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { createInquiry } from "../lib/inquiries.js";
-import { INQUIRER_TYPES, INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
+import { INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
+import logoUrl from "../assets/ortigas-logo.svg";
 
 const CONSENT_TEXT =
   "By clicking the button below, I give my consent to all divisions and organizations " +
@@ -14,7 +15,14 @@ const CONSENT_TEXT =
   "goods and services.";
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
+
+// The user type was chosen on the front page and passed via ?as=LESSOR|LESSEE.
+// Without a valid choice, send them back to make one.
+const VALID_TYPES = ["LESSOR", "LESSEE"];
+const selectedType = VALID_TYPES.includes(route.query.as) ? route.query.as : null;
+onMounted(() => { if (!selectedType) router.replace("/"); });
 
 const appHome = computed(() =>
   auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app",
@@ -24,7 +32,7 @@ function goStaff() {
 }
 
 const form = reactive({
-  category: "", inquirerType: "", inquiryType: "", fullName: "", email: "", message: "", consent: false,
+  category: "", inquirerType: selectedType || "", inquiryType: "", fullName: "", email: "", message: "", consent: false,
 });
 const submitting = ref(false);
 const submitted = ref(false);
@@ -59,7 +67,8 @@ async function submit() {
     if (form.message.trim()) payload.message = form.message.trim();
     await createInquiry(payload);
     submitted.value = true;
-    form.category = ""; form.inquirerType = ""; form.inquiryType = "";
+    // Keep the chosen user type — the same person may submit another inquiry.
+    form.category = ""; form.inquiryType = "";
     form.fullName = ""; form.email = ""; form.message = ""; form.consent = false;
   } catch (e) {
     error.value = e.response?.data?.error || "Something went wrong. Please try again.";
@@ -73,7 +82,8 @@ async function submit() {
   <div class="landing">
     <header class="landing__bar">
       <div class="brand">
-        <span class="brand__mark">RBU</span>
+        <img :src="logoUrl" class="brand__logo" alt="Ortigas Land" />
+        <span class="brand__name">Ortigas Land</span>
         <span class="brand__sub">Leasing</span>
       </div>
     </header>
@@ -93,6 +103,10 @@ async function submit() {
         </div>
 
         <form v-else @submit.prevent="submit">
+          <div class="asrole">
+            <span>Inquiring as <strong>{{ INQUIRER_LABEL[form.inquirerType] }}</strong></span>
+            <a href="#" @click.prevent="router.push('/')">Change</a>
+          </div>
           <div class="field">
             <label for="category">Category <span class="req">*</span></label>
             <select id="category" v-model="form.category">
@@ -102,26 +116,19 @@ async function submit() {
             </select>
           </div>
           <div class="field">
+            <label for="inquiryType">Inquiry Type <span class="req">*</span></label>
+            <select id="inquiryType" v-model="form.inquiryType">
+              <option value="" disabled>-</option>
+              <option v-for="opt in inquiryTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+          </div>
+          <div class="field">
             <label for="fullName">Full name <span class="req">*</span></label>
             <input id="fullName" type="text" v-model="form.fullName" autocomplete="name" />
           </div>
           <div class="field">
             <label for="email">Email <span class="req">*</span></label>
             <input id="email" type="email" v-model="form.email" autocomplete="email" />
-          </div>
-          <div class="field">
-            <label for="inquirerType">I am a <span class="req">*</span></label>
-            <select id="inquirerType" v-model="form.inquirerType">
-              <option value="" disabled>-</option>
-              <option v-for="t in INQUIRER_TYPES" :key="t" :value="t">{{ INQUIRER_LABEL[t] }}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="inquiryType">Inquiry Type <span class="req">*</span></label>
-            <select id="inquiryType" v-model="form.inquiryType" :disabled="!form.inquirerType">
-              <option value="" disabled>{{ form.inquirerType ? "-" : "Select \"I am a\" first" }}</option>
-              <option v-for="opt in inquiryTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
           </div>
           <div class="field">
             <label for="message">Additional details <span class="optional">(optional)</span></label>
@@ -154,9 +161,17 @@ async function submit() {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 1.5rem; height: 60px; background: var(--ink-900); color: #e7f1ea;
 }
-.brand { display: flex; align-items: baseline; gap: 0.45rem; }
-.brand__mark { font-family: var(--display); font-weight: 600; font-size: 1.35rem; color: #fff; line-height: 1; }
-.brand__sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: #7fa08f; }
+.brand { display: flex; align-items: center; gap: 0.5rem; }
+.brand__logo { width: 28px; height: 28px; display: block; }
+.brand__name { font-family: var(--display); font-weight: 600; font-size: 1.25rem; color: #fff; line-height: 1; }
+.brand__sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: #7fa08f; align-self: flex-end; padding-bottom: 0.2rem; }
+.asrole {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  background: var(--accent-050); border: 1px solid var(--accent-050); color: var(--accent-text);
+  border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; font-size: 0.88rem;
+}
+.asrole strong { font-weight: 700; }
+.asrole a { color: var(--accent-text); font-weight: 600; font-size: 0.82rem; }
 .staff { text-align: center; margin-top: 0.25rem; }
 .staff__btn {
   display: inline-block; min-width: 240px;
