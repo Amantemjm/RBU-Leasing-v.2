@@ -67,9 +67,11 @@ const currentLabel = computed(() => {
   return match ? match.label : "";
 });
 
-const isClientPortal = computed(() => auth.isOwner || auth.isTenant);
-const brandName = computed(() => (isClientPortal.value ? "Ortigas Land" : "RBU Leasing"));
-const brandSub = computed(() => (isClientPortal.value ? "Leasing Portal" : "Back Office"));
+// Lessor, Lessee, and O-Lease (Leasing Officer) all brand as the "Ortigas Land
+// Leasing Portal"; only back-office admins/viewers see "RBU Leasing / Back Office".
+const isPortal = computed(() => auth.isOwner || auth.isTenant || auth.role === "LEASING_OFFICER");
+const brandName = computed(() => (isPortal.value ? "Ortigas Land" : "RBU Leasing"));
+const brandSub = computed(() => (isPortal.value ? "Leasing Portal" : "Back Office"));
 
 const initials = computed(() => {
   const n = auth.user?.name || auth.user?.email || "U";
