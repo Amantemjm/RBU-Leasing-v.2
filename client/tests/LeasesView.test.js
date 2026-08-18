@@ -5,7 +5,7 @@ import { createRouter, createMemoryHistory } from "vue-router";
 
 vi.mock("../src/lib/resource.js", () => ({
   leases: {
-    list: vi.fn(() => Promise.resolve([{ id: "l1", unitId: "u1", tenantId: "t1", monthlyRent: "30000", status: "ACTIVE", startDate: "2026-01-01T00:00:00.000Z", endDate: "2026-12-31T00:00:00.000Z" }])),
+    list: vi.fn(() => Promise.resolve([{ id: "l1", unit: { id: "u1", unitNumber: "12A" }, tenant: { id: "t1", name: "Maria Santos" }, monthlyRent: "30000", status: "ACTIVE", startDate: "2026-01-01T00:00:00.000Z", endDate: "2026-12-31T00:00:00.000Z" }])),
     remove: vi.fn(() => Promise.resolve()),
   },
 }));
@@ -32,10 +32,12 @@ async function mountView(role) {
 
 describe("LeasesView", () => {
   beforeEach(() => setActivePinia(createPinia()));
-  it("lists leases with PHP rent and sliced dates", async () => {
+  it("lists leases with unit/tenant names, PHP rent and long-form dates", async () => {
     const w = await mountView("VIEWER");
+    expect(w.text()).toContain("12A");
+    expect(w.text()).toContain("Maria Santos");
     expect(w.text()).toContain("30,000");
-    expect(w.text()).toContain("2026-01-01");
+    expect(w.text()).toContain("January 1, 2026");
   });
   it("shows write controls for the Super Admin", async () => {
     const w = await mountView("ADMIN");

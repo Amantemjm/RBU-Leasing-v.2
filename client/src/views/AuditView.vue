@@ -1,13 +1,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { listAudit } from "../lib/audit.js";
-import { roleLabel } from "../lib/formatters.js";
+import { roleLabel, formatDate } from "../lib/formatters.js";
 
 const rows = ref([]);
 const error = ref("");
 
 function when(iso) {
-  return String(iso).replace("T", " ").slice(0, 19);
+  const time = String(iso).slice(11, 16); // HH:mm
+  return `${formatDate(iso)}${time ? " · " + time : ""}`;
 }
 
 onMounted(async () => {

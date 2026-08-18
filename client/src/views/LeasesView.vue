@@ -12,8 +12,8 @@ const rows = ref([]);
 const router = useRouter();
 const canWrite = computed(() => auth.role === "ADMIN");
 const columns = [
-  { key: "unitId", label: "Unit ID" },
-  { key: "tenantId", label: "Tenant ID" },
+  { key: "unit", label: "Unit", format: (u) => u?.unitNumber ?? "—" },
+  { key: "tenant", label: "Tenant", format: (t) => t?.name ?? "—" },
   { key: "startDate", label: "Start", format: formatDate },
   { key: "endDate", label: "End", format: formatDate },
   { key: "monthlyRent", label: "Monthly rent", format: formatPHP },

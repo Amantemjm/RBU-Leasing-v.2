@@ -6,9 +6,18 @@ export function formatPHP(amount) {
   return php.format(n);
 }
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Standard long date, e.g. "August 18, 2026". Parses the date part directly so
+// it never shifts across timezones. Used for every displayed date in the app.
 export function formatDate(iso) {
   if (!iso) return "";
-  return String(iso).slice(0, 10);
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return String(iso).slice(0, 10);
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
 }
 
 export function toDateInput(iso) {

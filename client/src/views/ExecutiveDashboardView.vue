@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, nextTick } from "vue";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
-import { formatPHP } from "../lib/formatters.js";
+import { formatPHP, formatDate } from "../lib/formatters.js";
 import AppIcon from "../components/AppIcon.vue";
 
 const data = ref(null);
@@ -26,11 +26,9 @@ async function doDownload() {
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function fmtDate(iso) {
-  if (!iso) return "—";
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${MONTHS[m - 1]} ${d}, ${y}`;
-}
+// Full standard date ("August 18, 2026") for table cells; short MONTHS above are
+// only used for the compact expiry-timeline labels.
+function fmtDate(iso) { return iso ? formatDate(iso) : "—"; }
 const dateLabel = computed(() => {
   if (!data.value) return "";
   const [y, m, d] = data.value.meta.asOf.split("-").map(Number);
