@@ -35,6 +35,7 @@ export function listUnitsForUser(user, filters = {}) {
 
 export async function createUnitForUser(user, data) {
   const payload = { ...data };
+  if (payload.baseRent == null) payload.baseRent = 0; // base rent lives on the lease
   if (user.role === "UNIT_OWNER") {
     payload.ownerId = user.unitOwnerId; // force own owner
     payload.approvalStatus = "PENDING"; // owner submissions await O-Lease approval
@@ -59,7 +60,7 @@ export async function getUnit(id) {
 export async function createUnit(data) {
   await assertOwnerExists(data.ownerId);
   if (data.towerId) await assertTowerExists(data.towerId);
-  return prisma.unit.create({ data });
+  return prisma.unit.create({ data: { baseRent: 0, ...data } });
 }
 
 export async function updateUnit(id, data) {

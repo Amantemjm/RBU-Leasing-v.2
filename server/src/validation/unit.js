@@ -9,7 +9,9 @@ export const unitCreateSchema = z.object({
   slotNo: z.string().nullish(),
   type: z.string().nullish(),
   sizeSqm: z.coerce.number().nonnegative().nullish(),
-  baseRent: z.coerce.number().nonnegative(),
+  // Optional: base rent is captured at the lease level, not on the unit. The
+  // service defaults it to 0 so registration works without it.
+  baseRent: z.coerce.number().nonnegative().nullish(),
   status: z.enum(["VACANT", "OCCUPIED"]).optional(),
 });
 

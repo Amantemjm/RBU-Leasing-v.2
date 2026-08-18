@@ -29,6 +29,16 @@ describe("owner-scoped units + approval", () => {
     expect(res.body.approvalStatus).toBe("PENDING");
   });
 
+  it("owner can register a unit without a base rent (defaults to 0)", async () => {
+    const o1 = await factory.owner();
+    const res = await request(app).post("/api/units")
+      .set("Authorization", `Bearer ${tokens.owner(o1.id)}`)
+      .send({ unitNumber: "10A", type: "2BR", floor: "10" }); // no baseRent — captured at lease level
+    expect(res.status).toBe(201);
+    expect(res.body.approvalStatus).toBe("PENDING");
+    expect(Number(res.body.baseRent)).toBe(0);
+  });
+
   it("owner cannot approve a unit (403)", async () => {
     const o1 = await factory.owner();
     const u = await factory.unit(o1.id, { approvalStatus: "PENDING" });
