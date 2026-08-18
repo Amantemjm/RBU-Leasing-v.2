@@ -27,7 +27,7 @@ async function decide(id, approve) {
     <p v-if="rows.length === 0" class="muted">No units awaiting approval.</p>
     <table v-else>
       <thead>
-        <tr><th>Unit #</th><th>Tower</th><th>Owner</th><th>Base rent</th><th v-if="canWrite">Actions</th></tr>
+        <tr><th>Unit #</th><th>Tower</th><th>Owner</th><th>Monthly rent</th><th v-if="canWrite">Actions</th></tr>
       </thead>
       <tbody>
         <tr v-for="u in rows" :key="u.id">

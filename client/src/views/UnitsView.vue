@@ -23,7 +23,7 @@ const columns = [
   { key: "estateName", label: "Estate" },
   { key: "towerName", label: "Tower" },
   { key: "type", label: "Type" },
-  { key: "baseRent", label: "Base rent", format: formatPHP },
+  { key: "baseRent", label: "Monthly Rent", format: formatPHP },
   { key: "status", label: "Status" },
 ];
 

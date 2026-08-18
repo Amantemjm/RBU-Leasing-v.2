@@ -11,7 +11,7 @@ const columns = [
   { key: "unitNumber", label: "Unit #" },
   { key: "tower", label: "Tower", format: (t) => t?.name || "—" },
   { key: "type", label: "Type" },
-  { key: "baseRent", label: "Base rent", format: formatPHP },
+  { key: "baseRent", label: "Monthly Rent", format: formatPHP },
   { key: "status", label: "Status" },
   { key: "approvalStatus", label: "Approval" },
 ];

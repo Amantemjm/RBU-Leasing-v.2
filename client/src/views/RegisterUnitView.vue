@@ -12,7 +12,7 @@ const towerOptions = ref([]);
 
 const form = reactive({
   estateId: "", towerId: "", unitNumber: "", floor: "", slotNo: "",
-  type: "",
+  type: "", baseRent: "",
 });
 
 async function loadTowers(estateId) {
@@ -73,6 +73,7 @@ async function submit() {
       <div class="field"><label for="floor">Level</label><input id="floor" type="text" v-model="form.floor" /></div>
       <div class="field"><label for="slotNo">Slot no.</label><input id="slotNo" type="text" v-model="form.slotNo" /></div>
       <div class="field"><label for="type">Unit type</label><input id="type" type="text" v-model="form.type" /></div>
+      <div class="field"><label for="baseRent">Monthly Rent (PHP)</label><input id="baseRent" type="number" min="0" step="500" v-model="form.baseRent" placeholder="e.g. 25000" /></div>
       <p v-if="error" class="error">{{ error }}</p>
       <div class="form-actions">
         <button type="submit" :disabled="submitting">Submit for approval</button>
