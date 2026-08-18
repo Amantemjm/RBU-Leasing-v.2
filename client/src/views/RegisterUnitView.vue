@@ -11,7 +11,7 @@ const estateOptions = ref([]);
 const towerOptions = ref([]);
 
 const form = reactive({
-  estateId: "", towerId: "", unitNumber: "", floor: "", slotNo: "",
+  estateId: "", towerId: "", unitNumber: "", slotNo: "",
   type: "", baseRent: "",
 });
 
@@ -70,7 +70,6 @@ async function submit() {
         </select>
       </div>
       <div class="field"><label for="unitNumber">Unit number</label><input id="unitNumber" type="text" v-model="form.unitNumber" /></div>
-      <div class="field"><label for="floor">Level</label><input id="floor" type="text" v-model="form.floor" /></div>
       <div class="field"><label for="slotNo">Slot no.</label><input id="slotNo" type="text" v-model="form.slotNo" /></div>
       <div class="field"><label for="type">Unit type</label><input id="type" type="text" v-model="form.type" /></div>
       <div class="field"><label for="baseRent">Monthly Rent (PHP)</label><input id="baseRent" type="number" min="0" step="500" v-model="form.baseRent" placeholder="e.g. 25000" /></div>
