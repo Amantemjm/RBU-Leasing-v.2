@@ -4,5 +4,5 @@ import lessorSheets from "../lib/lessorInfoSheets.js";
 </script>
 
 <template>
-  <InfoSheetSelf :client="lessorSheets" file-prefix="UnitOwnerInfoSheet" />
+  <InfoSheetSelf :client="lessorSheets" file-prefix="UnitOwnerAcceptanceForm" />
 </template>

@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, onMounted, nextTick } from "vue";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
 import AppIcon from "../components/AppIcon.vue";
+import AnimatedNumber from "../components/AnimatedNumber.vue";
 
 const data = ref(null);
 const loading = ref(true);
@@ -218,7 +219,7 @@ function cellValue(r, c) {
         <button v-for="k in KPIS" :key="k.key" type="button" class="kpi" :class="'t-' + k.tone" @click="goFilter(k.key === 'occ' ? 'all' : k.key)">
           <span class="kpi__icon"><AppIcon :name="k.icon" :size="18" /></span>
           <span class="kpi__label">{{ k.label }}</span>
-          <span class="kpi__value">{{ k.value }}</span>
+          <span class="kpi__value"><AnimatedNumber :value="k.value" /></span>
           <span class="kpi__sub">{{ k.sub }}</span>
           <span class="kpi__go"><AppIcon name="arrow-right" :size="14" /></span>
         </button>
@@ -244,7 +245,7 @@ function cellValue(r, c) {
           <div class="card__head"><h2>Occupancy</h2></div>
           <div class="occ__main">
             <div class="occ__ring" :style="{ background: `conic-gradient(var(--accent) ${anim ? occ.leasedPct : 0}%, var(--paper) 0)` }">
-              <div class="occ__hole"><span class="occ__pct">{{ occ.rate }}%</span><span class="occ__cap">Occupied</span></div>
+              <div class="occ__hole"><span class="occ__pct"><AnimatedNumber :value="occ.rate + '%'" /></span><span class="occ__cap">Occupied</span></div>
             </div>
             <div class="occ__legend">
               <div class="occ__row"><span class="dot d-good"></span>Leased <b>{{ occ.leased }}</b></div>
@@ -388,14 +389,27 @@ function cellValue(r, c) {
 .btn.loading svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* KPI cards */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
-.kpi { position: relative; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.15rem; cursor: pointer; display: flex; flex-direction: column; gap: .1rem; transition: transform .14s, box-shadow .16s, border-color .16s; overflow: hidden; }
-.kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+/* KPI cards — fixed equal-width columns (auto-fit stretched the last orphan
+   tile); grid-auto-rows:1fr keeps every tile the same height too. */
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 1rem; }
+@media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 440px) { .kpis { grid-template-columns: 1fr; } }
+.kpi { position: relative; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.2rem 1.15rem 1.1rem; cursor: pointer; display: flex; flex-direction: column; gap: .1rem; min-height: 148px; transition: transform .16s var(--ease-out), box-shadow .16s var(--ease-out), border-color .16s; overflow: hidden; animation: dfade .5s var(--ease-out) both; }
+/* tone accent strip along the top — unifies the tiles */
+.kpi::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--line-strong); }
+.kpi.t-brand::before { background: var(--accent); }
+.kpi.t-good::before { background: var(--good); }
+.kpi.t-warn::before { background: var(--warn); }
+.kpi.t-neutral::before { background: var(--neutral); }
+.kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--line-strong); }
+.kpi:nth-child(1) { animation-delay: .02s; } .kpi:nth-child(2) { animation-delay: .07s; }
+.kpi:nth-child(3) { animation-delay: .12s; } .kpi:nth-child(4) { animation-delay: .17s; } .kpi:nth-child(5) { animation-delay: .22s; }
+@keyframes dfade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .kpi__icon { width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: .55rem; }
 .kpi__label { font-size: .74rem; color: var(--muted); font-weight: 600; }
-.kpi__value { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); line-height: 1.1; margin-top: .1rem; }
-.kpi__sub { font-size: .76rem; color: var(--faint); margin-top: .1rem; }
+.kpi__value { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); line-height: 1.1; margin-top: .1rem; font-variant-numeric: tabular-nums; }
+.kpi__sub { font-size: .76rem; color: var(--faint); margin-top: auto; padding-top: .35rem; }
 .kpi__go { position: absolute; top: 1.1rem; right: 1rem; color: var(--faint); opacity: 0; transform: translateX(-4px); transition: .16s; }
 .kpi:hover .kpi__go { opacity: 1; transform: translateX(0); }
 .t-brand .kpi__icon { background: var(--accent-050); color: var(--accent); }
@@ -404,9 +418,11 @@ function cellValue(r, c) {
 .t-neutral .kpi__icon { background: var(--neutral-bg); color: var(--neutral); }
 
 /* Grid + cards */
-.grid { display: grid; gap: 1rem; }
-.grid--2 { grid-template-columns: 1fr 1fr; }
-.grid--insights { grid-template-columns: 1.55fr 1fr; }
+.grid { display: grid; gap: 1rem; align-items: stretch; }
+/* side-by-side cards are equal width (minmax(0,1fr) stops inner content from
+   skewing a column) and equal height (align-items:stretch) */
+.grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid--insights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 900px) { .grid--2, .grid--insights { grid-template-columns: 1fr; } }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.15rem 1.25rem; box-shadow: var(--shadow-sm); }
 .card__head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }

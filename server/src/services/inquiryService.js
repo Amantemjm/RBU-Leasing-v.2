@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, InvalidReferenceError } from "../lib/errors.js";
+import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
+import { ensureForInquiry } from "./leasingTransactionService.js";
 
 const assigneeInclude = { assignedTo: { select: { id: true, name: true, email: true } } };
 
@@ -7,14 +8,17 @@ export function createInquiry(data) {
   return prisma.inquiry.create({ data });
 }
 
-// ADMIN and VIEWER see every inquiry; an O-Lease (LEASING_OFFICER) sees only
-// the inquiries assigned to their own account.
+// ADMIN and VIEWER see every inquiry. An O-Lease (LEASING_OFFICER) sees the
+// inquiries assigned to their own account PLUS the unassigned pool, so they can
+// accept new inquiries themselves without an admin assigning them first.
 export function listInquiries(user) {
-  const where = user?.role === "LEASING_OFFICER" ? { assignedToId: user.userId } : {};
+  const where = user?.role === "LEASING_OFFICER"
+    ? { OR: [{ assignedToId: user.userId }, { assignedToId: null }] }
+    : {};
   return prisma.inquiry.findMany({ where, orderBy: { createdAt: "desc" }, include: assigneeInclude });
 }
 
-// Assign an inquiry to an O-Lease (LEASING_OFFICER), or null to unassign.
+// Admin assigns an inquiry to an O-Lease (LEASING_OFFICER), or null to unassign.
 export async function assignInquiry(id, assignedToId) {
   const inquiry = await prisma.inquiry.findUnique({ where: { id } });
   if (!inquiry) throw new NotFoundError("Inquiry not found");
@@ -25,6 +29,31 @@ export async function assignInquiry(id, assignedToId) {
     }
   }
   return prisma.inquiry.update({ where: { id }, data: { assignedToId }, include: assigneeInclude });
+}
+
+// An O-Lease accepts (self-assigns) an inquiry — allowed only if it is currently
+// unassigned or already theirs, so they can't take another officer's inquiry.
+export async function acceptInquiry(user, id) {
+  const inquiry = await prisma.inquiry.findUnique({ where: { id } });
+  if (!inquiry) throw new NotFoundError("Inquiry not found");
+  if (inquiry.assignedToId && inquiry.assignedToId !== user.userId) {
+    throw new ConflictError("This inquiry has already been accepted by another O-Lease");
+  }
+  const updated = await prisma.inquiry.update({ where: { id }, data: { assignedToId: user.userId }, include: assigneeInclude });
+  // Accepting an inquiry opens the end-to-end leasing transaction (idempotent).
+  await ensureForInquiry(updated, user);
+  return updated;
+}
+
+// Release an inquiry back to the unassigned pool. An O-Lease may release only
+// their own; an admin may release any.
+export async function releaseInquiry(user, id) {
+  const inquiry = await prisma.inquiry.findUnique({ where: { id } });
+  if (!inquiry) throw new NotFoundError("Inquiry not found");
+  if (user.role !== "ADMIN" && inquiry.assignedToId !== user.userId) {
+    throw new ConflictError("You can only release an inquiry assigned to you");
+  }
+  return prisma.inquiry.update({ where: { id }, data: { assignedToId: null }, include: assigneeInclude });
 }
 
 export async function updateInquiryStatus(id, status) {

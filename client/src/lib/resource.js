@@ -18,6 +18,54 @@ export const tenants = resource("/tenants");
 export const leases = resource("/leases");
 export const estates = resource("/estates");
 export const towers = resource("/towers");
+export const cmsForms = resource("/cms/forms");
+
+// CMS page-form slots (Super Admin configures a field set per role + nav page).
+export const pageForms = {
+  list: () => api.get("/cms/page-forms").then((r) => r.data),
+  get: (role, pageKey) => api.get(`/cms/page-forms/${role}/${pageKey}`).then((r) => r.data),
+  save: (role, pageKey, data) => api.put(`/cms/page-forms/${role}/${pageKey}`, data).then((r) => r.data),
+  remove: (role, pageKey) => api.delete(`/cms/page-forms/${role}/${pageKey}`).then((r) => r.data),
+  entries: (role, pageKey) => api.get(`/cms/page-forms/${role}/${pageKey}/entries`).then((r) => r.data),
+};
+
+// The signed-in user's own view of a page form (the fields configured for their
+// role + the page they're on, and their saved answers).
+export const myPageForm = {
+  get: (pageKey) => api.get(`/page-forms/mine/${pageKey}`).then((r) => r.data),
+  save: (pageKey, data) => api.put(`/page-forms/mine/${pageKey}`, { data }).then((r) => r.data),
+};
+
+// Leasing process tracker — one shared transaction per leasing deal.
+export const leasingTransactions = {
+  list: () => api.get("/leasing-transactions").then((r) => r.data),
+  get: (id) => api.get(`/leasing-transactions/${id}`).then((r) => r.data),
+  create: (data) => api.post("/leasing-transactions", data).then((r) => r.data),
+  setStatus: (id, data) => api.patch(`/leasing-transactions/${id}/status`, data).then((r) => r.data),
+  advance: (id, data) => api.patch(`/leasing-transactions/${id}/advance`, data || {}).then((r) => r.data),
+  returnStage: (id, data) => api.patch(`/leasing-transactions/${id}/return`, data || {}).then((r) => r.data),
+  link: (id, data) => api.patch(`/leasing-transactions/${id}/link`, data).then((r) => r.data),
+  remove: (id) => api.delete(`/leasing-transactions/${id}`).then((r) => r.data),
+  mine: () => api.get("/leasing-transactions/mine").then((r) => r.data),
+  getMine: (id) => api.get(`/leasing-transactions/mine/${id}`).then((r) => r.data),
+  // supporting documents
+  uploadDocument: (id, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post(`/leasing-transactions/${id}/documents`, form).then((r) => r.data);
+  },
+  deleteDocument: (id, docId) => api.delete(`/leasing-transactions/${id}/documents/${docId}`).then((r) => r.data),
+  async downloadDocument(id, docId, filename) {
+    const res = await api.get(`/leasing-transactions/${id}/documents/${docId}/download`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  },
+  // approval routing
+  approvalSteps: (id) => api.get(`/leasing-transactions/${id}/approval-steps`).then((r) => r.data),
+  decideStep: (id, stepId, data) => api.patch(`/leasing-transactions/${id}/approval-steps/${stepId}`, data).then((r) => r.data),
+};
 
 export function assignOwner(id, assignedOfficerId) {
   return api.patch(`/owners/${id}/assign`, { assignedOfficerId }).then((r) => r.data);

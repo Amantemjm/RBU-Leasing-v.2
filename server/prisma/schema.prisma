@@ -68,6 +68,8 @@ model User {
   tenantId     String?
   assignedInquiries Inquiry[] @relation("InquiryAssignee")
   assignedOwners UnitOwner[] @relation("OwnerOfficer")
+  assignedTransactions LeasingTransaction[] @relation("TxnOfficer")
+  pageFormEntries PageFormEntry[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -83,6 +85,7 @@ model UnitOwner {
   units      Unit[]
   users      User[]
   lessorInfoSheets LessorInfoSheet[]
+  leasingTransactions LeasingTransaction[]
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
 }
@@ -93,6 +96,7 @@ model LessorInfoSheet {
   unitOwnerId String
   status      InfoSheetStatus @default(REQUESTED)
   data        Json            @default("{}")
+  filledPdf   Bytes? // the interactive PDF the lessor filled and submitted
   remarks     String?
   submittedAt DateTime?
   reviewedAt  DateTime?
@@ -106,6 +110,7 @@ model LesseeInfoSheet {
   tenantId    String
   status      InfoSheetStatus @default(REQUESTED)
   data        Json            @default("{}")
+  filledPdf   Bytes? // the interactive PDF the lessee filled and submitted
   remarks     String?
   submittedAt DateTime?
   reviewedAt  DateTime?
@@ -149,6 +154,7 @@ model Unit {
   status     UnitStatus @default(VACANT)
   approvalStatus UnitApprovalStatus @default(APPROVED)
   leases     Lease[]
+  leasingTransactions LeasingTransaction[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 }
@@ -163,8 +169,53 @@ model Tenant {
   users        User[]
   requirements Requirement[]
   lesseeInfoSheets LesseeInfoSheet[]
+  leasingTransactions LeasingTransaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+}
+
+// Admin-built forms (CMS). `fields` is a JSON array of field definitions
+// ({ key, label, type, required, placeholder, options }) matching the shape the
+// client ConfigurableForm renders.
+model CmsForm {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  fields      Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// A custom field set the Super Admin attaches to one (role, page) navigation
+// slot — e.g. the Lessee's "Acceptance Form" page. `fields` uses the same JSON
+// shape as CmsForm. Users of that role see these fields on that page and their
+// answers are stored as PageFormEntry rows.
+model PageForm {
+  id        String          @id @default(cuid())
+  role      Role
+  pageKey   String
+  title     String?
+  fields    Json            @default("[]")
+  entries   PageFormEntry[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([role, pageKey])
+}
+
+// One user's saved answers to a PageForm (one row per user per form; upserted).
+model PageFormEntry {
+  id         String   @id @default(cuid())
+  pageForm   PageForm @relation(fields: [pageFormId], references: [id], onDelete: Cascade)
+  pageFormId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  data       Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([pageFormId, userId])
 }
 
 model Requirement {
@@ -213,8 +264,92 @@ model Inquiry {
   status       InquiryStatus   @default(NEW)
   assignedTo   User?           @relation("InquiryAssignee", fields: [assignedToId], references: [id])
   assignedToId String?
+  leasingTransaction LeasingTransaction?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+}
+
+// The single source of truth for one end-to-end leasing transaction. Progresses
+// through the stages defined in shared/leasingStages.js; `stage`/`status`/
+// `finalStatus` are validated against that registry (kept as strings, not PG
+// enums, so the many per-stage statuses stay flexible under manual migrations).
+model LeasingTransaction {
+  id          String   @id @default(cuid())
+  reference   String   @unique // RBU-YYYY-NNNNNN
+  stage       String   // current stage key
+  status      String   // current status within the stage
+  finalStatus String?  // set once the transaction reaches the Status stage
+  stageData   Json     @default("{}") // per-stage { status, remarks, completedAt, startedAt }
+  lesseeName  String?  // denormalised from the inquiry for quick display
+
+  inquiry     Inquiry?   @relation(fields: [inquiryId], references: [id])
+  inquiryId   String?    @unique
+  unit        Unit?      @relation(fields: [unitId], references: [id])
+  unitId      String?
+  tenant      Tenant?    @relation(fields: [tenantId], references: [id])
+  tenantId    String?
+  unitOwner   UnitOwner? @relation(fields: [unitOwnerId], references: [id])
+  unitOwnerId String?
+  assignedOfficer   User? @relation("TxnOfficer", fields: [assignedOfficerId], references: [id])
+  assignedOfficerId String?
+
+  events      TransactionEvent[]
+  documents   TransactionDocument[]
+  approvalSteps ApprovalStep[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Supporting documents uploaded against a transaction (e.g. the lessee's
+// Approval-stage requirements). Binary held in `data`, like Requirement.
+model TransactionDocument {
+  id            String   @id @default(cuid())
+  transaction   LeasingTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  filename      String
+  mimeType      String
+  size          Int
+  data          Bytes
+  stage         String?  // stage the document was uploaded under
+  uploadedById  String?
+  uploadedByName String?
+  createdAt     DateTime @default(now())
+
+  @@index([transactionId])
+}
+
+// One step of a transaction's sequential approval routing chain
+// (Leasing → Management → Authorized Approver → Final Approval).
+model ApprovalStep {
+  id            String   @id @default(cuid())
+  transaction   LeasingTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  order         Int
+  name          String
+  status        String   @default("Pending") // Pending / Approved / Rejected / Returned
+  approverId    String?
+  approverName  String?
+  remarks       String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@unique([transactionId, order])
+  @@index([transactionId])
+}
+
+// Append-only activity log for a transaction (who did what, when).
+model TransactionEvent {
+  id            String   @id @default(cuid())
+  transaction   LeasingTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  actorId       String?
+  actorName     String?
+  actorRole     String?
+  stage         String?
+  message       String
+  createdAt     DateTime @default(now())
+
+  @@index([transactionId])
 }
 
 model AuditLog {

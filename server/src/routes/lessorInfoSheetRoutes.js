@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { makeInfoSheetRouter } from "../lib/infoSheet.js";
+import { streamLessorInfoSheetPdf } from "../lib/lessorInfoSheetPdf.js";
 import lessorConfig from "../config/lessorInfoSheet.js";
 import { lessorSubmitSchema } from "../validation/lessorInfoSheet.js";
 
@@ -11,6 +12,8 @@ export default makeInfoSheetRouter({
   relationName: "unitOwner",
   config: lessorConfig,
   submitSchema: lessorSubmitSchema,
-  title: "Unit Owner Information Sheet",
-  filePrefix: "UnitOwnerInfoSheet",
+  title: "Unit Owner Acceptance Form",
+  filePrefix: "UnitOwnerAcceptanceForm",
+  pdfRenderer: streamLessorInfoSheetPdf,
+  binaryField: "filledPdf",
 });

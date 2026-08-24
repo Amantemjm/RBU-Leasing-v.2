@@ -9,8 +9,9 @@ beforeEach(async () => { await resetCrudTables(); });
 const BASE = "/api/lessor-info-sheets";
 const FILLED = {
   lastName: "Dela Cruz", firstName: "Juan", mobile: "09170000000", email: "juan@example.com",
-  estate: "Capitol Commons", tower: "Maven", unitNumber: "12A",
-  bankName: "BDO", accountName: "Juan Dela Cruz", accountNumber: "0011223344",
+  estate: "Capitol Commons", buildingName: "Maven at Capitol Commons", unitNumber: "12A",
+  sex: "Male", civilStatus: "Single", preferredChannel: ["Email", "Viber"],
+  unitType: "", unitTypeOther: "2-Bedroom", leaseTermPeriod: "Long Term (1 year and above)",
 };
 
 async function requestFor(ownerId) {
@@ -103,6 +104,51 @@ describe("Lessor Information Sheets", () => {
     expect(res.status).toBe(403);
   });
 
+  it("renders a live preview PDF from posted (unsaved) data", async () => {
+    const o = await factory.owner();
+    const res = await request(app).post(`${BASE}/preview`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`)
+      .send({ data: { lastName: "Reyes", firstName: "Antonio" } });
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("application/pdf");
+    expect(res.body.slice(0, 5).toString()).toBe("%PDF-");
+  });
+
+  const PDF_BYTES = Buffer.from("%PDF-1.4\n% uploaded acceptance form\n%%EOF");
+
+  it("owner uploads/edits and submits a PDF; staff can download it", async () => {
+    const o = await factory.owner();
+    const s = await requestFor(o.id);
+    // save a working copy (status unchanged)
+    const saved = await request(app).patch(`${BASE}/${s.body.id}/pdf`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`)
+      .set("Content-Type", "application/pdf").send(PDF_BYTES);
+    expect(saved.status).toBe(200);
+    expect(saved.body.status).toBe("REQUESTED");
+    expect(saved.body.filledPdf).toBeUndefined();
+    // submit it
+    const sub = await request(app).patch(`${BASE}/${s.body.id}/submit-pdf`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`)
+      .set("Content-Type", "application/pdf").send(PDF_BYTES);
+    expect(sub.status).toBe(200);
+    expect(sub.body.status).toBe("SUBMITTED");
+    // staff can retrieve the stored PDF
+    const got = await request(app).get(`${BASE}/${s.body.id}/filled-pdf`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(got.status).toBe(200);
+    expect(got.body.slice(0, 5).toString()).toBe("%PDF-");
+  });
+
+  it("rejects a non-PDF upload (400) and 404s filled-pdf when none", async () => {
+    const o = await factory.owner();
+    const s = await requestFor(o.id);
+    const bad = await request(app).patch(`${BASE}/${s.body.id}/pdf`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`)
+      .set("Content-Type", "application/pdf").send(Buffer.from("nope"));
+    expect(bad.status).toBe(400);
+    const none = await request(app).get(`${BASE}/${s.body.id}/filled-pdf`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(none.status).toBe(404);
+  });
+
   it("streams a PDF for the sheet", async () => {
     const o = await factory.owner();
     const s = await requestFor(o.id);
@@ -110,6 +156,6 @@ describe("Lessor Information Sheets", () => {
       .set("Authorization", `Bearer ${tokens.admin()}`);
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/pdf");
-    expect(res.headers["content-disposition"]).toContain("UnitOwnerInfoSheet-");
+    expect(res.headers["content-disposition"]).toContain("UnitOwnerAcceptanceForm-");
   });
 });

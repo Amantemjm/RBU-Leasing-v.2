@@ -9,8 +9,10 @@ beforeEach(async () => { await resetCrudTables(); });
 const BASE = "/api/lessee-info-sheets";
 const FILLED = {
   lastName: "Santos", firstName: "Maria", mobile: "09170000000", email: "maria@example.com",
-  presentAddress: "123 Ortigas Ave, Pasig", estate: "Capitol Commons", tower: "Maven", unitNumber: "7B",
-  emergencyName: "Ana Santos", emergencyContact: "09180000000",
+  estate: "Capitol Commons", buildingName: "Maven at Capitol Commons", unitNumber: "7B",
+  sex: "Female", civilStatus: "Single", preferredChannel: ["Email"],
+  unitPaymentStatus: "Post-dated Checks", leaseTermPeriod: "Long Term (1 year and above)",
+  typeOfEmployment: "Employed", position: "Manager",
 };
 
 async function requestFor(tenantId) {
@@ -49,7 +51,7 @@ describe("Lessee Information Sheets", () => {
       .set("Authorization", `Bearer ${tokens.tenant(t.id)}`).send({ data: FILLED });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("SUBMITTED");
-    expect(res.body.data.presentAddress).toBe("123 Ortigas Ave, Pasig");
+    expect(res.body.data.buildingName).toBe("Maven at Capitol Commons");
   });
 
   it("rejects a submit missing required fields (400)", async () => {
@@ -94,6 +96,6 @@ describe("Lessee Information Sheets", () => {
       .set("Authorization", `Bearer ${tokens.tenant(t.id)}`);
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/pdf");
-    expect(res.headers["content-disposition"]).toContain("LesseeInfoSheet-");
+    expect(res.headers["content-disposition"]).toContain("LesseeAcceptanceForm-");
   });
 });

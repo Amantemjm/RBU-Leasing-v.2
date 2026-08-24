@@ -4,5 +4,5 @@ import lesseeSheets from "../lib/lesseeInfoSheets.js";
 </script>
 
 <template>
-  <InfoSheetSelf :client="lesseeSheets" file-prefix="LesseeInfoSheet" />
+  <InfoSheetSelf :client="lesseeSheets" file-prefix="LesseeAcceptanceForm" />
 </template>

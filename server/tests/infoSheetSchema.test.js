@@ -43,3 +43,43 @@ describe("buildSchemaFromConfig", () => {
     expect(out.name).toBe("Ana");
   });
 });
+
+describe("buildSchemaFromConfig — choice fields", () => {
+  const config = {
+    title: "Choices",
+    sections: [
+      { title: "A", fields: [
+        { key: "sex", label: "Sex", type: "radio", options: ["Male", "Female"], required: true },
+        { key: "channel", label: "Channel", type: "checkboxes", options: ["SMS", "Email"], allowOther: true },
+        { key: "unitType", label: "Unit Type", type: "radio", options: ["Studio"], allowOther: true },
+      ] },
+    ],
+  };
+  const schema = buildSchemaFromConfig(config);
+
+  it("accepts a radio value, a checkbox array, and a write-in companion", () => {
+    const out = schema.parse({ sex: "Male", channel: ["SMS", "Email"], channelOther: "Telegram", unitType: "", unitTypeOther: "2-Bedroom" });
+    expect(out.sex).toBe("Male");
+    expect(out.channel).toEqual(["SMS", "Email"]);
+    expect(out.channelOther).toBe("Telegram");
+    expect(out.unitTypeOther).toBe("2-Bedroom");
+  });
+
+  it("defaults an omitted checkbox group to an empty array", () => {
+    const out = schema.parse({ sex: "Female" });
+    expect(out.channel).toEqual([]);
+  });
+
+  it("rejects a missing required radio", () => {
+    expect(() => schema.parse({ channel: ["SMS"] })).toThrow();
+  });
+
+  it("satisfies a required choice via its write-in companion", () => {
+    const cfg = { title: "T", sections: [{ title: "A", fields: [
+      { key: "unitType", label: "Unit Type", type: "radio", options: ["Studio"], allowOther: true, required: true },
+    ] }] };
+    const s = buildSchemaFromConfig(cfg);
+    expect(() => s.parse({ unitType: "", unitTypeOther: "Loft" })).not.toThrow();
+    expect(() => s.parse({ unitType: "" })).toThrow();
+  });
+});

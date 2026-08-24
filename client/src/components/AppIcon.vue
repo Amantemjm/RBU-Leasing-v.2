@@ -35,6 +35,7 @@ const PATHS = {
   columns: ["M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z", "M12 3v18"],
   "arrow-right": ["M5 12h14", "M12 5l7 7-7 7"],
   sort: ["M11 5h10", "M11 9h7", "M11 13h4", "M3 17l3 3 3-3", "M6 18V4"],
+  activity: ["M22 12h-4l-3 9L9 3l-3 9H2"],
 };
 </script>
 

@@ -39,6 +39,15 @@
   --radius-sm: 8px;
   --shadow-sm: 0 1px 2px rgba(9, 30, 22, 0.06), 0 1px 3px rgba(9, 30, 22, 0.05);
   --shadow-md: 0 6px 20px rgba(9, 30, 22, 0.10);
+  --shadow-lg: 0 18px 40px -18px rgba(9, 30, 22, 0.30), 0 6px 16px -8px rgba(9, 30, 22, 0.14);
+  --ring: 0 0 0 3px var(--accent-050);
+
+  /* Motion — shared easings + durations so timing feels consistent everywhere */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-1: 0.14s;
+  --dur-2: 0.22s;
+  --dur-3: 0.42s;
 
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --display: "Fraunces", Georgia, "Times New Roman", serif;
@@ -70,6 +79,7 @@
   --danger-050: rgba(191, 66, 56, 0.22);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -94,6 +104,7 @@
     --danger-050: rgba(191, 66, 56, 0.22);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
+    --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -153,12 +164,12 @@ button {
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.6rem 1rem;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
-    box-shadow 0.15s ease, transform 0.05s ease;
+  transition: background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease,
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out);
 }
 
 button:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.99);
 }
 
 button:disabled {
@@ -179,6 +190,14 @@ button:disabled {
 .app-main form button[type="submit"]:hover,
 .auth button:hover {
   background: var(--accent-600);
+  box-shadow: 0 8px 18px -8px rgba(10, 105, 6, 0.55);
+  transform: translateY(-1px);
+}
+.app-main section > header button:active,
+.app-main form button[type="submit"]:active,
+.auth button:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Secondary — form cancel */
@@ -202,6 +221,12 @@ button:disabled {
 
 .app-main button.primary:hover {
   background: var(--accent-600);
+  box-shadow: 0 8px 18px -8px rgba(10, 105, 6, 0.55);
+  transform: translateY(-1px);
+}
+.app-main button.primary:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-sm);
 }
 
 .app-main button.ghost {
@@ -223,15 +248,17 @@ button:disabled {
 .scrim { display: none; }
 
 /* ---- Sidebar (light, modern SaaS) ---- */
-.sidebar {
-  width: var(--sidebar-w); flex-shrink: 0;
+/* Scoped under .shell to out-rank PDF.js's pdf_viewer.css, which leaks a global
+   `.sidebar { min-width/width }` rule that otherwise clobbers ours on PDF views. */
+.shell .sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; min-width: 0;
   background: var(--surface); color: var(--text);
   border-right: 1px solid var(--line);
   display: flex; flex-direction: column;
   position: sticky; top: 0; align-self: flex-start; height: 100vh;
   transition: width 0.2s ease; font-family: var(--ui);
 }
-.sidebar-collapsed .sidebar { width: 66px; }
+.shell.sidebar-collapsed .sidebar { width: 66px; }
 
 .sidebar__brand {
   height: 60px; display: flex; align-items: center; gap: 0.65rem;
@@ -274,12 +301,18 @@ button:disabled {
   color: var(--muted); font-size: 0.875rem; font-weight: 500; text-decoration: none;
   white-space: nowrap; transition: background-color 0.14s ease, color 0.14s ease, transform 0.12s ease;
 }
-.navlink__icon { display: inline-flex; color: var(--faint); transition: color 0.14s ease; }
-.navlink:hover { background: var(--paper); color: var(--text); }
-.navlink:hover .navlink__icon { color: var(--muted); }
+.navlink__icon { display: inline-flex; color: var(--faint); transition: color var(--dur-1) ease, transform var(--dur-2) var(--ease-spring); }
+.navlink:hover { background: var(--paper); color: var(--text); transform: translateX(2px); }
+.navlink:hover .navlink__icon { color: var(--muted); transform: scale(1.08); }
 .navlink.active { background: var(--accent-050); color: var(--accent-text); font-weight: 600; }
 .navlink.active .navlink__icon { color: var(--accent); }
-.navlink.active::before { content: ""; position: absolute; left: -0.6rem; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.navlink.active::before {
+  content: ""; position: absolute; left: -0.6rem; top: 50%; width: 3px; height: 20px;
+  border-radius: 0 3px 3px 0; background: var(--accent);
+  transform: translateY(-50%) scaleY(0); transform-origin: center;
+  animation: navmark var(--dur-2) var(--ease-spring) forwards;
+}
+@keyframes navmark { to { transform: translateY(-50%) scaleY(1); } }
 .navlink svg { flex-shrink: 0; }
 .sidebar-collapsed .navlink { justify-content: center; padding: 0.55rem; }
 .sidebar-collapsed .navlink.active::before { left: 0; }
@@ -291,7 +324,12 @@ button:disabled {
   background: var(--surface); border-bottom: 1px solid var(--line);
   padding: 0 1.35rem; position: sticky; top: 0; z-index: 20; font-family: var(--ui);
 }
-.topbar__menu { display: none; background: transparent; border: none; color: var(--muted); padding: 0.3rem; cursor: pointer; }
+.topbar__menu {
+  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+  background: transparent; border: 1px solid transparent; color: var(--muted);
+  border-radius: 9px; cursor: pointer; transition: background 0.14s ease, color 0.14s ease;
+}
+.topbar__menu:hover { background: var(--paper); color: var(--text); }
 .crumbs { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-size: 0.85rem; }
 .crumbs__root { color: var(--muted); font-weight: 500; }
 .crumbs__sep { color: var(--faint); }
@@ -329,14 +367,8 @@ button:disabled {
 .menu__item.logout:hover { background: var(--danger-050); }
 .menu-scrim { position: fixed; inset: 0; z-index: 55; }
 
-@media (max-width: 860px) {
-  .sidebar {
-    position: fixed; inset: 0 auto 0 0; z-index: 40; height: 100vh; width: var(--sidebar-w); box-shadow: var(--shadow-md);
-  }
-  .sidebar-collapsed .sidebar { width: var(--sidebar-w); transform: translateX(-100%); }
-  .shell:not(.sidebar-collapsed) .scrim { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 35; }
-  .topbar__menu { display: inline-flex; }
-}
+/* The sidebar collapses to the 66px icon rail on every screen size (no off-screen
+   drawer); the always-visible topbar hamburger toggles expand/collapse. */
 
 .app-main {
   flex: 1;
@@ -397,6 +429,7 @@ button:disabled {
   border-top: 1px solid var(--line);
   color: var(--text);
   vertical-align: middle;
+  transition: background var(--dur-1) ease;
 }
 
 .app-main tbody tr:first-child td {
@@ -405,6 +438,11 @@ button:disabled {
 
 .app-main tbody tr:hover td {
   background: var(--row-hover);
+}
+
+/* A quiet accent bar slides in on the hovered row */
+.app-main tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .app-main table button {
@@ -506,11 +544,16 @@ button:disabled {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.app-main .field input:hover,
+.app-main .field select:hover {
+  border-color: var(--muted);
+}
+
 .app-main .field input:focus,
 .app-main .field select:focus {
   outline: none;
   border-color: var(--accent-text);
-  box-shadow: 0 0 0 3px var(--accent-050);
+  box-shadow: var(--ring);
 }
 
 .app-main form .error {
@@ -561,6 +604,14 @@ button:disabled {
   box-shadow: var(--shadow-sm);
   padding: 1.35rem 1.4rem;
   overflow: hidden;
+  transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--line-strong);
 }
 
 .card::before {
@@ -570,6 +621,11 @@ button:disabled {
   width: 3px;
   background: var(--accent);
   opacity: 0.85;
+  transition: width var(--dur-2) var(--ease-out);
+}
+
+.card:hover::before {
+  width: 5px;
 }
 
 .card--alert::before {
@@ -620,30 +676,61 @@ button:disabled {
 .meter__fill {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent-600));
   border-radius: 999px;
-  transition: width 0.4s ease;
+  transition: width 0.9s var(--ease-out);
+  animation: meter-grow 0.9s var(--ease-out) both;
+  transform-origin: left;
 }
+@keyframes meter-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* --------------------------------------------------------------------------
    Auth / login
    -------------------------------------------------------------------------- */
 
 .auth {
+  position: relative;
+  overflow: hidden;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: radial-gradient(120% 120% at 15% 0%, #14503a 0%, var(--ink-900) 60%);
+  background:
+    radial-gradient(120% 120% at 15% 0%, #14503a 0%, var(--ink-900) 60%),
+    var(--ink-900);
+}
+/* slow drifting mint glow behind the card */
+.auth::before {
+  content: "";
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  top: -20vmax;
+  right: -15vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(143, 211, 176, 0.20), transparent 68%);
+  filter: blur(30px);
+  animation: auth-drift 22s var(--ease-out) infinite alternate;
+  pointer-events: none;
+}
+@keyframes auth-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-6vmax, 6vmax) scale(1.15); }
 }
 
 .auth__card {
+  position: relative;
   width: 100%;
   max-width: 380px;
   background: var(--surface);
   border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   padding: 2.25rem 2rem;
+  animation: auth-in 0.5s var(--ease-out) both;
+}
+@keyframes auth-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 
 .auth__brand {
@@ -686,6 +773,9 @@ button:disabled {
   width: 100%;
 }
 
+.auth__alt { margin: 1rem 0 0; font-size: 0.85rem; color: var(--muted); text-align: center; }
+.auth__alt a { color: var(--accent-text); font-weight: 550; text-decoration: none; }
+.auth__alt a:hover { text-decoration: underline; }
 .auth input:focus {
   outline: none;
   border-color: var(--accent-text);
@@ -733,8 +823,98 @@ button:disabled {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Motion & polish — global entrance choreography, route transitions, effects
+   -------------------------------------------------------------------------- */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Page content settles in on load / navigation. Views render as a <section> or
+   .dashboard under .app-main; the header and each direct block rise in sequence. */
+.app-main > section > h1,
+.app-main > section > header,
+.app-main > .dashboard > h1,
+.app-main > section > .head {
+  animation: fade-up var(--dur-3) var(--ease-out) both;
+}
+
+/* Stagger the primary content blocks below the header for a gentle cascade */
+.app-main .cards > .card,
+.app-main .roles > .rolecard {
+  animation: fade-up var(--dur-3) var(--ease-out) both;
+}
+.app-main .cards > .card:nth-child(1), .app-main .roles > .rolecard:nth-child(1) { animation-delay: 0.03s; }
+.app-main .cards > .card:nth-child(2), .app-main .roles > .rolecard:nth-child(2) { animation-delay: 0.07s; }
+.app-main .cards > .card:nth-child(3), .app-main .roles > .rolecard:nth-child(3) { animation-delay: 0.11s; }
+.app-main .cards > .card:nth-child(4), .app-main .roles > .rolecard:nth-child(4) { animation-delay: 0.15s; }
+.app-main .cards > .card:nth-child(5) { animation-delay: 0.19s; }
+.app-main .cards > .card:nth-child(6) { animation-delay: 0.23s; }
+.app-main .cards > .card:nth-child(n + 7) { animation-delay: 0.27s; }
+
+/* The main table / form card eases in just after the header */
+.app-main > section > table,
+.app-main > section > form {
+  animation: fade-up var(--dur-3) var(--ease-out) 0.05s both;
+}
+
+/* Route transition (wraps <RouterView> in AppLayout) */
+.view-enter-active { transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out); }
+.view-leave-active { transition: opacity 0.12s ease, transform 0.12s ease; position: relative; }
+.view-enter-from { opacity: 0; transform: translateY(8px); }
+.view-leave-to { opacity: 0; transform: translateY(-6px); }
+
+/* The custom page-form panel eases in beneath the page */
+.app-main > .pfp { animation: fade-up var(--dur-3) var(--ease-out) 0.08s both; }
+
+/* Reusable shimmer skeleton for loading states */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: var(--radius-sm);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--row-hover), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* Modal / dialog backdrops fade, panels pop */
+.modal-backdrop { animation: fade-in var(--dur-2) ease both; }
+.modal, .menu { animation: pop-in var(--dur-2) var(--ease-out) both; transform-origin: top right; }
+
+/* Refined scrollbars (WebKit) that match the theme */
+.sidebar__nav, .app-main, .preview__canvas, .modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+  border: 2px solid var(--paper);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Selection matches the brand */
+::selection { background: var(--accent-050); color: var(--accent-text); }
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *, *::before, *::after {
     transition: none !important;
+    animation: none !important;
   }
 }

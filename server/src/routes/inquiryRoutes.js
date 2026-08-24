@@ -8,6 +8,9 @@ router.post("/", ctrl.create);
 // Staff only from here on.
 router.get("/", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER", "VIEWER"), ctrl.list);
 router.patch("/:id/assign", verifyJwt, requireRole("ADMIN"), ctrl.assign);
+// O-Lease self-assign / release (admin may also use these).
+router.patch("/:id/accept", verifyJwt, requireRole("LEASING_OFFICER", "ADMIN"), ctrl.accept);
+router.patch("/:id/release", verifyJwt, requireRole("LEASING_OFFICER", "ADMIN"), ctrl.release);
 router.patch("/:id", verifyJwt, requireWrite, ctrl.update);
 router.delete("/:id", verifyJwt, requireWrite, ctrl.remove);
 export default router;

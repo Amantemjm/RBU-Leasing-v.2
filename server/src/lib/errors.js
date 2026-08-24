@@ -18,3 +18,7 @@ export class ConflictError extends AppError {
 export class InvalidReferenceError extends AppError {
   constructor(message = "Invalid reference") { super(message, 400, "INVALID_REFERENCE"); }
 }
+
+export class ValidationError extends AppError {
+  constructor(message = "Validation failed") { super(message, 400, "VALIDATION"); }
+}

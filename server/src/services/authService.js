@@ -94,6 +94,41 @@ export async function deleteUser(id) {
   await prisma.user.delete({ where: { id } });
 }
 
+// Public self-registration for a lessor (UNIT_OWNER) or lessee (TENANT). Creates
+// the account AND its linked owner/tenant record, then returns a session token so
+// the user is signed in immediately — no admin involvement.
+export async function signupPortalUser({ name, email, password, role }) {
+  if (role !== "UNIT_OWNER" && role !== "TENANT") {
+    throw new InvalidReferenceError("role must be UNIT_OWNER or TENANT");
+  }
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw new ConflictError("An account with that username or email already exists");
+
+  const passwordHash = await hashPassword(password);
+  const contactEmail = email.includes("@") ? email : null;
+
+  const user = await prisma.$transaction(async (tx) => {
+    const data = { name, email, passwordHash, passwordPlain: password, role };
+    if (role === "UNIT_OWNER") {
+      const owner = await tx.unitOwner.create({ data: { name, email: contactEmail } });
+      data.unitOwnerId = owner.id;
+    } else {
+      const tenant = await tx.tenant.create({ data: { name, email: contactEmail } });
+      data.tenantId = tenant.id;
+    }
+    return tx.user.create({ data });
+  });
+
+  const token = issueToken({ id: user.id, role: user.role, unitOwnerId: user.unitOwnerId, tenantId: user.tenantId });
+  return {
+    token,
+    user: {
+      id: user.id, name: user.name, email: user.email, role: user.role,
+      unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+    },
+  };
+}
+
 export async function loginUser({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("INVALID_CREDENTIALS");

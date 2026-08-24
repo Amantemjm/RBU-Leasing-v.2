@@ -11,6 +11,8 @@ vi.mock("../src/lib/inquiries.js", () => ({
   ])),
   deleteInquiry: vi.fn(() => Promise.resolve()),
   assignInquiry: vi.fn(() => Promise.resolve({ id: "i1", assignedToId: "o1", assignedTo: { id: "o1", name: "Officer Jane" } })),
+  acceptInquiry: vi.fn(() => Promise.resolve({ id: "i1", assignedToId: "me", assignedTo: { id: "me", name: "Me" } })),
+  releaseInquiry: vi.fn(() => Promise.resolve({ id: "i1", assignedToId: null, assignedTo: null })),
 }));
 
 vi.mock("../src/lib/resource.js", () => ({
@@ -22,7 +24,7 @@ vi.mock("../src/lib/resource.js", () => ({
 
 import InquiriesView from "../src/views/InquiriesView.vue";
 import { useAuthStore } from "../src/stores/auth.js";
-import { deleteInquiry, assignInquiry } from "../src/lib/inquiries.js";
+import { deleteInquiry, assignInquiry, acceptInquiry } from "../src/lib/inquiries.js";
 import { listUsers } from "../src/lib/resource.js";
 
 function mountAs(role) {
@@ -55,23 +57,27 @@ describe("InquiriesView (staff)", () => {
     expect(w.findAll("button").some((b) => b.text() === "Delete")).toBe(false);
   });
 
-  it("an O-Lease cannot reassign but can delete their own", async () => {
+  it("an O-Lease sees no admin assign dropdown, but can Accept an unassigned inquiry", async () => {
     const w = mountAs("LEASING_OFFICER");
     await flushPromises();
-    expect(w.find(".ss").exists()).toBe(false); // only Super Admin assigns
+    expect(w.find("select.assign-select").exists()).toBe(false); // only Super Admin assigns
     expect(listUsers).not.toHaveBeenCalled();
-    expect(w.findAll("button").some((b) => b.text() === "Delete")).toBe(true);
+    const accept = w.findAll("button").find((b) => b.text() === "Accept");
+    expect(accept).toBeTruthy();
+    await accept.trigger("click");
+    await flushPromises();
+    expect(acceptInquiry).toHaveBeenCalledWith("i1");
   });
 
-  it("lets a Super Admin search and assign an O-Lease", async () => {
+  it("lets a Super Admin assign an O-Lease via a plain dropdown (no search)", async () => {
     const w = mountAs("ADMIN");
     await flushPromises();
-    expect(w.find(".ss").exists()).toBe(true);
-    await w.find(".ss__btn").trigger("click");
-    await w.find(".ss__search").setValue("jane");
-    const options = w.findAll(".ss__opt").filter((b) => !b.classes("clear")).map((b) => b.text());
-    expect(options).toEqual(["Officer Jane"]);
-    await w.findAll(".ss__opt").find((b) => b.text() === "Officer Jane").trigger("click");
+    const sel = w.find("select.assign-select");
+    expect(sel.exists()).toBe(true);
+    expect(w.find(".ss").exists()).toBe(false); // no searchable-select
+    const opts = sel.findAll("option").map((o) => o.text());
+    expect(opts).toEqual(["Unassigned", "Officer Jane"]); // Val Viewer is filtered out
+    await sel.setValue("o1");
     await flushPromises();
     expect(assignInquiry).toHaveBeenCalledWith("i1", "o1");
   });

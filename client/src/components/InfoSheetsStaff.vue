@@ -25,6 +25,8 @@ const requesting = ref(false);
 const active = ref(null);
 const remarks = ref("");
 const reviewing = ref(false);
+const activePdfUrl = ref("");   // set when the active form was submitted as a PDF
+const activeHasPdf = ref(false);
 
 async function load() {
   error.value = "";
@@ -51,12 +53,21 @@ async function requestSheet() {
   }
 }
 
-function openReview(row) { active.value = row; remarks.value = row.remarks || ""; }
-function closeReview() { if (!reviewing.value) active.value = null; }
+async function openReview(row) {
+  active.value = row; remarks.value = row.remarks || "";
+  activePdfUrl.value = ""; activeHasPdf.value = false;
+  if (row.status !== "REQUESTED") {
+    try { activePdfUrl.value = await props.client.filledPdfUrl(row.id); activeHasPdf.value = true; }
+    catch { activeHasPdf.value = false; } // 404 → submitted as structured data
+  }
+}
+function revokeActivePdf() { if (activePdfUrl.value) { try { URL.revokeObjectURL(activePdfUrl.value); } catch { /* ignore */ } activePdfUrl.value = ""; } }
+function closeReview() { if (!reviewing.value) { revokeActivePdf(); active.value = null; } }
 async function decide(status) {
   reviewing.value = true;
   try {
     await props.client.review(active.value.id, { status, remarks: remarks.value || undefined });
+    revokeActivePdf();
     active.value = null;
     await load();
   } catch (e) {
@@ -66,7 +77,8 @@ async function decide(status) {
   }
 }
 function download(row) {
-  props.client.downloadPdf(row.id, `${props.filePrefix}-${row.id}.pdf`);
+  if (activeHasPdf.value) props.client.downloadFilledPdf(row.id, `${props.filePrefix}-${row.id}.pdf`);
+  else props.client.downloadPdf(row.id, `${props.filePrefix}-${row.id}.pdf`);
 }
 </script>
 
@@ -99,7 +111,6 @@ function download(row) {
           <td>{{ formatDate(s.submittedAt) || "—" }}</td>
           <td class="actions">
             <button type="button" @click="openReview(s)">{{ s.status === "SUBMITTED" ? "Review" : "View" }}</button>
-            <button type="button" @click="download(s)">PDF</button>
           </td>
         </tr>
         <tr v-if="rows.length === 0"><td colspan="4" class="muted">No information sheets yet.</td></tr>
@@ -111,6 +122,9 @@ function download(row) {
         <h2>{{ active[parentKey]?.name }} — <span :class="['status-tag', active.status.toLowerCase()]">{{ STATUS_LABEL[active.status] }}</span></h2>
 
         <p v-if="active.status === 'REQUESTED'" class="muted">Awaiting submission.</p>
+        <div v-else-if="activeHasPdf" class="pdf-preview">
+          <iframe :src="activePdfUrl" class="pdf-frame" title="Submitted acceptance form"></iframe>
+        </div>
         <ConfigurableForm v-else-if="config" :config="config" :model-value="active.data || {}" readonly />
 
         <div v-if="active.status === 'SUBMITTED'" class="field">
@@ -121,7 +135,7 @@ function download(row) {
 
         <div class="modal-actions">
           <button type="button" class="ghost" @click="closeReview" :disabled="reviewing">Close</button>
-          <button type="button" class="ghost" @click="download(active)">Download PDF</button>
+          <button v-if="active.status !== 'REQUESTED'" type="button" class="ghost" @click="download(active)">Download PDF</button>
           <template v-if="active.status === 'SUBMITTED'">
             <button type="button" class="danger" :disabled="reviewing || !remarks.trim()" @click="decide('RETURNED')">Return</button>
             <button type="button" class="primary" :disabled="reviewing" @click="decide('APPROVED')">Approve</button>
@@ -153,6 +167,8 @@ function download(row) {
   width: 100%; max-width: 52rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 .modal h2 { margin: 0 0 1rem; }
+.pdf-preview { height: 64vh; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--paper); }
+.pdf-frame { width: 100%; height: 100%; border: 0; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.5rem 0; }
 .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--muted); }
 .field textarea {

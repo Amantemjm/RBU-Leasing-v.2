@@ -10,6 +10,14 @@ export const registerSchema = z.object({
   tenantId: z.string().nullish(),
 });
 
+// Public self-registration — lessors/lessees only.
+export const signupSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().min(3), // username or email
+  password: z.string().min(6),
+  role: z.enum(["UNIT_OWNER", "TENANT"]),
+});
+
 export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().min(3).optional(),

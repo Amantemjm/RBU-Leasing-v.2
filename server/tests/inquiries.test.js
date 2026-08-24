@@ -167,18 +167,65 @@ describe("Inquiries", () => {
     expect(res.status).toBe(400);
   });
 
-  it("an O-Lease sees only inquiries assigned to their account", async () => {
+  it("an O-Lease sees their own + unassigned inquiries, but not another officer's", async () => {
     const mine = await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Jane" });
-    await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Nobody" });
+    await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Nobody" }); // unassigned pool
+    const theirs = await request(app).post("/api/inquiries").send({ ...valid, fullName: "For Bob" });
     const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    const bob = await makeUser("LEASING_OFFICER", "bob@x.com");
     await request(app).patch(`/api/inquiries/${mine.body.id}/assign`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ assignedToId: jane.id });
+    await request(app).patch(`/api/inquiries/${theirs.body.id}/assign`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ assignedToId: bob.id });
 
     const janeToken = issueToken({ id: jane.id, role: "LEASING_OFFICER" });
     const res = await request(app).get("/api/inquiries").set("Authorization", `Bearer ${janeToken}`);
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].fullName).toBe("For Jane");
+    const names = res.body.map((r) => r.fullName).sort();
+    expect(names).toEqual(["For Jane", "For Nobody"]); // own + unassigned, not Bob's
+  });
+
+  it("an O-Lease accepts (self-assigns) an unassigned inquiry (200)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    const janeToken = issueToken({ id: jane.id, role: "LEASING_OFFICER" });
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/accept`)
+      .set("Authorization", `Bearer ${janeToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.assignedToId).toBe(jane.id);
+    expect(res.body.assignedTo.name).toBe("User LEASING_OFFICER");
+  });
+
+  it("an O-Lease cannot accept an inquiry already accepted by another (409)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const bob = await makeUser("LEASING_OFFICER", "bob@x.com");
+    const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    await request(app).patch(`/api/inquiries/${created.body.id}/accept`)
+      .set("Authorization", `Bearer ${issueToken({ id: bob.id, role: "LEASING_OFFICER" })}`);
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/accept`)
+      .set("Authorization", `Bearer ${issueToken({ id: jane.id, role: "LEASING_OFFICER" })}`);
+    expect(res.status).toBe(409);
+  });
+
+  it("an O-Lease releases their own inquiry back to the pool (200)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    const janeToken = issueToken({ id: jane.id, role: "LEASING_OFFICER" });
+    await request(app).patch(`/api/inquiries/${created.body.id}/accept`).set("Authorization", `Bearer ${janeToken}`);
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/release`).set("Authorization", `Bearer ${janeToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.assignedToId).toBeNull();
+  });
+
+  it("an O-Lease cannot release another officer's inquiry (409)", async () => {
+    const created = await request(app).post("/api/inquiries").send(valid);
+    const bob = await makeUser("LEASING_OFFICER", "bob@x.com");
+    const jane = await makeUser("LEASING_OFFICER", "jane@x.com");
+    await request(app).patch(`/api/inquiries/${created.body.id}/accept`)
+      .set("Authorization", `Bearer ${issueToken({ id: bob.id, role: "LEASING_OFFICER" })}`);
+    const res = await request(app).patch(`/api/inquiries/${created.body.id}/release`)
+      .set("Authorization", `Bearer ${issueToken({ id: jane.id, role: "LEASING_OFFICER" })}`);
+    expect(res.status).toBe(409);
   });
 
   it("admin sees every inquiry regardless of assignment", async () => {

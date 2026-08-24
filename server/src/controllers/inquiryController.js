@@ -22,6 +22,12 @@ export async function assign(req, res, next) {
     res.json(await service.assignInquiry(req.params.id, assignedToId));
   } catch (e) { next(e); }
 }
+export async function accept(req, res, next) {
+  try { res.json(await service.acceptInquiry(req.user, req.params.id)); } catch (e) { next(e); }
+}
+export async function release(req, res, next) {
+  try { res.json(await service.releaseInquiry(req.user, req.params.id)); } catch (e) { next(e); }
+}
 export async function remove(req, res, next) {
   try { await service.deleteInquiry(req.params.id); res.status(204).end(); } catch (e) { next(e); }
 }

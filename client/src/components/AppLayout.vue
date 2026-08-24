@@ -4,6 +4,8 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
 import AppIcon from "./AppIcon.vue";
+import PageFormPanel from "./PageFormPanel.vue";
+import { slotForPath } from "../../../shared/pageForms.js";
 import logoUrl from "../assets/ortigas-logo.svg";
 
 const auth = useAuthStore();
@@ -24,6 +26,7 @@ const STAFF_GROUPS = [
   { label: "Workspace", items: [
     { to: "/app", label: "Dashboard", icon: "grid" },
     { to: "/app/inquiries", label: "Inquiries", icon: "message" },
+    { to: "/app/transactions", label: "Leasing Tracker", icon: "activity" },
     { to: "/app/owners", label: "Owners", icon: "users" },
     { to: "/app/units", label: "Units", icon: "building" },
     { to: "/app/tenants", label: "Tenants", icon: "user" },
@@ -34,19 +37,22 @@ const STAFF_GROUPS = [
     { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
   ] },
   { label: "Administration", items: [
+    { to: "/app/forms", label: "Forms", icon: "columns", admin: true },
     { to: "/app/users", label: "System Users", icon: "shield", admin: true },
     { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
   ] },
 ];
 const OWNER_GROUPS = [{ label: null, items: [
   { to: "/app/my-units", label: "My Units", icon: "building" },
-  { to: "/app/info-sheet", label: "Information Sheet", icon: "clipboard" },
+  { to: "/app/leasing-progress", label: "Leasing Progress", icon: "activity" },
+  { to: "/app/info-sheet", label: "Acceptance Form", icon: "clipboard" },
   { to: "/app/my-leases", label: "My Leases", icon: "file" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ] }];
 const TENANT_GROUPS = [{ label: null, items: [
   { to: "/app/my-lease", label: "My Lease", icon: "file" },
-  { to: "/app/info-sheet-tenant", label: "Information Sheet", icon: "clipboard" },
+  { to: "/app/leasing-progress", label: "Leasing Progress", icon: "activity" },
+  { to: "/app/info-sheet-tenant", label: "Acceptance Form", icon: "clipboard" },
   { to: "/app/requirements", label: "Requirements", icon: "folder" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ] }];
@@ -66,6 +72,10 @@ const currentLabel = computed(() => {
   const match = allItems.value.find((i) => isActive(i.to));
   return match ? match.label : "";
 });
+
+// The admin-configured custom-field slot for the current role + page (if any).
+// Rendered centrally so every navigation destination can carry extra fields.
+const activeSlot = computed(() => (auth.role ? slotForPath(auth.role, route.path) : undefined));
 
 // Lessor, Lessee, and O-Lease (Leasing Officer) all brand as the "Ortigas Land
 // Leasing Portal"; only back-office admins/viewers see "RBU Leasing / Back Office".
@@ -170,7 +180,14 @@ function logout() {
         </div>
       </header>
 
-      <main class="app-main"><RouterView /></main>
+      <main class="app-main">
+        <RouterView v-slot="{ Component }">
+          <transition name="view" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </RouterView>
+        <PageFormPanel v-if="activeSlot" :key="`${auth.role}:${activeSlot.key}`" :page-key="activeSlot.key" />
+      </main>
     </div>
   </div>
 </template>

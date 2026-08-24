@@ -14,6 +14,7 @@ const ENTITY = {
   auth: "Account",
   estates: "Estate",
   towers: "Tower",
+  "leasing-transactions": "Transaction",
 };
 
 // Derive a human action + entity from the request path/method.
@@ -21,6 +22,27 @@ function classify(path, method) {
   const segs = path.replace(/^\/api\//, "").split("/"); // e.g. ["units", "<id>", "approve"]
   const group = segs[0];
   const entity = ENTITY[group] || group;
+
+  if (group === "cms") {
+    // Nested one level deeper: /api/cms/forms/:id or /api/cms/page-forms/:role/:pageKey
+    const isPage = segs[1] === "page-forms";
+    const id = isPage ? [segs[2], segs[3]].filter(Boolean).join("/") : (segs[2] || null);
+    let action;
+    if (method === "POST") action = "create";
+    else if (method === "PATCH" || method === "PUT") action = "update";
+    else if (method === "DELETE") action = "delete";
+    else action = method.toLowerCase();
+    return { entity: isPage ? "Page Form" : "Form", action, entityId: id };
+  }
+
+  if (group === "page-forms") {
+    // Runtime submissions: /api/page-forms/mine/:pageKey
+    return {
+      entity: "Form Response",
+      action: method === "PUT" ? "submit" : method.toLowerCase(),
+      entityId: segs[2] || null,
+    };
+  }
 
   if (group === "auth") {
     const kind = segs[1];

@@ -7,3 +7,11 @@ daemon/
 
 .env.test
 .env.*.local
+
+# stray local artifacts / runtime data
+server/data/
+/info-sheet-submitted.png
+/leasing-executive-dashboard.html
+
+# operational provisioning scripts (real credentials/PII — keep out of the repo)
+server/scripts/create-*.js

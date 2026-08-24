@@ -26,15 +26,12 @@ async function mountView(as = "LESSEE") {
 describe("InquiryView (Quick Inquiry form)", () => {
   beforeEach(() => createInquiry.mockClear());
 
-  it("shows the exact OCLP consent text", async () => {
+  it("shows the OCLP consent text", async () => {
     const w = await mountView();
     expect(w.text()).toContain(
-      "By clicking the button below, I give my consent to all divisions and organizations " +
-      "in Ortigas and Company, Limited Partnership (OCLP), and their service providers and " +
-      "agents to collect, use and disclose the personal data as contained in this form, or " +
-      "as otherwise provided by me for the purpose of providing information on their products " +
-      "and services to me via email, including but not limited to offers, promotions, and new " +
-      "goods and services.",
+      "I consent to Ortigas and Company, Limited Partnership (OCLP), its divisions, and their " +
+      "service providers collecting and using the personal data in this form to respond to my " +
+      "inquiry and share relevant products and services by email.",
     );
   });
 
@@ -61,7 +58,7 @@ describe("InquiryView (Quick Inquiry form)", () => {
     const w = await mountView("LESSEE");
     const submit = () => w.find('button[type="submit"]');
     expect(submit().attributes("disabled")).toBeDefined();
-    await w.find("#category").setValue("RESIDENCES");
+    await w.findAll(".seg__opt").find((b) => b.text().includes("Residences")).trigger("click");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
     expect(submit().attributes("disabled")).toBeDefined(); // type + consent unset
@@ -73,7 +70,7 @@ describe("InquiryView (Quick Inquiry form)", () => {
 
   it("submits with the carried-over user type and shows a thank-you state", async () => {
     const w = await mountView("LESSEE");
-    await w.find("#category").setValue("RESIDENCES");
+    await w.findAll(".seg__opt").find((b) => b.text().includes("Residences")).trigger("click");
     await w.find("#fullName").setValue("Maria Santos");
     await w.find("#email").setValue("maria@example.com");
     await w.find("#inquiryType").setValue("Unit Availability");
@@ -84,6 +81,6 @@ describe("InquiryView (Quick Inquiry form)", () => {
       category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability",
       fullName: "Maria Santos", email: "maria@example.com", consent: true,
     });
-    expect(w.text()).toContain("Thank you!");
+    expect(w.text()).toContain("Inquiry received");
   });
 });

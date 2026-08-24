@@ -54,4 +54,27 @@ describe("ConfigurableForm", () => {
     expect(w.find("#lastName").exists()).toBe(false);
     expect(w.text()).toContain("Santos");
   });
+
+  it("selects a radio option and emits the choice", async () => {
+    const cfg = { title: "T", sections: [{ title: "A", fields: [
+      { key: "sex", label: "Sex", type: "radio", options: ["Male", "Female"] },
+    ] }] };
+    const w = mount(ConfigurableForm, { props: { config: cfg, modelValue: {} } });
+    await flushPromises();
+    const male = w.findAll("button.choice").find((b) => b.text().includes("Male"));
+    await male.trigger("click");
+    expect(w.emitted("update:modelValue").at(-1)[0].sex).toBe("Male");
+  });
+
+  it("toggles multiple checkbox options into an array", async () => {
+    const cfg = { title: "T", sections: [{ title: "A", fields: [
+      { key: "channel", label: "Channel", type: "checkboxes", options: ["SMS", "Email"], allowOther: true },
+    ] }] };
+    const w = mount(ConfigurableForm, { props: { config: cfg, modelValue: {} } });
+    await flushPromises();
+    const btns = w.findAll("button.choice");
+    await btns.find((b) => b.text().includes("SMS")).trigger("click");
+    await btns.find((b) => b.text().includes("Email")).trigger("click");
+    expect(w.emitted("update:modelValue").at(-1)[0].channel).toEqual(["SMS", "Email"]);
+  });
 });

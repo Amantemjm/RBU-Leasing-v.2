@@ -17,6 +17,13 @@ export function updateInquiryStatus(id, status) {
 export function assignInquiry(id, assignedToId) {
   return api.patch(`/inquiries/${id}/assign`, { assignedToId }).then((r) => r.data);
 }
+// O-Lease self-assign / release.
+export function acceptInquiry(id) {
+  return api.patch(`/inquiries/${id}/accept`).then((r) => r.data);
+}
+export function releaseInquiry(id) {
+  return api.patch(`/inquiries/${id}/release`).then((r) => r.data);
+}
 export function deleteInquiry(id) {
   return api.delete(`/inquiries/${id}`).then((r) => r.data);
 }

@@ -10,7 +10,7 @@ import { tenants } from "../lib/resource.js";
     :parent-list="() => tenants.list()"
     parent-key="tenant"
     parent-label="Tenant"
-    file-prefix="LesseeInfoSheet"
-    title="Lessee Sheets"
+    file-prefix="LesseeAcceptanceForm"
+    title="Lessee Acceptance Forms"
   />
 </template>

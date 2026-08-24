@@ -34,6 +34,7 @@ async function submit() {
         <button type="submit">Log in</button>
         <p v-if="error" class="error">{{ error }}</p>
       </form>
+      <p class="auth__alt">Lessor or lessee? <router-link to="/signup">Create an account</router-link></p>
     </div>
   </div>
 </template>

@@ -10,7 +10,7 @@ import { owners } from "../lib/resource.js";
     :parent-list="() => owners.list()"
     parent-key="unitOwner"
     parent-label="Owner"
-    file-prefix="UnitOwnerInfoSheet"
-    title="Lessor Sheets"
+    file-prefix="UnitOwnerAcceptanceForm"
+    title="Lessor Acceptance Forms"
   />
 </template>

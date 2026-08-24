@@ -5,6 +5,9 @@ import { issueToken } from "../src/services/authService.js";
 // login (the seeded ADMIN is the only ADMIN, so it survives).
 export async function resetCrudTables() {
   await prisma.auditLog.deleteMany();
+  // Leasing transactions reference inquiries/units/users, so clear them first.
+  await prisma.transactionEvent.deleteMany();
+  await prisma.leasingTransaction.deleteMany();
   await prisma.inquiry.deleteMany();
   await prisma.lease.deleteMany();
   await prisma.requirement.deleteMany();
