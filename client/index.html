@@ -4,6 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RBU Leasing</title>
+    <script>
+      // Apply the saved theme before first paint, otherwise a user who chose
+      // Dark sees a white flash on every load (Vue mounts after paint).
+      // Mirrors src/lib/theme.js — keep the key and values in sync.
+      try {
+        var t = localStorage.getItem("rbu-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

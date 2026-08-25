@@ -45,7 +45,7 @@ function open(role, pageKey) {
   <section>
     <div class="head">
       <div>
-        <h1>Forms</h1>
+        <h1>Content Manager</h1>
         <p class="muted">Configure the custom fields shown on each role's pages. Choose a page to build its fields; people in that role will see and fill them in.</p>
       </div>
     </div>

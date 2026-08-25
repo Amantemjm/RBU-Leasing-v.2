@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted, nextTick } from "vue";
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
 import AppIcon from "../components/AppIcon.vue";
@@ -164,9 +164,41 @@ const paged = computed(() => filtered.value.slice((page.value - 1) * pageSize, p
 watch([quick, search, propFilter, tenantFilter, monthFilter, sortKey, sortDir], () => { page.value = 1; });
 
 function sortBy(k) { if (sortKey.value === k) sortDir.value *= -1; else { sortKey.value = k; sortDir.value = 1; } }
+// --- Spotlighting a block --------------------------------------------------
+// Clicking a KPI tile dims the rest of the dashboard and lifts the block that
+// answers it, so there is no doubt what you are looking at. It stays lit until
+// dismissed — a spotlight that faded on a timer would vanish mid-read.
+// Released by the scrim, Escape, or clicking the same tile again.
+const spotlight = ref("");
+
+function focusBlock(id) {
+  spotlight.value = id;
+  nextTick(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+function clearSpotlight() { spotlight.value = ""; }
+
+function onKeydown(e) { if (e.key === "Escape") clearSpotlight(); }
+onMounted(() => document.addEventListener("keydown", onKeydown));
+onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
+
+// Drill-downs ("show me the rows behind this number") always land on the table.
 function goFilter(k, opts = {}) {
   quick.value = k; monthFilter.value = opts.month || ""; if (opts.prop !== undefined) propFilter.value = opts.prop;
-  nextTick(() => document.getElementById("unitsTable")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  focusBlock("unitsTable");
+}
+
+// Tiles that have a block of their own go there instead of to the table.
+// The rest are unit counts, and the table is the only place those are itemised.
+const TILE_BLOCK = { occ: "occupancy", "Near Expiry": "leasesExpiring" };
+
+function goTile(key) {
+  const block = TILE_BLOCK[key] || "unitsTable";
+  if (spotlight.value === block) return clearSpotlight(); // same tile = release
+  // Occupancy is informational — it must not clobber a filter already in place.
+  if (key === "occ") return focusBlock(TILE_BLOCK.occ);
+  if (TILE_BLOCK[key]) { quick.value = key; monthFilter.value = ""; return focusBlock(TILE_BLOCK[key]); }
+  return goFilter(key);
 }
 function statusClass(s) {
   return s === "Leased" ? "b-good" : s === "Near Expiry" ? "b-warn" : s === "Attention Required" ? "b-crit" : "b-neutral";
@@ -193,6 +225,8 @@ function cellValue(r, c) {
 
 <template>
   <section class="dash">
+    <!-- Dims everything except the spotlit block. Click anywhere to release. -->
+    <div v-if="spotlight" class="spot-scrim" @click="clearSpotlight"></div>
     <!-- Header -->
     <header class="dash__head">
       <div>
@@ -216,7 +250,7 @@ function cellValue(r, c) {
     <template v-else-if="data">
       <!-- KPI cards -->
       <div class="kpis">
-        <button v-for="k in KPIS" :key="k.key" type="button" class="kpi" :class="'t-' + k.tone" @click="goFilter(k.key === 'occ' ? 'all' : k.key)">
+        <button v-for="k in KPIS" :key="k.key" type="button" class="kpi" :class="'t-' + k.tone" @click="goTile(k.key)">
           <span class="kpi__icon"><AppIcon :name="k.icon" :size="18" /></span>
           <span class="kpi__label">{{ k.label }}</span>
           <span class="kpi__value"><AnimatedNumber :value="k.value" /></span>
@@ -241,7 +275,7 @@ function cellValue(r, c) {
           </div>
         </div>
 
-        <div class="card occ">
+        <div id="occupancy" class="card occ" :class="{ 'is-spotlit': spotlight === 'occupancy' }">
           <div class="card__head"><h2>Occupancy</h2></div>
           <div class="occ__main">
             <div class="occ__ring" :style="{ background: `conic-gradient(var(--accent) ${anim ? occ.leasedPct : 0}%, var(--paper) 0)` }">
@@ -258,7 +292,7 @@ function cellValue(r, c) {
 
       <!-- Expiry monitoring + Portfolio -->
       <div class="grid grid--2">
-        <div class="card">
+        <div id="leasesExpiring" class="card" :class="{ 'is-spotlit': spotlight === 'leasesExpiring' }">
           <div class="card__head"><h2>Leases Expiring</h2><button type="button" class="link" @click="goFilter('Near Expiry')">View expiring leases <AppIcon name="arrow-right" :size="13" /></button></div>
           <div class="bars">
             <button v-for="b in bucketRows" :key="b.key" type="button" class="metricrow" @click="goFilter('Near Expiry')">
@@ -300,7 +334,7 @@ function cellValue(r, c) {
       </div>
 
       <!-- Registered units table -->
-      <div id="unitsTable" class="card table-card">
+      <div id="unitsTable" class="card table-card" :class="{ 'is-spotlit': spotlight === 'unitsTable' }">
         <div class="card__head">
           <div><h2>Registered Units</h2><span class="card__hint">{{ filtered.length }} of {{ rows.length }} units</span></div>
           <div class="table-tools">
@@ -360,6 +394,44 @@ function cellValue(r, c) {
 </template>
 
 <style scoped>
+/* Spotlight: dim the dashboard, lift the block a tile points at. scroll-margin
+   keeps the sticky topbar off the block we just scrolled to. */
+#occupancy, #leasesExpiring, #unitsTable { scroll-margin-top: 76px; }
+
+.spot-scrim {
+  position: fixed;
+  inset: 0;
+  /* Above the sticky topbar (20) and the theme switch (30), below dropdowns
+     (40+) and modals (50+). The lifted block sits one step above this. */
+  z-index: 35;
+  background: rgba(9, 30, 22, 0.58);
+  cursor: pointer;
+  animation: spot-fade var(--dur-2) var(--ease-out) both;
+}
+
+/* Compounded with .card deliberately: the plain .card rule is defined further
+   down this stylesheet, so a lone .is-spotlit would lose the border and shadow
+   to it on equal specificity. */
+.card.is-spotlit {
+  /* position + z-index lift the card out from under the scrim. No ancestor
+     here sets transform/filter, so this genuinely clears a fixed overlay. */
+  position: relative;
+  z-index: 36;
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 1px var(--accent-text), var(--shadow-lg);
+  /* A held state rather than a keyframe end-state, so the lift survives
+     animations being throttled and is readable as plain computed style. */
+  transform: scale(1.015);
+  transition: transform var(--dur-3) var(--ease-spring), box-shadow var(--dur-2) var(--ease-out);
+}
+
+@keyframes spot-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spot-scrim { animation: none; }
+  .card.is-spotlit { transform: none; transition: none; }
+}
+
 .dash {
   font-family: var(--ui); display: flex; flex-direction: column; gap: 1.15rem;
   --good: #157a3e; --good-bg: #e7f3ec; --warn: #b5751a; --warn-bg: #f8efdd; --crit: #b23a2e; --crit-bg: #f7e0dc; --neutral: #6b7a72; --neutral-bg: var(--paper);

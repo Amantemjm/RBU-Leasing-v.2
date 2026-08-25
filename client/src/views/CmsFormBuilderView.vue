@@ -171,7 +171,7 @@ function entryPairs(entry) {
   <section class="builder">
     <div class="head">
       <div class="head__left">
-        <button type="button" class="back" @click="router.push('/app/forms')">← Forms</button>
+        <button type="button" class="back" @click="router.push('/app/forms')">← Content Manager</button>
         <div>
           <h1>{{ slot?.label || pageKey }}</h1>
           <p class="muted">

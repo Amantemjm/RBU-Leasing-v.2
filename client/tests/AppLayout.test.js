@@ -20,7 +20,19 @@ function mountAs(role) {
 }
 
 describe("AppLayout (sidebar shell)", () => {
-  beforeEach(() => setActivePinia(createPinia()));
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  // The theme control now lives in ThemeToggle, mounted once at the app root so
+  // it appears on public pages too — see tests/ThemeToggle.test.js and App.test.js.
+  it("no longer carries a theme picker in the user menu", async () => {
+    const w = mountAs("LEASING_OFFICER");
+    await w.find(".userchip").trigger("click");
+    expect(w.find(".themepick").exists()).toBe(false);
+  });
 
   it("lists the staff functions in the sidebar", async () => {
     const nav = mountAs("LEASING_OFFICER").find(".sidebar__nav").text();
@@ -34,6 +46,24 @@ describe("AppLayout (sidebar shell)", () => {
     const adminNav = mountAs("ADMIN").find(".sidebar__nav").text();
     expect(adminNav).toContain("System Users");
     expect(adminNav).toContain("Audit Trail");
+  });
+
+  it("names the CMS section Content Manager, not Forms", () => {
+    const nav = mountAs("ADMIN").find(".sidebar__nav");
+    expect(nav.text()).toContain("Content Manager");
+    const link = nav.findAll("a").find((a) => a.attributes("href") === "/app/forms");
+    expect(link.text()).toBe("Content Manager");
+  });
+
+  // The breadcrumb reads from the same nav label, so it must follow the rename.
+  it("shows the renamed label in the breadcrumb", async () => {
+    const auth = useAuthStore();
+    auth.setSession({ token: "t", user: { name: "Test User", role: "ADMIN" } });
+    const router = makeRouter();
+    router.push("/app/forms");
+    await router.isReady();
+    const w = mount(AppLayout, { global: { plugins: [router] } });
+    expect(w.find(".crumbs__here").text()).toBe("Content Manager");
   });
 
   it("gives owners and tenants their own sidebar", () => {

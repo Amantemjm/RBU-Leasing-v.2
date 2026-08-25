@@ -74,7 +74,7 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
 
 .iq__bar {
   position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between;
-  padding: 1.15rem 1.6rem; max-width: 1040px; margin: 0 auto; width: 100%;
+  padding: 1.15rem var(--toggle-gutter) 1.15rem 1.6rem; max-width: 1040px; margin: 0 auto; width: 100%;
 }
 .brand { display: flex; align-items: center; gap: 0.55rem; }
 .brand__logo { width: 30px; height: 30px; display: block; filter: brightness(0) invert(1); opacity: 0.95; }

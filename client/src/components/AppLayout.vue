@@ -12,8 +12,8 @@ const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-// Light/dark follows the browser's prefers-color-scheme purely via CSS — no
-// in-app override — so the app matches the OS/browser exactly.
+// Light/dark is chosen in ThemeToggle, mounted at the app root so the control
+// is in the same place on every page (public routes included).
 
 // --- Sidebar + user menu state ---
 const isNarrow = typeof window !== "undefined" && window.matchMedia
@@ -37,7 +37,7 @@ const STAFF_GROUPS = [
     { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
   ] },
   { label: "Administration", items: [
-    { to: "/app/forms", label: "Forms", icon: "columns", admin: true },
+    { to: "/app/forms", label: "Content Manager", icon: "columns", admin: true },
     { to: "/app/users", label: "System Users", icon: "shield", admin: true },
     { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
   ] },

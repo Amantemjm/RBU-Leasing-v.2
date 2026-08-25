@@ -55,6 +55,12 @@
   --ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --sidebar-w: 250px;
+
+  /* Room reserved at the top-right of every header for the floating
+     ThemeToggle switch, so it never overlaps the user chip or the sign-in
+     button. Must stay >= the switch's right offset + width + a little
+     clearance; the switch shrinks on narrow screens and this shrinks with it. */
+  --toggle-gutter: 78px;
 }
 
 /* Dark palette — shared by the auto (OS) and manual (data-theme) paths */
@@ -322,7 +328,7 @@ button:disabled {
 .topbar {
   height: 60px; flex-shrink: 0; display: flex; align-items: center; gap: 0.85rem;
   background: var(--surface); border-bottom: 1px solid var(--line);
-  padding: 0 1.35rem; position: sticky; top: 0; z-index: 20; font-family: var(--ui);
+  padding: 0 var(--toggle-gutter) 0 1.35rem; position: sticky; top: 0; z-index: 20; font-family: var(--ui);
 }
 .topbar__menu {
   display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
@@ -354,7 +360,9 @@ button:disabled {
 .userchip__name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
 .userchip__role { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .userchip__caret { color: var(--faint); }
-@media (max-width: 620px) { .userchip__meta, .crumbs__root, .crumbs__sep { display: none; } }
+@media (max-width: 620px) {
+  /* Pairs with the compact switch in ThemeToggle.vue. */
+  :root { --toggle-gutter: 60px; } .userchip__meta, .crumbs__root, .crumbs__sep { display: none; } }
 
 .menu { position: absolute; right: 0; top: calc(100% + 8px); width: 246px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-md); padding: 0.4rem; z-index: 60; }
 .menu__head { display: flex; gap: 0.6rem; align-items: center; padding: 0.55rem 0.55rem 0.7rem; border-bottom: 1px solid var(--line); margin-bottom: 0.35rem; }
@@ -365,6 +373,8 @@ button:disabled {
 .menu__item:hover { background: var(--paper); }
 .menu__item.logout { color: var(--danger); }
 .menu__item.logout:hover { background: var(--danger-050); }
+
+
 .menu-scrim { position: fixed; inset: 0; z-index: 55; }
 
 /* The sidebar collapses to the 66px icon rail on every screen size (no off-screen

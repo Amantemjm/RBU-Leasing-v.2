@@ -74,4 +74,10 @@ describe("CmsFormBuilderView (page-form slot editor)", () => {
     expect(w.find(".error").text()).toContain("isn't a configurable page");
     expect(pageForms.get).not.toHaveBeenCalled();
   });
+
+  it("labels the back button with the renamed section", async () => {
+    const { w } = await mountView();
+    const back = w.find(".back");
+    expect(back.text()).toBe("← Content Manager");
+  });
 });
