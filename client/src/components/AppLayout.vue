@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { roleLabel } from "../lib/formatters.js";
 import AppIcon from "./AppIcon.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 import PageFormPanel from "./PageFormPanel.vue";
 import { slotForPath } from "../../../shared/pageForms.js";
 import logoUrl from "../assets/ortigas-logo.svg";
@@ -153,6 +154,7 @@ function logout() {
         </div>
 
         <div class="topbar__right">
+          <ThemeToggle inline />
           <div class="usermenu">
             <button type="button" class="userchip" :class="{ open: menuOpen }" @click="menuOpen = !menuOpen" aria-haspopup="menu" :aria-expanded="menuOpen">
               <span class="userchip__avatar">{{ initials }}</span>

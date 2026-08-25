@@ -28,13 +28,9 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
         <span class="brand__name">Ortigas Land</span>
         <span class="brand__sub">Leasing</span>
       </div>
-      <button type="button" class="signin" @click="goStaff">
-        {{ auth.isAuthenticated ? "Go to app" : "Staff sign in" }}
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
     </header>
 
-    <main class="iq__body">
+    <main class="iq__body" :class="{ 'is-step1': step === 1, 'is-step2': step === 2 }">
       <div class="iq__intro">
         <p class="eyebrow rise" style="--d:0">Residential &amp; Office Leasing</p>
         <h1 class="rise" style="--d:1">Quick Inquiry</h1>
@@ -47,14 +43,22 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
       </div>
 
       <div class="iq__card rise" style="--d:4"><slot /></div>
-      <p class="iq__foot rise" style="--d:5"><slot name="foot" /></p>
+
+      <div class="iq__signin rise" style="--d:5">
+        <button type="button" class="signin" @click="goStaff">
+          {{ auth.isAuthenticated ? "Go to app" : "Sign in" }}
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <p class="iq__foot rise" style="--d:6"><slot name="foot" /></p>
     </main>
   </div>
 </template>
 
 <style scoped>
 .iq {
-  position: relative; overflow: hidden; min-height: 100vh; display: flex; flex-direction: column;
+  position: relative; overflow: hidden; height: 100vh; height: 100dvh; display: flex; flex-direction: column;
   background: radial-gradient(120% 90% at 12% -10%, #206b4a 0%, var(--ink-900) 52%, #0a3020 100%);
   color: #eaf3ee; font-family: var(--ui);
 }
@@ -73,8 +77,8 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
 }
 
 .iq__bar {
-  position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between;
-  padding: 1.15rem var(--toggle-gutter) 1.15rem 1.6rem; max-width: 1040px; margin: 0 auto; width: 100%;
+  position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-start;
+  padding: 1.15rem var(--toggle-gutter) 1.15rem 1.6rem; width: 100%;
 }
 .brand { display: flex; align-items: center; gap: 0.55rem; }
 .brand__logo { width: 30px; height: 30px; display: block; filter: brightness(0) invert(1); opacity: 0.95; }
@@ -92,15 +96,25 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
 
 /* centre the composition on tall screens */
 .iq__body {
-  position: relative; z-index: 1; flex: 1; width: 100%; max-width: 620px; margin: 0 auto;
-  padding: 1.5rem 1.6rem 3rem; display: flex; flex-direction: column; justify-content: center; gap: 1.5rem;
+  position: relative; z-index: 1; flex: 1; min-height: 0; width: 100%; max-width: 780px; margin: 0 auto;
+  padding: 1.5rem 1.9rem 1.6rem; display: flex; flex-direction: column; justify-content: center; gap: 1.15rem;
 }
-.iq__intro { text-align: left; }
+.iq__intro { flex: 0 0 auto; }
+.iq__signin, .iq__foot { flex: 0 0 auto; }
+
+/* Both pages: anchored to the top centre. */
+.iq__body.is-step1, .iq__body.is-step2 { justify-content: flex-start; padding-top: 2.6rem; }
+
+/* Page 2 (the form): shrink only the card; leave the intro at full size. */
+.iq__body.is-step2 .iq__card {
+  align-self: center; width: 100%; max-width: 700px; padding: 1.6rem 2.6rem;
+}
+.iq__intro { text-align: center; }
 .eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--brand-mint); margin: 0 0 0.7rem; font-weight: 700; }
 .iq__intro h1 { font-family: var(--display); font-size: clamp(2.4rem, 6vw, 3.5rem); font-weight: 500; letter-spacing: -0.01em; margin: 0 0 0.55rem; color: #fff; line-height: 1.02; }
-.lede { color: rgba(234, 243, 238, 0.82); margin: 0; max-width: 36rem; font-size: 1.02rem; line-height: 1.55; }
+.lede { color: rgba(234, 243, 238, 0.82); margin: 0 auto; max-width: 42rem; font-size: 1.08rem; line-height: 1.55; }
 
-.steps { list-style: none; display: flex; align-items: center; gap: 0.7rem; margin: 1.4rem 0 0; padding: 0; }
+.steps { list-style: none; display: flex; align-items: center; justify-content: center; gap: 0.7rem; margin: 0.9rem 0 0; padding: 0; }
 .steps li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: rgba(234, 243, 238, 0.5); }
 .steps li.on { color: #fff; }
 .steps__dot {
@@ -113,10 +127,12 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
 .steps__bar { flex: 0 0 34px; height: 1px; background: rgba(255, 255, 255, 0.25); }
 
 .iq__card {
-  background: var(--surface); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: calc(var(--radius) + 6px);
+  flex: 0 1 auto; min-height: 0; overflow-y: auto;
+  background: var(--surface); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: calc(var(--radius) + 8px);
   box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.12);
-  padding: 1.9rem; color: var(--text);
+  padding: 1.9rem 2.4rem; color: var(--text);
 }
+.iq__signin { display: flex; justify-content: center; margin-top: -0.25rem; }
 .iq__foot { text-align: center; color: rgba(234, 243, 238, 0.6); font-size: 0.78rem; margin: 0; letter-spacing: 0.02em; }
 
 .rise { animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--d, 0) * 90ms); }

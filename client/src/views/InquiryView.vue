@@ -109,7 +109,7 @@ async function submit() {
 
         <div class="field">
           <label for="message">Additional details <span class="optional">(optional)</span></label>
-          <textarea id="message" rows="3" v-model="form.message" placeholder="Preferred estate, unit size, budget, move-in date…"></textarea>
+          <textarea id="message" rows="2" v-model="form.message" placeholder="Preferred estate, unit size, budget, move-in date…"></textarea>
         </div>
 
         <label class="consent">
@@ -128,7 +128,7 @@ async function submit() {
 </template>
 
 <style scoped>
-form { display: flex; flex-direction: column; gap: 1.15rem; }
+form { display: flex; flex-direction: column; gap: 0.8rem; }
 .asrole {
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
   background: var(--accent-050); border: 1px solid var(--accent-100, var(--accent-050)); color: var(--accent-text);
@@ -137,7 +137,7 @@ form { display: flex; flex-direction: column; gap: 1.15rem; }
 .asrole strong { font-weight: 700; }
 .asrole a { color: var(--accent-text); font-weight: 600; font-size: 0.8rem; text-decoration: underline; }
 
-.field { display: flex; flex-direction: column; gap: 0.45rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
 .label, .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--muted); }
 .req { color: var(--danger); }
 .optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
@@ -147,7 +147,7 @@ form { display: flex; flex-direction: column; gap: 1.15rem; }
 .seg__opt {
   display: flex; align-items: center; justify-content: center; gap: 0.55rem; cursor: pointer;
   background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm);
-  padding: 0.85rem 0.75rem; font: inherit; font-size: 0.92rem; font-weight: 550; color: var(--ink-700);
+  padding: 0.6rem 0.75rem; font: inherit; font-size: 0.92rem; font-weight: 550; color: var(--ink-700);
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.12s ease;
 }
 .seg__opt svg { color: var(--muted); transition: color 0.16s ease; }
@@ -167,7 +167,7 @@ form { display: flex; flex-direction: column; gap: 1.15rem; }
 }
 .field input::placeholder, .field textarea::placeholder { color: var(--faint); }
 
-.consent { display: flex; gap: 0.65rem; align-items: flex-start; font-size: 0.8rem; color: var(--muted); line-height: 1.5; cursor: pointer; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; }
+.consent { display: flex; gap: 0.65rem; align-items: flex-start; font-size: 0.78rem; color: var(--muted); line-height: 1.45; cursor: pointer; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.55rem 0.75rem; }
 .consent input { margin-top: 0.15rem; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--accent); }
 
 .primary {

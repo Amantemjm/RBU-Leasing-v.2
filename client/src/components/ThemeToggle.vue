@@ -1,13 +1,18 @@
 <script setup>
-// Floating dark/light switch. Mounted once in App.vue rather than in each
-// layout, so it holds the identical viewport position on every route —
-// including login, signup and the public inquiry pages, which have no shell.
+// Floating dark/light switch — minimal day↔night pill in the Ortigas brand
+// green: a soft mint track with a white knob + brand-green sun by day; a deep
+// brand-green track with the knob + moon by night, gliding smoothly across.
+// Mounted once in App.vue so it holds the identical viewport position on every
+// route — including login, signup and the public inquiry pages.
 //
-// The headers reserve room for it on the right (see --toggle-gutter in
-// app.css); changing this control's width means changing that gutter too.
+// The headers reserve room for it on the right (see --toggle-gutter in app.css);
+// changing this control's OUTER width means changing that gutter too.
 import { computed } from "vue";
-import AppIcon from "./AppIcon.vue";
 import { useTheme } from "../lib/theme.js";
+
+// `inline` docks the switch into a layout (e.g. the app nav bar) instead of
+// floating fixed at the top-right of the viewport (used on public pages).
+defineProps({ inline: { type: Boolean, default: false } });
 
 const { theme, toggleTheme } = useTheme();
 
@@ -18,7 +23,7 @@ const isDark = computed(() => theme.value === "dark");
   <button
     type="button"
     class="themeswitch"
-    :class="{ 'is-dark': isDark }"
+    :class="{ 'is-dark': isDark, 'themeswitch--inline': inline }"
     role="switch"
     :aria-checked="isDark ? 'true' : 'false'"
     aria-label="Dark mode"
@@ -26,9 +31,28 @@ const isDark = computed(() => theme.value === "dark");
     @click="toggleTheme"
   >
     <span class="themeswitch__track" aria-hidden="true">
-      <AppIcon name="sun" :size="13" class="themeswitch__ico themeswitch__ico--sun" />
-      <AppIcon name="moon" :size="12" class="themeswitch__ico themeswitch__ico--moon" />
-      <span class="themeswitch__knob"></span>
+      <span class="themeswitch__knob">
+        <!-- Day: line-art sun -->
+        <svg class="themeswitch__ico themeswitch__ico--sun" viewBox="0 0 24 24" width="22" height="22"
+          fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4.1" />
+          <line x1="12" y1="2.4" x2="12" y2="4.9" />
+          <line x1="12" y1="19.1" x2="12" y2="21.6" />
+          <line x1="2.4" y1="12" x2="4.9" y2="12" />
+          <line x1="19.1" y1="12" x2="21.6" y2="12" />
+          <line x1="5.3" y1="5.3" x2="7.1" y2="7.1" />
+          <line x1="16.9" y1="16.9" x2="18.7" y2="18.7" />
+          <line x1="18.7" y1="5.3" x2="16.9" y2="7.1" />
+          <line x1="7.1" y1="16.9" x2="5.3" y2="18.7" />
+        </svg>
+        <!-- Night: line-art crescent moon + sparkles -->
+        <svg class="themeswitch__ico themeswitch__ico--moon" viewBox="0 0 24 24" width="22" height="22"
+          fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15.4 3.3a7.6 7.6 0 1 0 5.3 12.9A6.1 6.1 0 0 1 15.4 3.3z" />
+          <path d="M18.4 4.1l.62 1.66 1.66.62-1.66.62-.62 1.66-.62-1.66-1.66-.62 1.66-.62z" />
+          <path d="M20.6 8.7l.36.98.98.36-.98.36-.36.98-.36-.98-.98-.36.98-.36z" />
+        </svg>
+      </span>
     </span>
   </button>
 </template>
@@ -47,62 +71,91 @@ const isDark = computed(() => theme.value === "dark");
   cursor: pointer;
   line-height: 0;
   border-radius: 999px;
+  /* A clean, smooth glide shared by the knob, track and icons. */
+  --tsw-dur: 0.5s;
+  --tsw-spring: cubic-bezier(0.65, 0, 0.35, 1);
+  --tsw-glide: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Docked in the nav bar: no fixed positioning, sits inline with the topbar. */
+.themeswitch--inline {
+  position: static;
+  top: auto;
+  right: auto;
+  z-index: auto;
+  flex-shrink: 0;
 }
 
 .themeswitch__track {
   position: relative;
   display: block;
-  width: 52px;
-  height: 28px;
+  width: 80px;
+  height: 42px;
   border-radius: 999px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow-sm);
-  transition: background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+  background: #e8f3ed; /* soft brand mint */
+  border: 1px solid #c8ddd2;
+  box-shadow: inset 0 1px 2px rgba(12, 44, 33, 0.08);
+  transition: background var(--tsw-dur) var(--tsw-glide), border-color var(--dur-2) var(--ease-out);
 }
-
 .themeswitch.is-dark .themeswitch__track {
-  background: var(--accent);
-  border-color: var(--accent);
+  /* Deep brand-green shell gradient (Green Pea → deep ink green). */
+  background: linear-gradient(160deg, #1d6142 0%, #0c2c21 100%);
+  border-color: #0c2c21;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-/* Both icons sit on the track; the knob slides over whichever is inactive. */
-.themeswitch__ico {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  transition: color var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out);
-}
-.themeswitch__ico--sun { left: 6px; color: var(--warn); opacity: 1; }
-.themeswitch__ico--moon { right: 7px; color: var(--faint); opacity: 0.75; }
-.themeswitch.is-dark .themeswitch__ico--sun { opacity: 0.55; color: rgba(255, 255, 255, 0.75); }
-.themeswitch.is-dark .themeswitch__ico--moon { opacity: 1; color: #fff; }
-
+/* White knob carrying the current celestial icon (brand-green stroke). */
 .themeswitch__knob {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 20px;
-  height: 20px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: var(--surface);
-  box-shadow: 0 1px 3px rgba(9, 30, 22, 0.32);
-  transition: transform var(--dur-2) var(--ease-spring);
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #cfe3d9;
+  box-shadow: 0 1px 5px rgba(12, 44, 33, 0.28);
+  color: var(--accent); /* icon stroke = brand green (constant across modes) */
+  transform: translateX(38px); /* day → right */
+  will-change: transform;
+  transition: transform var(--tsw-dur) var(--tsw-spring),
+    border-color var(--tsw-dur) var(--tsw-glide), box-shadow var(--tsw-dur) var(--tsw-glide);
 }
-.themeswitch.is-dark .themeswitch__knob { transform: translateX(24px); }
+.themeswitch.is-dark .themeswitch__knob {
+  transform: translateX(0); /* night → left */
+  border-color: #eaf5ee;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+/* A small press feedback that respects the current side. */
+.themeswitch:active .themeswitch__knob { transform: translateX(38px) scale(0.93); }
+.themeswitch.is-dark:active .themeswitch__knob { transform: translateX(0) scale(0.93); }
+
+/* Icons crossfade between sun (day) and moon (night). */
+.themeswitch__ico {
+  grid-area: 1 / 1;
+  transition: opacity calc(var(--tsw-dur) * 0.6) var(--tsw-glide), transform var(--tsw-dur) var(--tsw-spring);
+}
+.themeswitch__ico--sun { opacity: 1; transform: rotate(0deg) scale(1); }
+.themeswitch__ico--moon { opacity: 0; transform: rotate(35deg) scale(0.55); }
+.themeswitch.is-dark .themeswitch__ico--sun { opacity: 0; transform: rotate(-35deg) scale(0.55); }
+.themeswitch.is-dark .themeswitch__ico--moon { opacity: 1; transform: rotate(0deg) scale(1); }
 
 .themeswitch:hover .themeswitch__track { border-color: var(--accent-text); }
+.themeswitch.is-dark:hover .themeswitch__track { border-color: var(--brand-mint); }
 .themeswitch:focus-visible { outline: none; box-shadow: var(--ring); }
 
 /* Narrow screens: same corner, smaller footprint, so crowded headers still fit
    beside it. Keep --toggle-gutter (app.css) in step with these numbers. */
 @media (max-width: 620px) {
   .themeswitch { top: 12px; right: 10px; }
-  .themeswitch__track { width: 44px; height: 24px; }
-  .themeswitch__knob { width: 17px; height: 17px; top: 3px; left: 3px; }
-  .themeswitch.is-dark .themeswitch__knob { transform: translateX(20px); }
-  .themeswitch__ico--sun { left: 5px; }
-  .themeswitch__ico--moon { right: 5px; }
+  .themeswitch__track { width: 66px; height: 36px; }
+  .themeswitch__knob { width: 30px; height: 30px; top: 3px; left: 3px; transform: translateX(30px); }
+  .themeswitch.is-dark .themeswitch__knob { transform: translateX(0); }
+  .themeswitch:active .themeswitch__knob { transform: translateX(30px) scale(0.93); }
+  .themeswitch.is-dark:active .themeswitch__knob { transform: translateX(0) scale(0.93); }
+  .themeswitch__ico { width: 18px; height: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
