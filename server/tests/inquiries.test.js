@@ -3,6 +3,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
 import { issueToken } from "../src/services/authService.js";
+import { INQUIRY_TYPES } from "../../shared/inquiryTypes.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -16,6 +17,45 @@ const valid = {
   message: "I'm interested in a 2BR unit.",
   consent: true,
 };
+
+// The lessor list has to cover the whole lease lifecycle, not just onboarding
+// a new unit — renewals and pre-terminations are recurring leasing work and
+// were previously landing in "General Inquiry", invisible to reporting.
+const NEW_LESSOR_TYPES = [
+  "Update Listing",
+  "Tenant Screening",
+  "Lease Renewal",
+  "Lease Pre-termination",
+];
+
+describe("Lessor inquiry types", () => {
+  it("offers every lifecycle stage a lessor can ask about", () => {
+    for (const t of NEW_LESSOR_TYPES) expect(INQUIRY_TYPES.LESSOR).toContain(t);
+  });
+
+  it.each(NEW_LESSOR_TYPES)("accepts a public LESSOR inquiry of type %s", async (inquiryType) => {
+    const res = await request(app).post("/api/inquiries")
+      .send({ ...valid, inquirerType: "LESSOR", inquiryType });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ inquirerType: "LESSOR", inquiryType });
+  });
+
+  it("keeps the lessee list free of lessor-only types", () => {
+    for (const t of NEW_LESSOR_TYPES) expect(INQUIRY_TYPES.LESSEE).not.toContain(t);
+  });
+
+  it("rejects a lessor-only type submitted as a lessee (400)", async () => {
+    const res = await request(app).post("/api/inquiries")
+      .send({ ...valid, inquirerType: "LESSEE", inquiryType: "Lease Renewal" });
+    expect(res.status).toBe(400);
+  });
+
+  it("still rejects a type that is on neither list (400)", async () => {
+    const res = await request(app).post("/api/inquiries")
+      .send({ ...valid, inquirerType: "LESSOR", inquiryType: "Sell My Unit" });
+    expect(res.status).toBe(400);
+  });
+});
 
 describe("Inquiries", () => {
   it("accepts a public LESSEE inquiry with no auth (201)", async () => {

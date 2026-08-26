@@ -20,14 +20,23 @@ export const INQUIRY_TYPES = {
     "Fees & Payments",
     "General Inquiry",
   ],
+  // Ordered by where the owner sits in the lease lifecycle: bringing a unit in,
+  // pricing and matching it, agreeing terms, then what happens once a lease is
+  // running. Renewal and pre-termination are recurring leasing work, not
+  // afterthoughts — before they existed here they fell into "General Inquiry"
+  // and could not be reported on.
   LESSOR: [
     "List Unit for Lease",
+    "Update Listing",
     "Rental Rate",
     "Find a Tenant",
-    "Property Management",
+    "Tenant Screening",
     "Leasing Terms",
     "Fees & Commission",
     "Lease Contract",
+    "Lease Renewal",
+    "Lease Pre-termination",
+    "Property Management",
     "General Inquiry",
   ],
 };

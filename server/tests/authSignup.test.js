@@ -17,46 +17,48 @@ async function cleanup() {
 beforeEach(cleanup);
 afterAll(cleanup);
 
+// Signup is an APPLICATION, not an account handout — see accountApproval.test.js
+// for the approve/reject side. These cover the public endpoint's own contract.
+const base = { password: "pw12345678", consent: true };
+
 describe("POST /api/auth/signup — public self-registration", () => {
-  it("creates a lessee account + linked tenant record and returns a session token", async () => {
+  it("records a lessee application without a session or a tenant record", async () => {
     const res = await request(app).post("/api/auth/signup")
-      .send({ name: "New Lessee", email: "lessee.signup@x.com", password: "pw123456", role: "TENANT" });
+      .send({ ...base, name: "New Lessee", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com", role: "TENANT" });
     expect(res.status).toBe(201);
-    expect(res.body.token).toBeTruthy();
+    expect(res.body.status).toBe("PENDING");
+    expect(res.body.token).toBeUndefined();
     expect(res.body.user.role).toBe("TENANT");
-    expect(res.body.user.tenantId).toBeTruthy();
-    const t = await prisma.tenant.findUnique({ where: { id: res.body.user.tenantId } });
-    expect(t?.name).toBe("New Lessee");
+    expect(await prisma.tenant.findFirst({ where: { email: "lessee.signup@x.com" } })).toBeNull();
   });
 
-  it("creates a lessor account + linked owner record", async () => {
+  it("records a lessor application without an owner record", async () => {
     const res = await request(app).post("/api/auth/signup")
-      .send({ name: "New Lessor", email: "lessor.signup@x.com", password: "pw123456", role: "UNIT_OWNER" });
+      .send({ ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com", role: "UNIT_OWNER" });
     expect(res.status).toBe(201);
     expect(res.body.user.role).toBe("UNIT_OWNER");
-    expect(res.body.user.unitOwnerId).toBeTruthy();
+    expect(await prisma.unitOwner.findFirst({ where: { email: "lessor.signup@x.com" } })).toBeNull();
   });
 
-  it("lets the new account log in immediately", async () => {
+  it("does NOT let the new account log in until it is approved", async () => {
     await request(app).post("/api/auth/signup")
-      .send({ name: "New Lessee", email: "lessee.signup@x.com", password: "pw123456", role: "TENANT" });
+      .send({ ...base, name: "New Lessee", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com", role: "TENANT" });
     const login = await request(app).post("/api/auth/login")
-      .send({ email: "lessee.signup@x.com", password: "pw123456" });
-    expect(login.status).toBe(200);
-    expect(login.body.user.role).toBe("TENANT");
+      .send({ email: "lessee.signup@x.com", password: base.password });
+    expect(login.status).toBe(403);
+    expect(login.body.code).toBe("ACCOUNT_PENDING");
   });
 
   it("rejects a duplicate username/email (409)", async () => {
-    await request(app).post("/api/auth/signup")
-      .send({ name: "A", email: "lessee.signup@x.com", password: "pw123456", role: "TENANT" });
-    const res = await request(app).post("/api/auth/signup")
-      .send({ name: "B", email: "lessee.signup@x.com", password: "pw123456", role: "TENANT" });
+    const body = { ...base, name: "A", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com", role: "TENANT" };
+    await request(app).post("/api/auth/signup").send(body);
+    const res = await request(app).post("/api/auth/signup").send({ ...body, name: "B" });
     expect(res.status).toBe(409);
   });
 
   it("rejects a staff role via self-signup (400)", async () => {
     const res = await request(app).post("/api/auth/signup")
-      .send({ name: "X", email: "lessor.signup@x.com", password: "pw123456", role: "ADMIN" });
+      .send({ ...base, name: "X", email: "lessor.signup@x.com", contactEmail: "x@x.com", role: "ADMIN" });
     expect(res.status).toBe(400);
   });
 });

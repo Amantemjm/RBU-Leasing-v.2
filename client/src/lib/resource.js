@@ -79,6 +79,14 @@ export function rejectUnit(id) {
 export function createUser(payload) {
   return api.post("/auth/register", payload).then((r) => r.data);
 }
+// Account approval queue — portal self-signups awaiting an ADMIN or O-Lease
+// decision. Approving is what creates the linked Owner/Tenant record.
+export const pendingAccounts = {
+  list: () => api.get("/auth/pending").then((r) => r.data),
+  approve: (id) => api.patch(`/auth/pending/${id}/approve`).then((r) => r.data),
+  reject: (id, reason) => api.patch(`/auth/pending/${id}/reject`, { reason }).then((r) => r.data),
+};
+
 export function listUsers() {
   return api.get("/auth/users").then((r) => r.data);
 }

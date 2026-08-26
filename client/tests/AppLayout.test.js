@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import AppLayout from "../src/components/AppLayout.vue";
 import { useAuthStore } from "../src/stores/auth.js";
+import { useActionCenter } from "../src/stores/actionCenter.js";
 
 const stub = { template: "<div/>" };
 function makeRouter() {
@@ -46,6 +47,78 @@ describe("AppLayout (sidebar shell)", () => {
     const adminNav = mountAs("ADMIN").find(".sidebar__nav").text();
     expect(adminNav).toContain("System Users");
     expect(adminNav).toContain("Audit Trail");
+  });
+
+  describe("action needed indicator", () => {
+    // The badge/bell must reflect outstanding work without visiting the page.
+    function withPending(role, n) {
+      const store = useActionCenter();
+      store.accountApprovals = n;
+      return mountAs(role);
+    }
+
+    it("shows a count on the Account Approvals nav item when work is waiting", () => {
+      const w = withPending("ADMIN", 3);
+      const link = w.findAll("a").find((a) => a.attributes("href") === "/app/account-approvals");
+      expect(link.find(".navlink__badge").text()).toBe("3");
+    });
+
+    it("shows no badge when nothing is waiting", () => {
+      const w = withPending("ADMIN", 0);
+      const link = w.findAll("a").find((a) => a.attributes("href") === "/app/account-approvals");
+      expect(link.find(".navlink__badge").exists()).toBe(false);
+    });
+
+    it("puts a bell in the top bar carrying the same count", () => {
+      const w = withPending("LEASING_OFFICER", 2);
+      const bell = w.find(".bell");
+      expect(bell.exists()).toBe(true);
+      expect(bell.find(".bell__count").text()).toBe("2");
+      expect(bell.attributes("aria-label")).toContain("2");
+    });
+
+    it("marks the bell quiet when there is nothing to do", () => {
+      const w = withPending("ADMIN", 0);
+      expect(w.find(".bell__count").exists()).toBe(false);
+      expect(w.find(".bell").attributes("aria-label")).toBe("No actions needed");
+    });
+
+    it("opens a panel naming the outstanding work", async () => {
+      const w = withPending("ADMIN", 4);
+      await w.find(".bell").trigger("click");
+      const panel = w.find(".actions-panel");
+      expect(panel.exists()).toBe(true);
+      expect(panel.text()).toContain("Account Approvals");
+      expect(panel.text()).toContain("4");
+      const link = panel.findAll("a").find((a) => a.attributes("href") === "/app/account-approvals");
+      expect(link).toBeTruthy();
+    });
+
+    it("says so when the panel is opened with nothing pending", async () => {
+      const w = withPending("ADMIN", 0);
+      await w.find(".bell").trigger("click");
+      expect(w.find(".actions-panel").text()).toContain("Nothing needs your attention");
+    });
+
+    // Roles that cannot approve must not see the indicator at all.
+    it.each(["VIEWER", "TENANT", "UNIT_OWNER"])("hides the bell from %s", (role) => {
+      const w = withPending(role, 5);
+      expect(w.find(".bell").exists()).toBe(false);
+    });
+
+    it("clears the count on sign-out so the next user sees nothing stale", async () => {
+      const store = useActionCenter();
+      store.accountApprovals = 6;
+      const w = mountAs("ADMIN");
+      await w.find(".userchip").trigger("click");
+      await w.findAll("button").find((b) => b.text().includes("Log out")).trigger("click");
+      expect(store.total).toBe(0);
+    });
+
+    it("caps a large count so it cannot break the layout", () => {
+      const w = withPending("ADMIN", 130);
+      expect(w.find(".bell__count").text()).toBe("99+");
+    });
   });
 
   it("names the CMS section Content Manager, not Forms", () => {

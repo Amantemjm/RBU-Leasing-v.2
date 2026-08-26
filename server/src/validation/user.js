@@ -13,9 +13,17 @@ export const registerSchema = z.object({
 // Public self-registration — lessors/lessees only.
 export const signupSchema = z.object({
   name: z.string().min(1),
-  email: z.string().min(3), // username or email
-  password: z.string().min(6),
+  email: z.string().min(3), // login username; may or may not be an address
+  // Required: the approver has to be able to contact the applicant, and this
+  // becomes the linked Owner/Tenant record's email on approval.
+  contactEmail: z.string().email(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["UNIT_OWNER", "TENANT"]),
+  consent: z.literal(true),
+});
+
+export const rejectAccountSchema = z.object({
+  reason: z.string().min(1, "A reason is required"),
 });
 
 export const updateUserSchema = z.object({

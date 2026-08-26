@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Portal self-signups (lessor/lessee) start PENDING and need an ADMIN or
+// LEASING_OFFICER to approve them before they can sign in. Staff accounts
+// created from the Users screen are APPROVED outright.
+enum AccountStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum Role {
   ADMIN
   LEASING_OFFICER
@@ -62,6 +71,20 @@ model User {
   passwordHash String
   passwordPlain String?   // recoverable copy for the admin credential list (internal tool)
   role         Role       @default(VIEWER)
+  // Defaults to APPROVED so existing accounts and admin-created staff logins
+  // are unaffected; only the signup route sets PENDING.
+  status       AccountStatus @default(APPROVED)
+  // `email` doubles as the login username and may not be an address at all, so
+  // the reachable address given at signup is kept separately — the approver
+  // needs a way to contact the applicant.
+  contactEmail String?
+  // Approver is stored by id + name rather than as a relation: a self-relation
+  // on User complicates every query here, and the name must survive the
+  // approver's account being deleted.
+  approvedById   String?
+  approvedByName String?
+  decidedAt      DateTime?
+  rejectionReason String?
   unitOwner    UnitOwner? @relation(fields: [unitOwnerId], references: [id])
   unitOwnerId  String?
   tenant       Tenant?    @relation(fields: [tenantId], references: [id])
@@ -72,6 +95,8 @@ model User {
   pageFormEntries PageFormEntry[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([status])
 }
 
 model UnitOwner {

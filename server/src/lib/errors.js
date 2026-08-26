@@ -22,3 +22,17 @@ export class InvalidReferenceError extends AppError {
 export class ValidationError extends AppError {
   constructor(message = "Validation failed") { super(message, 400, "VALIDATION"); }
 }
+
+// Correct credentials but the account is not usable yet. 403 rather than 401:
+// the caller proved who they are, they are simply not allowed through.
+export class AccountPendingError extends AppError {
+  constructor(message = "Your account is awaiting approval by the leasing team.") {
+    super(message, 403, "ACCOUNT_PENDING");
+  }
+}
+
+export class AccountRejectedError extends AppError {
+  constructor(message = "This account was not approved. Please contact the leasing team.") {
+    super(message, 403, "ACCOUNT_REJECTED");
+  }
+}

@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
+import { useActionCenter } from "../stores/actionCenter.js";
 import { roleLabel } from "../lib/formatters.js";
 import AppIcon from "./AppIcon.vue";
 import ThemeToggle from "./ThemeToggle.vue";
@@ -15,6 +16,27 @@ const router = useRouter();
 
 // Light/dark is chosen in ThemeToggle, mounted at the app root so the control
 // is in the same place on every page (public routes included).
+
+// --- Outstanding work needing a decision ---------------------------------
+// Polled centrally here rather than per-page, so a waiting approval is visible
+// from anywhere in the app. Only roles that can act on it poll at all.
+const actions = useActionCenter();
+const canAct = computed(() => ["ADMIN", "LEASING_OFFICER"].includes(auth.role));
+const actionsOpen = ref(false);
+
+onMounted(() => { if (canAct.value) actions.start(auth.role); });
+onBeforeUnmount(() => actions.stop());
+
+// Badge text, capped so a large number cannot stretch the sidebar or the bell.
+function badge(n) { return n > 99 ? "99+" : String(n); }
+
+// Count for a given nav destination — extend as more action types appear.
+function pendingFor(to) {
+  return to === "/app/account-approvals" ? actions.accountApprovals : 0;
+}
+
+const bellLabel = computed(() =>
+  actions.total > 0 ? `${actions.total} action${actions.total === 1 ? "" : "s"} needed` : "No actions needed");
 
 // --- Sidebar + user menu state ---
 const isNarrow = typeof window !== "undefined" && window.matchMedia
@@ -38,6 +60,7 @@ const STAFF_GROUPS = [
     { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
   ] },
   { label: "Administration", items: [
+    { to: "/app/account-approvals", label: "Account Approvals", icon: "shield", write: true },
     { to: "/app/forms", label: "Content Manager", icon: "columns", admin: true },
     { to: "/app/users", label: "System Users", icon: "shield", admin: true },
     { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
@@ -94,6 +117,10 @@ function onNav() {
   if (window.matchMedia && window.matchMedia("(max-width: 860px)").matches) sidebarOpen.value = false;
 }
 function logout() {
+  // Cleared here rather than inside the auth store: actionCenter -> resource ->
+  // api -> auth would be a circular import, and both stores are already in
+  // scope in this component.
+  actions.reset();
   auth.logout();
   router.push("/");
 }
@@ -137,6 +164,11 @@ function logout() {
           >
             <span class="navlink__icon"><AppIcon :name="l.icon" :size="18" /></span>
             <span v-if="sidebarOpen" class="navlink__label">{{ l.label }}</span>
+            <span
+              v-if="canAct && pendingFor(l.to) > 0"
+              class="navlink__badge"
+              :title="`${pendingFor(l.to)} awaiting action`"
+            >{{ badge(pendingFor(l.to)) }}</span>
           </RouterLink>
         </div>
       </nav>
@@ -154,6 +186,37 @@ function logout() {
         </div>
 
         <div class="topbar__right">
+          <div v-if="canAct" class="bellwrap">
+            <button
+              type="button"
+              class="bell"
+              :class="{ 'has-actions': actions.hasActions }"
+              :aria-label="bellLabel"
+              aria-haspopup="menu"
+              :aria-expanded="actionsOpen"
+              @click="actionsOpen = !actionsOpen"
+            >
+              <AppIcon name="bell" :size="18" />
+              <span v-if="actions.total > 0" class="bell__count">{{ badge(actions.total) }}</span>
+            </button>
+            <div class="actions-panel" v-show="actionsOpen" role="menu">
+              <div class="actions-panel__head">Actions needed</div>
+              <RouterLink
+                v-if="actions.accountApprovals > 0"
+                class="actions-panel__item"
+                to="/app/account-approvals"
+                @click="actionsOpen = false"
+              >
+                <span class="actions-panel__n">{{ badge(actions.accountApprovals) }}</span>
+                <span>
+                  <strong>Account Approvals</strong>
+                  <small>Lessor/lessee sign-ups waiting for a decision</small>
+                </span>
+              </RouterLink>
+              <p v-else class="actions-panel__empty">Nothing needs your attention.</p>
+            </div>
+            <div v-show="actionsOpen" class="menu-scrim" @click="actionsOpen = false"></div>
+          </div>
           <ThemeToggle inline />
           <div class="usermenu">
             <button type="button" class="userchip" :class="{ open: menuOpen }" @click="menuOpen = !menuOpen" aria-haspopup="menu" :aria-expanded="menuOpen">

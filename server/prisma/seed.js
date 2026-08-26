@@ -8,7 +8,11 @@ async function main() {
   // Super admin: always guaranteed present with a known password and ADMIN role.
   await prisma.user.upsert({
     where: { email },
-    update: { passwordHash: await hashPassword("admin123"), passwordPlain: "admin123", role: "ADMIN" },
+    // Only the ADMIN role is re-asserted on an existing account. The password is
+    // deliberately NOT reset here: re-seeding used to clobber a changed admin
+    // password back to the default, which browsers flag as breached. Use
+    // scripts/set-admin-password.js to change it.
+    update: { role: "ADMIN" },
     create: {
       name: "Super Admin", email,
       passwordHash: await hashPassword("admin123"), passwordPlain: "admin123", role: "ADMIN",

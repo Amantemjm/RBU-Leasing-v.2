@@ -105,9 +105,33 @@ function goStaff() { router.push(auth.isAuthenticated ? appHome.value : "/login"
 /* Both pages: anchored to the top centre. */
 .iq__body.is-step1, .iq__body.is-step2 { justify-content: flex-start; padding-top: 2.6rem; }
 
-/* Page 2 (the form): shrink only the card; leave the intro at full size. */
+/* Page 2 (the form) is meant to sit still — the card should not scroll inside
+   itself at ordinary window heights. The card only gets what the intro leaves,
+   so on this page the intro is condensed and the card padding tightened. The
+   card keeps overflow-y:auto purely as a safety valve for very short windows,
+   where clipping the submit button would be worse than a scrollbar. */
 .iq__body.is-step2 .iq__card {
-  align-self: center; width: 100%; max-width: 700px; padding: 1.6rem 2.6rem;
+  align-self: center; width: 100%; max-width: 700px; padding: 1.25rem 2.2rem;
+}
+.iq__body.is-step2 { padding-top: 1.5rem; gap: 0.85rem; }
+.iq__body.is-step2 .iq__intro h1 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); margin-bottom: 0.35rem; }
+.iq__body.is-step2 .lede { font-size: 0.95rem; line-height: 1.45; }
+.iq__body.is-step2 .eyebrow { margin-bottom: 0.45rem; }
+.iq__body.is-step2 .steps { margin-top: 0.6rem; }
+@media (max-height: 820px) {
+  .iq__body.is-step2 { padding-top: 1.1rem; gap: 0.7rem; }
+  .iq__body.is-step2 .iq__card { padding: 1rem 2.2rem; }
+}
+@media (max-height: 760px) {
+  .iq__body.is-step2 { padding-top: 0.8rem; gap: 0.55rem; }
+  .iq__body.is-step2 .iq__card { padding: 0.85rem 1.9rem; }
+  .iq__body.is-step2 .iq__intro h1 { font-size: 1.55rem; margin-bottom: 0.25rem; }
+  .iq__body.is-step2 .lede { font-size: 0.88rem; }
+}
+@media (max-height: 700px) {
+  /* Below this the intro copy is the least important thing on the page. */
+  .iq__body.is-step2 .lede, .iq__body.is-step2 .eyebrow { display: none; }
+  .iq__body.is-step2 .iq__signin { display: none; }
 }
 .iq__intro { text-align: center; }
 .eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--brand-mint); margin: 0 0 0.7rem; font-weight: 700; }

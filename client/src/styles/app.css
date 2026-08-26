@@ -355,6 +355,60 @@ button:disabled {
 }
 @keyframes navmark { to { transform: translateY(-50%) scaleY(1); } }
 .navlink svg { flex-shrink: 0; }
+
+/* Count of items waiting on this page. Pushed to the far right of the row. */
+.navlink__badge {
+  margin-left: auto; flex-shrink: 0;
+  min-width: 20px; padding: 0 0.35rem; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: var(--danger); color: #fff;
+  font-size: 0.66rem; font-weight: 700; line-height: 1;
+}
+.navlink.active .navlink__badge { background: var(--danger); }
+
+/* Top-bar bell: the same outstanding work, visible from any page. */
+.bellwrap { position: relative; display: flex; }
+.bell {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0; border: none; border-radius: 10px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+.bell:hover { background: var(--paper); color: var(--text); }
+.bell:focus-visible { outline: none; box-shadow: var(--ring); }
+.bell.has-actions { color: var(--accent-text); }
+.bell__count {
+  position: absolute; top: 1px; right: 0;
+  min-width: 16px; height: 16px; padding: 0 0.25rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: var(--danger); color: #fff;
+  font-size: 0.6rem; font-weight: 700; line-height: 1;
+  border: 2px solid var(--surface);
+}
+
+.actions-panel {
+  position: absolute; right: 0; top: calc(100% + 8px); width: 288px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-md); padding: 0.4rem; z-index: 60;
+}
+.actions-panel__head {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--faint); padding: 0.4rem 0.55rem 0.5rem;
+}
+.actions-panel__item {
+  display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem;
+  border-radius: 8px; text-decoration: none; color: var(--text);
+}
+.actions-panel__item:hover { background: var(--paper); }
+.actions-panel__item strong { display: block; font-size: 0.85rem; font-weight: 600; }
+.actions-panel__item small { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem; }
+.actions-panel__n {
+  flex-shrink: 0; min-width: 22px; height: 22px; padding: 0 0.3rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: var(--danger); color: #fff;
+  font-size: 0.7rem; font-weight: 700;
+}
+.actions-panel__empty { margin: 0; padding: 0.5rem 0.55rem 0.75rem; font-size: 0.82rem; color: var(--muted); }
 .sidebar-collapsed .navlink { justify-content: center; padding: 0.55rem; }
 .sidebar-collapsed .navlink.active::before { left: 0; }
 

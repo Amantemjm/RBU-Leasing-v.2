@@ -74,6 +74,7 @@ async function submit() {
           <a href="#" @click.prevent="router.push('/')">Change</a>
         </div>
 
+        <div class="row">
         <div class="field">
           <span class="label">What are you interested in? <span class="req">*</span></span>
           <div class="seg" role="group" aria-label="Category">
@@ -94,6 +95,7 @@ async function submit() {
             <option value="" disabled>Select…</option>
             <option v-for="opt in inquiryTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
+        </div>
         </div>
 
         <div class="row">
@@ -129,6 +131,18 @@ async function submit() {
 
 <style scoped>
 form { display: flex; flex-direction: column; gap: 0.8rem; }
+/* The form is meant to sit still rather than scroll inside its card, so it
+   gives back vertical space as the window gets shorter. Keyed to height, not
+   width — a wide-but-short window is the case that actually overflows. */
+@media (max-height: 820px) { form { gap: 0.62rem; } }
+@media (max-height: 760px) {
+  form { gap: 0.5rem; }
+  .consent { font-size: 0.74rem; padding: 0.45rem 0.65rem; line-height: 1.4; }
+}
+@media (max-height: 700px) {
+  form { gap: 0.4rem; }
+  textarea { min-height: 0; }
+}
 .asrole {
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
   background: var(--accent-050); border: 1px solid var(--accent-100, var(--accent-050)); color: var(--accent-text);
@@ -142,6 +156,7 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
 .req { color: var(--danger); }
 .optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; }
+@media (max-width: 620px) { .row { grid-template-columns: 1fr; gap: 0.8rem; } }
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
 .seg__opt {

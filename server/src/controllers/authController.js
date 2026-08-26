@@ -1,5 +1,8 @@
-import { loginUser, registerUser, signupPortalUser, listUsers, updateUser, deleteUser } from "../services/authService.js";
-import { registerSchema, signupSchema, updateUserSchema } from "../validation/user.js";
+import {
+  loginUser, registerUser, signupPortalUser, listUsers, updateUser, deleteUser,
+  listPendingAccounts, approveAccount, rejectAccount,
+} from "../services/authService.js";
+import { registerSchema, signupSchema, updateUserSchema, rejectAccountSchema } from "../validation/user.js";
 
 export async function login(req, res, next) {
   try {
@@ -17,11 +20,31 @@ export async function register(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// Public: a lessor/lessee creates their own account and is signed in immediately.
+// Public: a lessor/lessee applies for an account. No session is returned — the
+// application waits for an ADMIN or LEASING_OFFICER to approve it.
 export async function signup(req, res, next) {
   try {
     const data = signupSchema.parse(req.body);
     res.status(201).json(await signupPortalUser(data));
+  } catch (err) { next(err); }
+}
+
+export async function pendingAccounts(req, res, next) {
+  try {
+    res.json(await listPendingAccounts());
+  } catch (err) { next(err); }
+}
+
+export async function approve(req, res, next) {
+  try {
+    res.json(await approveAccount(req.params.id, req.user));
+  } catch (err) { next(err); }
+}
+
+export async function reject(req, res, next) {
+  try {
+    const { reason } = rejectAccountSchema.parse(req.body);
+    res.json(await rejectAccount(req.params.id, req.user, reason));
   } catch (err) { next(err); }
 }
 

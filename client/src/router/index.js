@@ -28,6 +28,7 @@ const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
 const TenantInfoSheetView = () => import("../views/TenantInfoSheetView.vue");
 import RequirementsView from "../views/RequirementsView.vue";
 import UsersView from "../views/UsersView.vue";
+import AccountApprovalsView from "../views/AccountApprovalsView.vue";
 import AuditView from "../views/AuditView.vue";
 import CmsFormsView from "../views/CmsFormsView.vue";
 const CmsFormBuilderView = () => import("../views/CmsFormBuilderView.vue");
@@ -83,6 +84,8 @@ const routes = [
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },
       { path: "my-profile", component: MyProfileView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
       // Super Admin
+      // Admin OR O-Lease: the leasing team vets portal signups, not just admins.
+      { path: "account-approvals", component: AccountApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
       { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
       { path: "audit", component: AuditView, meta: { roles: ["ADMIN"] } },
       { path: "forms", component: CmsFormsView, meta: { roles: ["ADMIN"] } },
