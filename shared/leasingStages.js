@@ -3,51 +3,27 @@
 // server (validation + state machine) and the client (tracker UI) so the two
 // never drift.
 
-// Ordered list of the 10 process stages. `short` is the tracker label; `initial`
+// Ordered list of the 6 process stages. `short` is the tracker label; `initial`
 // is the status a stage takes when the transaction first enters it; `done` marks
 // the status that means the stage is complete and ready to advance.
 export const LEASING_STAGES = [
   {
     key: "INQUIRY", label: "Inquiry", short: "Inquiry",
-    statuses: ["New Inquiry", "Under Review", "Need More Information", "Qualified", "Not Qualified", "Declined"],
+    statuses: ["New Inquiry", "Under Review", "Qualified", "Not Qualified", "Declined", "Skipped"],
     initial: "New Inquiry", done: "Qualified",
-    lesseeAction: "Submit your inquiry and leasing requirements.",
+    lesseeAction: "Submit your inquiry — no account needed.",
   },
   {
-    key: "ACCEPT_INQUIRY", label: "Accept Inquiry", short: "Accept",
-    statuses: ["Pending", "Accepted", "Reassigned", "Declined"],
-    initial: "Pending", done: "Accepted",
-    lesseeAction: "Your inquiry is being reviewed by the leasing team.",
-  },
-  {
-    key: "UNIT_REGISTRATION", label: "Unit Registration", short: "Register Unit",
-    statuses: ["Pending", "Unit Registered"],
-    initial: "Pending", done: "Unit Registered",
-    lesseeAction: "The leasing team is registering your selected unit.",
+    key: "SEND_REQUIREMENTS", label: "Send Requirements", short: "Requirements",
+    statuses: ["Pending", "Submitted", "Incomplete", "Complete"],
+    initial: "Pending", done: "Complete",
+    lesseeAction: "Upload the required documents.",
   },
   {
     key: "APPROVAL", label: "Approval", short: "Approval",
     statuses: ["Pending Submission", "Submitted", "Under Review", "For Revision", "Approved", "Rejected"],
     initial: "Pending Submission", done: "Approved",
-    lesseeAction: "Submit the required documents and await approval.",
-  },
-  {
-    key: "UNIT_SHOOT", label: "Unit Shoot", short: "Unit Shoot",
-    statuses: ["Pending", "Scheduled", "In Progress", "Completed", "Rescheduled"],
-    initial: "Pending", done: "Completed",
-    lesseeAction: "View the scheduled unit shoot.",
-  },
-  {
-    key: "ACCOMPLISHMENT_FORM", label: "Accomplishment Form", short: "Accomplishment",
-    statuses: ["For Completion", "Submitted", "Under Review", "Accepted", "Returned"],
-    initial: "For Completion", done: "Accepted",
-    lesseeAction: "Complete and submit the accomplishment form.",
-  },
-  {
-    key: "LETTER_OF_INTENT", label: "Letter of Intent", short: "LOI",
-    statuses: ["Draft", "For Lessee Review", "Submitted", "For Lessor Review", "Accepted", "Returned"],
-    initial: "Draft", done: "Accepted",
-    lesseeAction: "Review and sign the Letter of Intent.",
+    lesseeAction: "Await approval of your submission.",
   },
   {
     key: "UNIT_INSPECTION", label: "Unit Inspection", short: "Inspection",
@@ -56,16 +32,16 @@ export const LEASING_STAGES = [
     lesseeAction: "Attend or acknowledge the unit inspection.",
   },
   {
-    key: "CONTRACT_SIGNING", label: "Contract Signing", short: "Signing",
-    statuses: ["Contract Preparation", "For Review", "For Lessee Signing", "For Lessor Signing", "Fully Executed"],
-    initial: "Contract Preparation", done: "Fully Executed",
-    lesseeAction: "Review and sign the lease contract.",
+    key: "KEY_TURNOVER", label: "Key Turnover", short: "Turnover",
+    statuses: ["Pending", "Scheduled", "Completed", "Rescheduled"],
+    initial: "Pending", done: "Completed",
+    lesseeAction: "Turn over the unit keys.",
   },
   {
-    key: "FINAL_STATUS", label: "Status", short: "Status",
-    statuses: ["Active", "Completed", "Pending", "For Revision", "Cancelled", "Rejected", "Expired"],
-    initial: "Active", done: "Completed",
-    lesseeAction: "View your final leasing status.",
+    key: "PHOTOSHOOT", label: "Photoshoot", short: "Photoshoot",
+    statuses: ["Pending", "Scheduled", "In Progress", "Completed", "Rescheduled"],
+    initial: "Pending", done: "Completed",
+    lesseeAction: "The unit photoshoot is scheduled.",
   },
 ];
 
@@ -84,7 +60,7 @@ export function stageByKey(key) {
   return LEASING_STAGES.find((s) => s.key === key);
 }
 export function isFinalStage(key) {
-  return key === "FINAL_STATUS";
+  return key === "PHOTOSHOOT";
 }
 export function nextStageKey(key) {
   const i = stageIndex(key);
