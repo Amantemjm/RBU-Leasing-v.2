@@ -50,7 +50,7 @@ describe("Audit trail", () => {
 
   it("records sub-actions like unit approval", async () => {
     const owner = await factory.owner();
-    const unit = await factory.unit(owner.id, { approvalStatus: "PENDING" });
+    const unit = await factory.unit(owner.id, { approvalStatus: "SUBMITTED" });
     await request(app).patch(`/api/units/${unit.id}/approve`)
       .set("Authorization", `Bearer ${tokens.officer()}`);
     const rows = await latest();

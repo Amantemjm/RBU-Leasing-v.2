@@ -34,21 +34,43 @@ export function listUnitsForUser(user, filters = {}) {
 }
 
 export async function createUnitForUser(user, data) {
-  const payload = { ...data };
+  const { submit, ...fields } = data;
+  const payload = { ...fields };
   if (payload.baseRent == null) payload.baseRent = 0; // base rent lives on the lease
   if (user.role === "UNIT_OWNER") {
     payload.ownerId = user.unitOwnerId; // force own owner
-    payload.approvalStatus = "PENDING"; // owner submissions await O-Lease approval
+    payload.approvalStatus = submit ? "SUBMITTED" : "DRAFT";
   }
   await assertOwnerExists(payload.ownerId);
   if (payload.towerId) await assertTowerExists(payload.towerId);
   return prisma.unit.create({ data: payload, include: withHierarchy });
 }
 
-export async function approveUnit(id, decision) {
+export async function submitUnit(user, id) {
+  const unit = await getUnit(id);
+  if (user && user.role === "UNIT_OWNER" && unit.ownerId !== user.unitOwnerId) {
+    throw new NotFoundError("Unit not found");
+  }
+  if (!["DRAFT", "REJECTED"].includes(unit.approvalStatus)) {
+    throw new ConflictError("Only a draft or rejected unit can be submitted");
+  }
+  return prisma.unit.update({
+    where: { id }, data: { approvalStatus: "SUBMITTED", reviewRemarks: null }, include: withHierarchy,
+  });
+}
+
+export async function approveUnit(id) {
   await getUnit(id);
-  const approvalStatus = decision === "approve" ? "APPROVED" : "REJECTED";
-  return prisma.unit.update({ where: { id }, data: { approvalStatus }, include: withHierarchy });
+  return prisma.unit.update({
+    where: { id }, data: { approvalStatus: "APPROVED", reviewRemarks: null }, include: withHierarchy,
+  });
+}
+
+export async function rejectUnit(id, remarks) {
+  await getUnit(id);
+  return prisma.unit.update({
+    where: { id }, data: { approvalStatus: "REJECTED", reviewRemarks: remarks }, include: withHierarchy,
+  });
 }
 
 export async function getUnit(id) {
@@ -63,11 +85,21 @@ export async function createUnit(data) {
   return prisma.unit.create({ data: { baseRent: 0, ...data } });
 }
 
-export async function updateUnit(id, data) {
-  await getUnit(id);
-  if (data.ownerId) await assertOwnerExists(data.ownerId);
-  if (data.towerId) await assertTowerExists(data.towerId);
-  return prisma.unit.update({ where: { id }, data });
+export async function updateUnit(user, id, data) {
+  const unit = await getUnit(id);
+  const { submit, ...fields } = data;
+  void submit;
+  if (user && user.role === "UNIT_OWNER") {
+    if (unit.ownerId !== user.unitOwnerId) throw new NotFoundError("Unit not found");
+    if (!["DRAFT", "REJECTED"].includes(unit.approvalStatus)) {
+      throw new ConflictError("This unit can no longer be edited");
+    }
+    fields.ownerId = user.unitOwnerId; // never let an owner reassign
+    delete fields.approvalStatus;      // status changes only via submit/approve/reject
+  }
+  if (fields.ownerId) await assertOwnerExists(fields.ownerId);
+  if (fields.towerId) await assertTowerExists(fields.towerId);
+  return prisma.unit.update({ where: { id }, data: fields, include: withHierarchy });
 }
 
 export async function removeUnit(id) {

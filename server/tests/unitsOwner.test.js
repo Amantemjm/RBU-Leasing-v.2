@@ -7,11 +7,11 @@ const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
 
 describe("owner-scoped units + approval", () => {
-  it("owner sees only their own units, including pending", async () => {
+  it("owner sees only their own units, including submitted", async () => {
     const o1 = await factory.owner();
     const o2 = await factory.owner({ name: "Other" });
     await factory.unit(o1.id, { unitNumber: "A" });
-    await factory.unit(o1.id, { unitNumber: "B", approvalStatus: "PENDING" });
+    await factory.unit(o1.id, { unitNumber: "B", approvalStatus: "SUBMITTED" });
     await factory.unit(o2.id, { unitNumber: "C" });
 
     const res = await request(app).get("/api/units").set("Authorization", `Bearer ${tokens.owner(o1.id)}`);
@@ -19,14 +19,14 @@ describe("owner-scoped units + approval", () => {
     expect(res.body).toHaveLength(2);
   });
 
-  it("owner-submitted unit is PENDING and owned by them (ownerId forced)", async () => {
+  it("owner-created unit is DRAFT and owned by them (ownerId forced)", async () => {
     const o1 = await factory.owner();
     const res = await request(app).post("/api/units")
       .set("Authorization", `Bearer ${tokens.owner(o1.id)}`)
       .send({ unitNumber: "NEW", baseRent: 30000, ownerId: "someone-else" });
     expect(res.status).toBe(201);
     expect(res.body.ownerId).toBe(o1.id);
-    expect(res.body.approvalStatus).toBe("PENDING");
+    expect(res.body.approvalStatus).toBe("DRAFT");
   });
 
   it("owner can register a unit without a base rent (defaults to 0)", async () => {
@@ -35,21 +35,21 @@ describe("owner-scoped units + approval", () => {
       .set("Authorization", `Bearer ${tokens.owner(o1.id)}`)
       .send({ unitNumber: "10A", type: "2BR", floor: "10" }); // no baseRent — captured at lease level
     expect(res.status).toBe(201);
-    expect(res.body.approvalStatus).toBe("PENDING");
+    expect(res.body.approvalStatus).toBe("DRAFT");
     expect(Number(res.body.baseRent)).toBe(0);
   });
 
   it("owner cannot approve a unit (403)", async () => {
     const o1 = await factory.owner();
-    const u = await factory.unit(o1.id, { approvalStatus: "PENDING" });
+    const u = await factory.unit(o1.id, { approvalStatus: "SUBMITTED" });
     const res = await request(app).patch(`/api/units/${u.id}/approve`)
       .set("Authorization", `Bearer ${tokens.owner(o1.id)}`);
     expect(res.status).toBe(403);
   });
 
-  it("officer approves a pending unit", async () => {
+  it("officer approves a submitted unit", async () => {
     const o1 = await factory.owner();
-    const u = await factory.unit(o1.id, { approvalStatus: "PENDING" });
+    const u = await factory.unit(o1.id, { approvalStatus: "SUBMITTED" });
     const res = await request(app).patch(`/api/units/${u.id}/approve`)
       .set("Authorization", `Bearer ${tokens.officer()}`);
     expect(res.status).toBe(200);
@@ -58,9 +58,9 @@ describe("owner-scoped units + approval", () => {
 
   it("admin can filter units by approvalStatus", async () => {
     const o1 = await factory.owner();
-    await factory.unit(o1.id, { unitNumber: "P", approvalStatus: "PENDING" });
+    await factory.unit(o1.id, { unitNumber: "P", approvalStatus: "SUBMITTED" });
     await factory.unit(o1.id, { unitNumber: "Q", approvalStatus: "APPROVED" });
-    const res = await request(app).get("/api/units?approvalStatus=PENDING")
+    const res = await request(app).get("/api/units?approvalStatus=SUBMITTED")
       .set("Authorization", `Bearer ${tokens.admin()}`);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].unitNumber).toBe("P");

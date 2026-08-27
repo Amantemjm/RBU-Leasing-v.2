@@ -13,6 +13,9 @@ export const unitCreateSchema = z.object({
   // service defaults it to 0 so registration works without it.
   baseRent: z.coerce.number().nonnegative().nullish(),
   status: z.enum(["VACANT", "OCCUPIED"]).optional(),
+  submit: z.boolean().optional(),
 });
 
 export const unitUpdateSchema = unitCreateSchema.partial();
+
+export const unitRejectSchema = z.object({ remarks: z.string().min(1, "A remark is required") });
