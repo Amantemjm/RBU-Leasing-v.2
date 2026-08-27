@@ -55,6 +55,14 @@ describe("Leasing transactions (process tracker)", () => {
     expect(res.body.stage).toBe("INQUIRY");
   });
 
+  it("rejects a startStage the lessor flow does not allow", async () => {
+    const { token } = await makeOfficer();
+    const res = await request(app).post("/api/leasing-transactions")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ lesseeName: "Bad Start", startStage: "APPROVAL" });
+    expect(res.status).toBe(400);
+  });
+
   it("advances forward through stages and records events", async () => {
     const inquiry = await newInquiry();
     const { token, user } = await makeOfficer();

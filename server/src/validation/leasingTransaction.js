@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { STAGE_KEYS } from "../../../shared/leasingStages.js";
+
+// The only stages a staff-created transaction may start at: the normal front
+// door (Inquiry) or, for a lessor already in the system, Send Requirements.
+// Starting further along would skip approval routing, so it is not allowed.
+export const STARTABLE_STAGES = ["INQUIRY", "SEND_REQUIREMENTS"];
 
 export const txnCreateSchema = z.object({
   lesseeName: z.string().optional().nullable(),
@@ -7,7 +11,7 @@ export const txnCreateSchema = z.object({
   tenantId: z.string().optional().nullable(),
   unitOwnerId: z.string().optional().nullable(),
   assignedOfficerId: z.string().optional().nullable(),
-  startStage: z.string().refine((v) => STAGE_KEYS.includes(v), "invalid startStage").optional(),
+  startStage: z.enum(STARTABLE_STAGES).optional(),
 });
 
 export const txnStatusSchema = z.object({
