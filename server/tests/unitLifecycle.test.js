@@ -62,4 +62,14 @@ describe("Unit lifecycle", () => {
     expect(app2.body.approvalStatus).toBe("APPROVED");
     expect(app2.body.reviewRemarks).toBeNull();
   });
+
+  it("a lessor cannot fetch another owner's unit (404), but can fetch their own", async () => {
+    const o1 = await factory.owner(); const o2 = await factory.owner({ name: "Two" });
+    const mine = await factory.unit(o1.id, { unitNumber: "M1" });
+    const theirs = await factory.unit(o2.id, { unitNumber: "T1" });
+    const okMine = await request(app).get(`/api/units/${mine.id}`).set({ Authorization: `Bearer ${tokens.owner(o1.id)}` });
+    expect(okMine.status).toBe(200);
+    const blocked = await request(app).get(`/api/units/${theirs.id}`).set({ Authorization: `Bearer ${tokens.owner(o1.id)}` });
+    expect(blocked.status).toBe(404);
+  });
 });

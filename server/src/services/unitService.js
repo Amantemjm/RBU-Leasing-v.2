@@ -79,6 +79,14 @@ export async function getUnit(id) {
   return unit;
 }
 
+export async function getUnitForUser(user, id) {
+  const unit = await getUnit(id);
+  if (user && user.role === "UNIT_OWNER" && unit.ownerId !== user.unitOwnerId) {
+    throw new NotFoundError("Unit not found");
+  }
+  return unit;
+}
+
 export async function createUnit(data) {
   await assertOwnerExists(data.ownerId);
   if (data.towerId) await assertTowerExists(data.towerId);

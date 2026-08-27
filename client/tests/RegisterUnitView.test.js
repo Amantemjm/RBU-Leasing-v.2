@@ -144,4 +144,34 @@ describe("RegisterUnitView", () => {
     expect(w.find(".error").text()).toBe("Unit already registered");
     expect(w.find("form").exists()).toBe(true); // keeps their input for a retry
   });
+
+  it("loads an existing unit via ?id= for editing, prefills the form, and saves through update", async () => {
+    units.get.mockResolvedValue({
+      id: "u9", unitNumber: "19A", floor: "19", slotNo: "B5-15",
+      type: "1 Bedroom", baseRent: 25000, towerId: "t1",
+      tower: { id: "t1", name: "Ibiza Tower", estate: { id: "e1", name: "Circulo Verde" } },
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/:pathMatch(.*)*", component: stub }],
+    });
+    router.push("/app/register-unit?id=u9");
+    await router.isReady();
+    const w = mount(RegisterUnitView, { global: { plugins: [router] } });
+    await flushPromises();
+
+    expect(units.get).toHaveBeenCalledWith("u9");
+    expect(w.find("#unitNumber").element.value).toBe("19A");
+    expect(w.find("#estateId").element.value).toBe("e1");
+    expect(w.find("#towerId").element.value).toBe("t1");
+
+    await w.find("button.submit").trigger("click");
+    await flushPromises();
+
+    expect(units.update).toHaveBeenCalledTimes(1);
+    const [id, payload] = units.update.mock.calls[0];
+    expect(id).toBe("u9");
+    expect(payload).toMatchObject({ unitNumber: "19A", towerId: "t1" });
+    expect(submitUnit).toHaveBeenCalledWith("u9");
+  });
 });
