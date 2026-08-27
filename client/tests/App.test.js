@@ -25,10 +25,11 @@ describe("App shell", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 
-  // Mounted once at the root rather than per-layout, so the control sits in the
-  // identical viewport position on every route — public pages included.
-  it.each(["/", "/login", "/signup", "/inquiry", "/app/users"])(
-    "renders the theme toggle on %s",
+  // On public routes there is no nav bar, so App.vue renders the floating
+  // ThemeToggle itself, mounted once at the root so it sits in the identical
+  // viewport position on every public route.
+  it.each(["/", "/login", "/signup", "/inquiry"])(
+    "renders the floating theme toggle on %s",
     async (path) => {
       const router = makeRouter();
       router.push(path);
@@ -38,11 +39,14 @@ describe("App shell", () => {
     },
   );
 
-  it("renders exactly one theme toggle, never a duplicate", async () => {
+  // Inside the app shell (/app/*) the switch lives in the nav bar (AppLayout)
+  // instead, so App.vue must not also render the floating control — otherwise
+  // there would be two toggles on screen.
+  it("does not render the floating theme toggle on /app/* routes", async () => {
     const router = makeRouter();
     router.push("/app/users");
     await router.isReady();
     const w = mount(App, { global: { plugins: [router] } });
-    expect(w.findAllComponents(ThemeToggle)).toHaveLength(1);
+    expect(w.findComponent(ThemeToggle).exists()).toBe(false);
   });
 });
