@@ -1,14 +1,16 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { units, estates, towers } from "../lib/resource.js";
+import { useRouter, useRoute } from "vue-router";
+import { units, estates, towers, submitUnit } from "../lib/resource.js";
 
 const router = useRouter();
+const route = useRoute();
 const error = ref("");
 const submitting = ref(false);
 const done = ref(false);
 const estateOptions = ref([]);
 const towerOptions = ref([]);
+const editId = ref(route.query.id || null);
 
 const form = reactive({
   estateId: "", towerId: "", unitNumber: "", floor: "", slotNo: "",
@@ -32,18 +34,34 @@ async function onEstateChange() {
 
 onMounted(async () => {
   estateOptions.value = (await estates.list()).map((e) => ({ value: e.id, label: e.name }));
+
+  if (editId.value) {
+    const u = await units.get(editId.value);
+    form.unitNumber = u.unitNumber || ""; form.floor = u.floor || ""; form.slotNo = u.slotNo || "";
+    form.type = u.type || ""; form.baseRent = u.baseRent != null ? String(u.baseRent) : "";
+    if (u.tower?.estate?.id) {
+      form.estateId = u.tower.estate.id;
+      await loadTowers(form.estateId);
+      form.towerId = u.towerId || "";
+    }
+  }
 });
 
-async function submit() {
+async function save(submitForApproval) {
   error.value = "";
   submitting.value = true;
-  const payload = {};
+  const payload = { submit: submitForApproval };
   for (const [k, v] of Object.entries(form)) {
     if (k === "estateId") continue; // UI-only: narrows the tower list
     if (v !== "" && v !== null && v !== undefined) payload[k] = v;
   }
   try {
-    await units.create(payload);
+    if (editId.value) {
+      await units.update(editId.value, payload);
+      if (submitForApproval) await submitUnit(editId.value);
+    } else {
+      await units.create(payload);
+    }
     done.value = true;
     setTimeout(() => router.push("/app/my-units"), 1600);
   } catch (e) {
@@ -67,12 +85,12 @@ async function submit() {
     <div v-if="done" class="done">
       <span class="done__tick" aria-hidden="true">✓</span>
       <div>
-        <h2>Submitted for approval</h2>
+        <h2>{{ editId ? "Saved" : "Submitted for approval" }}</h2>
         <p class="muted">O-Lease will review it shortly. Taking you back to your units…</p>
       </div>
     </div>
 
-    <form v-else @submit.prevent="submit" novalidate>
+    <form v-else @submit.prevent="save(true)" novalidate>
       <fieldset class="fset">
         <legend class="fset__title">Where it is</legend>
         <div class="fset__grid">
@@ -145,9 +163,8 @@ async function submit() {
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="form-actions">
-        <button type="submit" :disabled="submitting">
-          {{ submitting ? "Submitting…" : "Submit for approval" }}
-        </button>
+        <button type="button" class="draft" :disabled="submitting" @click="save(false)">Save as draft</button>
+        <button type="submit" class="submit" :disabled="submitting" @click.prevent="save(true)">Submit for approval</button>
         <button type="button" class="cancel" @click="router.push('/app/my-units')">Cancel</button>
       </div>
       <p class="foot">Nothing is published until O-Lease approves it.</p>

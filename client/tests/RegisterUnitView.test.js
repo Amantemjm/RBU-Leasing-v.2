@@ -3,13 +3,18 @@ import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
 
 vi.mock("../src/lib/resource.js", () => ({
-  units: { create: vi.fn(() => Promise.resolve({ id: "u1" })) },
+  units: {
+    create: vi.fn(() => Promise.resolve({ id: "u1" })),
+    get: vi.fn(() => Promise.resolve({})),
+    update: vi.fn(() => Promise.resolve({ id: "u1" })),
+  },
   estates: { list: vi.fn(() => Promise.resolve([{ id: "e1", name: "Circulo Verde" }])) },
   towers: { list: vi.fn(() => Promise.resolve([{ id: "t1", name: "Ibiza Tower" }])) },
+  submitUnit: vi.fn(() => Promise.resolve({ id: "u1" })),
 }));
 
 import RegisterUnitView from "../src/views/RegisterUnitView.vue";
-import { units, estates, towers } from "../src/lib/resource.js";
+import { units, estates, towers, submitUnit } from "../src/lib/resource.js";
 
 const stub = { template: "<div/>" };
 
@@ -29,8 +34,11 @@ describe("RegisterUnitView", () => {
   beforeEach(() => {
     units.create.mockClear();
     units.create.mockResolvedValue({ id: "u1" });
+    units.get.mockClear();
+    units.update.mockClear();
     estates.list.mockClear();
     towers.list.mockClear();
+    submitUnit.mockClear();
   });
 
   // Every free-text field should show the shape of a real answer, taken from
@@ -85,7 +93,7 @@ describe("RegisterUnitView", () => {
     await w.find("#slotNo").setValue("B5-15");
     await w.find("#type").setValue("1 Bedroom");
     await w.find("#baseRent").setValue("25000");
-    await w.find("form").trigger("submit.prevent");
+    await w.find("button.submit").trigger("click");
     await flushPromises();
 
     expect(units.create).toHaveBeenCalledTimes(1);
@@ -95,6 +103,17 @@ describe("RegisterUnitView", () => {
       type: "1 Bedroom", baseRent: 25000, // number input yields a number, not a string
     });
     expect(payload.estateId).toBeUndefined();
+    expect(payload.submit).toBe(true);
+  });
+
+  it("saves a draft without submitting for approval", async () => {
+    const w = await mountView();
+    await w.find("#unitNumber").setValue("6D");
+    await w.find("button.draft").trigger("click");
+    await flushPromises();
+    const payload = units.create.mock.calls[0][0];
+    expect(payload.unitNumber).toBe("6D");
+    expect(payload.submit).toBe(false);
   });
 
   it("omits blank optional fields rather than sending empty strings", async () => {

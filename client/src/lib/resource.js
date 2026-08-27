@@ -73,8 +73,11 @@ export function assignOwner(id, assignedOfficerId) {
 export function approveUnit(id) {
   return api.patch(`/units/${id}/approve`).then((r) => r.data);
 }
-export function rejectUnit(id) {
-  return api.patch(`/units/${id}/reject`).then((r) => r.data);
+export function rejectUnit(id, remarks) {
+  return api.patch(`/units/${id}/reject`, { remarks }).then((r) => r.data);
+}
+export function submitUnit(id) {
+  return api.patch(`/units/${id}/submit`).then((r) => r.data);
 }
 export function createUser(payload) {
   return api.post("/auth/register", payload).then((r) => r.data);
