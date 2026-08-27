@@ -7,7 +7,7 @@ import {
 } from "../lib/errors.js";
 
 // The seeded super admin cannot be deleted or demoted from ADMIN.
-export const SUPER_ADMIN_EMAIL = "admin@rbu.local";
+export const SUPER_ADMIN_EMAIL = "Admin";
 
 export async function hashPassword(plain) {
   return bcrypt.hash(plain, 10);
@@ -53,6 +53,9 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
+    // Only active, approved accounts belong in the system Users list. Pending
+    // applications live in Account Approvals; rejected ones are deleted outright.
+    where: { status: "APPROVED" },
     orderBy: { createdAt: "desc" },
     select: {
       id: true, name: true, email: true, role: true, passwordPlain: true,
@@ -180,24 +183,20 @@ export async function approveAccount(id, approver) {
   });
 }
 
+// Rejecting an application deletes the account outright. It never lingers among
+// system users, and removing the row frees the username so the applicant can
+// re-apply later. No linked UnitOwner/Tenant exists yet (those are created only
+// on approval), so the delete is self-contained. `reason` is required by the
+// operator's confirmation flow but not persisted, since no record is kept.
 export async function rejectAccount(id, approver, reason) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
   if (user.status !== "PENDING") {
     throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
   }
-  const decidedBy = await approverName(approver);
-  const updated = await prisma.user.update({
-    where: { id },
-    data: {
-      status: "REJECTED",
-      rejectionReason: reason,
-      approvedById: approver.userId,
-      approvedByName: decidedBy,
-      decidedAt: new Date(),
-    },
-  });
-  return { id: updated.id, name: updated.name, email: updated.email, status: updated.status };
+  void reason;
+  await prisma.user.delete({ where: { id } });
+  return { id: user.id, name: user.name, email: user.email, status: "REJECTED" };
 }
 
 export async function loginUser({ email, password }) {

@@ -108,7 +108,7 @@ async function confirmReject() {
     <div v-if="rejecting" class="modal-backdrop" @click.self="rejecting = null">
       <div class="modal" role="dialog" aria-modal="true" aria-label="Reject account">
         <h2>Reject {{ rejecting.name }}</h2>
-        <p class="muted small">They will not be able to sign in. The reason is kept on the record.</p>
+        <p class="muted small">This permanently removes the request; the username is freed so they can apply again later.</p>
         <div class="field">
           <label for="reason">Reason</label>
           <input id="reason" type="text" v-model="reason" placeholder="e.g. Could not verify identity" />

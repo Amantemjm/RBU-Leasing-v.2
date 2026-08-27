@@ -1,9 +1,9 @@
-// Sets a new password for the seeded admin (admin@rbu.local).
+// Sets a new password for the seeded super admin.
 // Usage:  node scripts/set-admin-password.js "<new-password>"   (min 8 chars)
 // Run this before exposing the app on the network.
 import "../src/env.js";
 import { prisma } from "../src/lib/prisma.js";
-import { hashPassword } from "../src/services/authService.js";
+import { hashPassword, SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 
 const pw = process.argv[2];
 if (!pw || pw.length < 8) {
@@ -17,7 +17,7 @@ try {
   // only the hash would leave that screen showing the previous password while
   // login expects the new one.
   const user = await prisma.user.update({
-    where: { email: "admin@rbu.local" },
+    where: { email: SUPER_ADMIN_EMAIL },
     data: { passwordHash, passwordPlain: pw },
   });
   console.log(`Password updated for ${user.email}.`);

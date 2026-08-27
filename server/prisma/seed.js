@@ -1,10 +1,10 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/prisma.js";
-import { hashPassword } from "../src/services/authService.js";
+import { hashPassword, SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 import { seedEstates } from "./estatesSeed.js";
 
 async function main() {
-  const email = "admin@rbu.local";
+  const email = SUPER_ADMIN_EMAIL;
   // Super admin: always guaranteed present with a known password and ADMIN role.
   await prisma.user.upsert({
     where: { email },
@@ -18,7 +18,7 @@ async function main() {
       passwordHash: await hashPassword("admin123"), passwordPlain: "admin123", role: "ADMIN",
     },
   });
-  console.log("seeded super admin admin@rbu.local / admin123");
+  console.log(`seeded super admin ${email} / admin123`);
 
   await seedEstates(prisma);
   console.log("seeded estate/tower hierarchy");

@@ -20,13 +20,15 @@ async function submit() {
     const home = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
     router.push(home);
   } catch (e) {
-    // A pending or rejected account is a different situation from bad
-    // credentials, and the server says which — passing it through avoids
-    // applicants retyping a password that was never the problem.
+    // A pending account is a distinct situation from bad credentials, and the
+    // server says so — passing it through avoids applicants retyping a password
+    // that was never the problem. A rejected application is deleted outright, so
+    // it simply no longer exists: that login lands here as normal invalid
+    // credentials, and the message points the person to create an account.
     const code = e.response?.data?.code;
-    error.value = code === "ACCOUNT_PENDING" || code === "ACCOUNT_REJECTED"
+    error.value = code === "ACCOUNT_PENDING"
       ? e.response.data.error
-      : "Invalid username or password.";
+      : "We couldn't find an account with those details. Check your username and password, or create an account below if you don't have one yet.";
   }
 }
 </script>
