@@ -25,7 +25,8 @@ enum Role {
 }
 
 enum UnitApprovalStatus {
-  PENDING
+  DRAFT
+  SUBMITTED
   APPROVED
   REJECTED
 }
@@ -178,6 +179,7 @@ model Unit {
   baseRent   Decimal
   status     UnitStatus @default(VACANT)
   approvalStatus UnitApprovalStatus @default(APPROVED)
+  reviewRemarks  String?
   leases     Lease[]
   leasingTransactions LeasingTransaction[]
   createdAt  DateTime   @default(now())
