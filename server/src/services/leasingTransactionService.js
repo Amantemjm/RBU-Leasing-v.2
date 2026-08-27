@@ -62,13 +62,12 @@ export async function ensureForInquiry(inquiry, actor) {
   const reference = await nextReference();
   const stageData = {
     INQUIRY: { status: "Qualified", completedAt: now },
-    ACCEPT_INQUIRY: { status: "Accepted", completedAt: now },
-    UNIT_REGISTRATION: { status: "Pending", startedAt: now },
+    SEND_REQUIREMENTS: { status: "Pending", startedAt: now },
   };
   const txn = await prisma.leasingTransaction.create({
     data: {
       reference,
-      stage: "UNIT_REGISTRATION",
+      stage: "SEND_REQUIREMENTS",
       status: "Pending",
       stageData,
       lesseeName: inquiry.fullName,
@@ -76,7 +75,7 @@ export async function ensureForInquiry(inquiry, actor) {
       assignedOfficerId: inquiry.assignedToId || actor?.userId || null,
     },
   });
-  await logEvent(txn.id, actor, `Inquiry accepted — transaction ${reference} created`, "ACCEPT_INQUIRY");
+  await logEvent(txn.id, actor, `Inquiry accepted — transaction ${reference} created`, "INQUIRY");
   return txn;
 }
 

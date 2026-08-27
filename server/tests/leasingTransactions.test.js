@@ -31,7 +31,7 @@ describe("Leasing transactions (process tracker)", () => {
     expect(list.body).toHaveLength(1);
     const txn = list.body[0];
     expect(txn.reference).toMatch(/^RBU-\d{4}-\d{6}$/);
-    expect(txn.stage).toBe("UNIT_REGISTRATION"); // inquiry + accept are complete
+    expect(txn.stage).toBe("SEND_REQUIREMENTS"); // inquiry complete, awaiting requirements
     expect(txn.lesseeName).toBe("Maria Santos");
   });
 
@@ -45,7 +45,7 @@ describe("Leasing transactions (process tracker)", () => {
       .set("Authorization", `Bearer ${token}`).send({ remarks: "Docs complete" });
     expect(adv.status).toBe(200);
     expect(adv.body.stage).toBe("APPROVAL");
-    expect(adv.body.stageData.UNIT_REGISTRATION.completedAt).toBeTruthy();
+    expect(adv.body.stageData.SEND_REQUIREMENTS.completedAt).toBeTruthy();
 
     // events include creation + advance, newest first
     const detail = await request(app).get(`/api/leasing-transactions/${txnId}`).set("Authorization", `Bearer ${token}`);
@@ -60,9 +60,9 @@ describe("Leasing transactions (process tracker)", () => {
     const txnId = (await request(app).get("/api/leasing-transactions").set("Authorization", `Bearer ${token}`)).body[0].id;
 
     const ok = await request(app).patch(`/api/leasing-transactions/${txnId}/status`)
-      .set("Authorization", `Bearer ${token}`).send({ status: "Unit Registered" });
+      .set("Authorization", `Bearer ${token}`).send({ status: "Complete" });
     expect(ok.status).toBe(200);
-    expect(ok.body.status).toBe("Unit Registered");
+    expect(ok.body.status).toBe("Complete");
 
     const bad = await request(app).patch(`/api/leasing-transactions/${txnId}/status`)
       .set("Authorization", `Bearer ${token}`).send({ status: "Bogus Status" });
@@ -79,7 +79,7 @@ describe("Leasing transactions (process tracker)", () => {
     const ret = await request(app).patch(`/api/leasing-transactions/${txnId}/return`)
       .set("Authorization", `Bearer ${token}`).send({ remarks: "Missing document" });
     expect(ret.status).toBe(200);
-    expect(ret.body.stage).toBe("UNIT_REGISTRATION");
+    expect(ret.body.stage).toBe("SEND_REQUIREMENTS");
   });
 
   it("links a unit and lessee to the transaction", async () => {
