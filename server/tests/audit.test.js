@@ -4,6 +4,7 @@ import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
 import { flushAudits } from "../src/middleware/audit.js";
 import { prisma } from "../src/lib/prisma.js";
+import { SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -28,7 +29,7 @@ describe("Audit trail", () => {
   it("records the real actor name on login", async () => {
     // The seeded super admin exists in the DB
     const res = await request(app).post("/api/auth/login")
-      .send({ email: "admin@rbu.local", password: "admin123" });
+      .send({ email: SUPER_ADMIN_EMAIL, password: "admin123" });
     expect(res.status).toBe(200);
     const rows = await latest();
     const entry = rows.find((r) => r.action === "login");

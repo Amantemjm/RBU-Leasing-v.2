@@ -3,7 +3,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
-import { issueToken } from "../src/services/authService.js";
+import { issueToken, SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -149,7 +149,7 @@ describe("Approving an account", () => {
     await signup();
     const u = await pendingUser();
     // Approve as a real, resolvable admin so the name can be looked up.
-    const admin = await prisma.user.findUnique({ where: { email: "admin@rbu.local" } });
+    const admin = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
     await request(app).patch(`/api/auth/pending/${u.id}/approve`)
       .set("Authorization", `Bearer ${issueToken({ id: admin.id, role: "ADMIN" })}`);
     const after = await pendingUser();
@@ -180,7 +180,7 @@ describe("Approving an account", () => {
 });
 
 describe("Rejecting an account", () => {
-  it("marks it rejected, keeps the reason, and creates no linked record", async () => {
+  it("deletes the account and creates no linked record", async () => {
     await signup();
     const u = await pendingUser();
     const res = await request(app).patch(`/api/auth/pending/${u.id}/reject`)
@@ -188,22 +188,23 @@ describe("Rejecting an account", () => {
       .send({ reason: "Could not verify identity" });
     expect(res.status).toBe(200);
 
+    // Rejecting deletes the account outright — no retained REJECTED record,
+    // which also frees the username for re-application.
     const after = await pendingUser();
-    expect(after.status).toBe("REJECTED");
-    expect(after.rejectionReason).toBe("Could not verify identity");
-    expect(after.tenantId).toBeNull();
+    expect(after).toBeNull();
     expect(await prisma.tenant.count()).toBe(0);
   });
 
-  it("blocks login after rejection with its own message", async () => {
+  it("blocks login after rejection like any other unknown account", async () => {
     await signup();
     const u = await pendingUser();
     await request(app).patch(`/api/auth/pending/${u.id}/reject`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "Duplicate account" });
+    // The account row is gone, so login fails as ordinary invalid credentials —
+    // there is no special "account rejected" message anymore.
     const res = await request(app).post("/api/auth/login")
       .send({ email: applicant.email, password: applicant.password });
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("ACCOUNT_REJECTED");
+    expect(res.status).toBe(401);
   });
 
   it("requires a reason", async () => {
@@ -228,7 +229,7 @@ describe("Existing accounts are unaffected", () => {
   });
 
   it("the seeded super admin can still sign in", async () => {
-    const admin = await prisma.user.findUnique({ where: { email: "admin@rbu.local" } });
+    const admin = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
     expect(admin.status).toBe("APPROVED");
   });
 });

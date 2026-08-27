@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
+import { SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -119,7 +120,7 @@ describe("admin provisions owner/tenant accounts", () => {
 
   it("protects the super admin from deletion and demotion", async () => {
     const list = await request(app).get("/api/auth/users").set("Authorization", `Bearer ${tokens.admin()}`);
-    const superAdmin = list.body.find((x) => x.email === "admin@rbu.local");
+    const superAdmin = list.body.find((x) => x.email === SUPER_ADMIN_EMAIL);
     expect(superAdmin).toBeTruthy();
     const del = await request(app).delete(`/api/auth/users/${superAdmin.id}`).set("Authorization", `Bearer ${tokens.admin()}`);
     expect(del.status).toBe(409);
