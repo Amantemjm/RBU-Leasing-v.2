@@ -53,9 +53,9 @@ describe("Approval stage — routing + documents", () => {
       expect(last.status).toBe(200);
     }
     expect(last.body.status).toBe("Approved"); // stage status reflects full approval
-    // now it can advance to Unit Shoot
+    // now it can advance to Unit Inspection
     const adv = await request(app).patch(`/api/leasing-transactions/${txn.id}/advance`).set(auth(token)).send({});
-    expect(adv.body.stage).toBe("UNIT_SHOOT");
+    expect(adv.body.stage).toBe("UNIT_INSPECTION");
   });
 
   it("reflects a rejection on the Approval stage status", async () => {
