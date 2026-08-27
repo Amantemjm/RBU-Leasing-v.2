@@ -33,13 +33,28 @@ const filtered = computed(() => {
     .some((x) => String(x || "").toLowerCase().includes(term)));
 });
 
-async function createNew() {
-  const name = window.prompt("Lessee name for the new transaction");
-  if (name == null) return;
+const creating = ref(false);
+const newName = ref("");
+const newStartStage = ref("INQUIRY");
+const createError = ref("");
+
+function openCreate() {
+  newName.value = "";
+  newStartStage.value = "INQUIRY";
+  createError.value = "";
+  creating.value = true;
+}
+async function submitCreate() {
   try {
-    const t = await leasingTransactions.create({ lesseeName: name.trim() || null });
+    const t = await leasingTransactions.create({
+      lesseeName: newName.value.trim() || null,
+      startStage: newStartStage.value,
+    });
+    creating.value = false;
     router.push(`/app/transactions/${t.id}`);
-  } catch (e) { listError.value = e.response?.data?.error || "Could not create transaction"; }
+  } catch (e) {
+    createError.value = e.response?.data?.error || "Could not create transaction";
+  }
 }
 </script>
 
@@ -50,7 +65,7 @@ async function createNew() {
         <h1>Leasing Tracker</h1>
         <p class="muted">Every leasing transaction from inquiry to contract, in one place.</p>
       </div>
-      <button type="button" class="primary" @click="createNew">New transaction</button>
+      <button type="button" class="primary" @click="openCreate">New transaction</button>
     </header>
 
     <div class="toolbar">
@@ -77,6 +92,28 @@ async function createNew() {
         <tr v-if="!filtered.length"><td colspan="8" class="muted empty">No transactions yet. They are created automatically when an inquiry is accepted.</td></tr>
       </tbody>
     </table>
+
+    <div v-if="creating" class="modal-backdrop" @click.self="creating = false">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="New transaction">
+        <h2>New transaction</h2>
+        <div class="field">
+          <label for="txn-name">Lessee / lessor name</label>
+          <input id="txn-name" type="text" v-model="newName" placeholder="e.g. Juan dela Cruz" />
+        </div>
+        <div class="field">
+          <label for="txn-start">Start at</label>
+          <select id="txn-start" v-model="newStartStage">
+            <option value="INQUIRY">Inquiry</option>
+            <option value="SEND_REQUIREMENTS">Send Requirements (registered lessor)</option>
+          </select>
+        </div>
+        <p v-if="createError" class="error">{{ createError }}</p>
+        <div class="modal-actions">
+          <button type="button" class="cancel" @click="creating = false">Cancel</button>
+          <button type="button" class="primary" @click="submitCreate">Create</button>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -89,4 +126,11 @@ async function createNew() {
 .ref { font-family: ui-monospace, "Consolas", monospace; font-size: 0.8rem; background: var(--accent-050); color: var(--accent-text); padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); }
 .stage { font-weight: 600; }
 .empty { text-align: center; padding: 2rem 0; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(9,30,22,0.45); display: grid; place-items: center; z-index: 50; }
+.modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 1.5rem; width: min(420px, 92vw); }
+.modal h2 { margin: 0 0 1rem; }
+.modal .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.9rem; }
+.modal label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+.modal input, .modal select { font: inherit; padding: 0.6rem 0.7rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; }
 </style>
