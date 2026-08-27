@@ -16,13 +16,12 @@ const props = defineProps({
 });
 
 const STAGE_ICON = {
-  INQUIRY: "📝", ACCEPT_INQUIRY: "🤝", UNIT_REGISTRATION: "🏢", APPROVAL: "✅",
-  UNIT_SHOOT: "📸", ACCOMPLISHMENT_FORM: "🖊️", LETTER_OF_INTENT: "📄",
-  UNIT_INSPECTION: "🔍", CONTRACT_SIGNING: "✍️", FINAL_STATUS: "🔑",
+  INQUIRY: "📝", SEND_REQUIREMENTS: "📎", APPROVAL: "✅",
+  UNIT_INSPECTION: "🔍", KEY_TURNOVER: "🔑", PHOTOSHOOT: "📸",
 };
 const TOTAL = LEASING_STAGES.length;
 const currentIdx = computed(() => Math.max(0, stageIndex(props.currentStage)));
-const isDelivered = computed(() => props.currentStage === "FINAL_STATUS" && ["Active", "Completed"].includes(props.finalStatus || props.status));
+const isDelivered = computed(() => props.currentStage === "PHOTOSHOOT" && (props.finalStatus || props.status) === "Completed");
 
 // Courier-style headline + sub-line.
 const state = computed(() => {
