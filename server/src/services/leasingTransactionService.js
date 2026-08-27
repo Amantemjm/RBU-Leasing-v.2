@@ -52,8 +52,8 @@ function stampNow() {
 
 // --- auto-create when an inquiry is accepted -------------------------------
 
-// Creates the transaction for an accepted inquiry (idempotent). Inquiry and
-// Accept-Inquiry stages are marked complete; the flow rests at Unit Registration.
+// Creates the transaction for an accepted inquiry (idempotent). The Inquiry
+// stage is marked complete; the flow rests at Send Requirements.
 export async function ensureForInquiry(inquiry, actor) {
   const existing = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inquiry.id } });
   if (existing) return existing;
@@ -220,7 +220,7 @@ export async function returnStage(actor, id, { status, remarks } = {}) {
   return getTransaction(id);
 }
 
-// Link related records (used mainly at Unit Registration).
+// Link related records (unit / lessee / lessor) to the transaction.
 export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) {
   await loadOrThrow(id);
   const data = {};
