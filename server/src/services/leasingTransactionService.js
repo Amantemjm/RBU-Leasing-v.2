@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import {
-  LEASING_STAGES, stageByKey, nextStageKey, prevStageKey, isValidStatus, isFinalStage,
+  LEASING_STAGES, STAGE_KEYS, stageByKey, stageIndex, nextStageKey, prevStageKey, isValidStatus, isFinalStage,
   APPROVAL_ROUTING, APPROVAL_STEP_STATUSES,
 } from "../../../shared/leasingStages.js";
 
@@ -122,13 +122,24 @@ export async function getMineTransaction(user, id) {
 
 export async function createTransaction(actor, data) {
   const reference = await nextReference();
-  const first = LEASING_STAGES[0];
+  const startKey = data.startStage && STAGE_KEYS.includes(data.startStage)
+    ? data.startStage : LEASING_STAGES[0].key;
+  const startIdx = stageIndex(startKey);
+  const startCfg = stageByKey(startKey);
+  const now = stampNow();
+
+  const stageData = {};
+  for (let i = 0; i < startIdx; i++) {
+    stageData[STAGE_KEYS[i]] = { status: "Skipped", completedAt: now };
+  }
+  stageData[startKey] = { status: startCfg.initial, startedAt: now };
+
   const txn = await prisma.leasingTransaction.create({
     data: {
       reference,
-      stage: first.key,
-      status: first.initial,
-      stageData: { [first.key]: { status: first.initial, startedAt: stampNow() } },
+      stage: startKey,
+      status: startCfg.initial,
+      stageData,
       lesseeName: data.lesseeName || null,
       unitId: data.unitId || null,
       tenantId: data.tenantId || null,
@@ -136,7 +147,8 @@ export async function createTransaction(actor, data) {
       assignedOfficerId: data.assignedOfficerId || actor?.userId || null,
     },
   });
-  await logEvent(txn.id, actor, `Transaction ${reference} created`, first.key);
+  if (startKey === "APPROVAL") await ensureApprovalSteps(txn.id);
+  await logEvent(txn.id, actor, `Transaction ${reference} created`, startKey);
   return getTransaction(txn.id);
 }
 

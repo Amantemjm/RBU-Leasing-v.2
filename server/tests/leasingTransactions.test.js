@@ -35,6 +35,26 @@ describe("Leasing transactions (process tracker)", () => {
     expect(txn.lesseeName).toBe("Maria Santos");
   });
 
+  it("lets staff start a transaction at Send Requirements, skipping Inquiry", async () => {
+    const { token } = await makeOfficer();
+    const res = await request(app).post("/api/leasing-transactions")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ lesseeName: "Registered Lessor", startStage: "SEND_REQUIREMENTS" });
+    expect(res.status).toBe(201);
+    expect(res.body.stage).toBe("SEND_REQUIREMENTS");
+    expect(res.body.status).toBe("Pending");
+    expect(res.body.stageData.INQUIRY.status).toBe("Skipped");
+    expect(res.body.stageData.INQUIRY.completedAt).toBeTruthy();
+  });
+
+  it("defaults a staff-created transaction to the Inquiry stage", async () => {
+    const { token } = await makeOfficer();
+    const res = await request(app).post("/api/leasing-transactions")
+      .set("Authorization", `Bearer ${token}`).send({ lesseeName: "Walk-in" });
+    expect(res.status).toBe(201);
+    expect(res.body.stage).toBe("INQUIRY");
+  });
+
   it("advances forward through stages and records events", async () => {
     const inquiry = await newInquiry();
     const { token, user } = await makeOfficer();

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STAGE_KEYS } from "../../../shared/leasingStages.js";
 
 export const txnCreateSchema = z.object({
   lesseeName: z.string().optional().nullable(),
@@ -6,6 +7,7 @@ export const txnCreateSchema = z.object({
   tenantId: z.string().optional().nullable(),
   unitOwnerId: z.string().optional().nullable(),
   assignedOfficerId: z.string().optional().nullable(),
+  startStage: z.string().refine((v) => STAGE_KEYS.includes(v), "invalid startStage").optional(),
 });
 
 export const txnStatusSchema = z.object({
