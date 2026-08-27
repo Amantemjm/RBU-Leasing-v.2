@@ -3,8 +3,8 @@ import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
 
 const baseTxn = {
-  id: "t1", reference: "RBU-2026-000001", stage: "UNIT_REGISTRATION", status: "Pending",
-  finalStatus: null, stageData: { UNIT_REGISTRATION: { status: "Pending", startedAt: "2026-08-24T00:00:00Z" } },
+  id: "t1", reference: "RBU-2026-000001", stage: "SEND_REQUIREMENTS", status: "Pending",
+  finalStatus: null, stageData: { SEND_REQUIREMENTS: { status: "Pending", startedAt: "2026-08-24T00:00:00Z" } },
   lesseeName: "Maria Santos", unit: null, tenant: null, unitOwner: null,
   assignedOfficer: { id: "o1", name: "Officer Jane" }, inquiry: { fullName: "Maria Santos", inquiryType: "Unit Availability" },
   createdAt: "2026-08-24T00:00:00Z", updatedAt: "2026-08-24T00:00:00Z", events: [{ id: "e1", message: "Inquiry accepted", createdAt: "2026-08-24T00:00:00Z", actorName: "Officer Jane" }],
@@ -45,8 +45,8 @@ describe("TransactionDetailView", () => {
   it("renders the tracker, reference, current stage and activity", async () => {
     const w = await mountView();
     expect(w.text()).toContain("RBU-2026-000001");
-    expect(w.find(".stage-name").text()).toBe("Unit Registration");
-    expect(w.findAll(".ms")).toHaveLength(10); // delivery-tracker milestones
+    expect(w.find(".stage-name").text()).toBe("Send Requirements");
+    expect(w.findAll(".ms")).toHaveLength(6); // delivery-tracker milestones
     expect(w.text()).toContain("Inquiry accepted");
   });
 
