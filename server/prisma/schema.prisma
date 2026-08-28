@@ -125,6 +125,9 @@ model LessorInfoSheet {
   data        Json            @default("{}")
   filledPdf   Bytes? // the interactive PDF the lessor filled and submitted
   remarks     String?
+  submittedByName String?
+  reviewedByName  String?
+  formVersion     String?
   submittedAt DateTime?
   reviewedAt  DateTime?
   createdAt   DateTime        @default(now())
@@ -139,6 +142,9 @@ model LesseeInfoSheet {
   data        Json            @default("{}")
   filledPdf   Bytes? // the interactive PDF the lessee filled and submitted
   remarks     String?
+  submittedByName String?
+  reviewedByName  String?
+  formVersion     String?
   submittedAt DateTime?
   reviewedAt  DateTime?
   createdAt   DateTime        @default(now())

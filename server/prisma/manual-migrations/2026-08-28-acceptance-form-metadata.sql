@@ -1,0 +1,8 @@
+ALTER TABLE "LessorInfoSheet"
+  ADD COLUMN IF NOT EXISTS "submittedByName" TEXT,
+  ADD COLUMN IF NOT EXISTS "reviewedByName" TEXT,
+  ADD COLUMN IF NOT EXISTS "formVersion" TEXT;
+ALTER TABLE "LesseeInfoSheet"
+  ADD COLUMN IF NOT EXISTS "submittedByName" TEXT,
+  ADD COLUMN IF NOT EXISTS "reviewedByName" TEXT,
+  ADD COLUMN IF NOT EXISTS "formVersion" TEXT;
