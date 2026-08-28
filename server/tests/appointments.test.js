@@ -117,3 +117,74 @@ describe("Appointments — schedule/list", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("Appointments — lifecycle", () => {
+  async function scheduled(stage = "UNIT_INSPECTION") {
+    const t = await txnAtInspection();
+    const res = await request(app).post(`/api/appointments/transaction/${t.id}/${stage}`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
+    return { t, id: res.body.id };
+  }
+
+  it("reschedule updates time, sets Rescheduled, increments count", async () => {
+    const { id } = await scheduled();
+    const res = await request(app).patch(`/api/appointments/${id}/reschedule`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-05T10:00:00.000Z" });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("Rescheduled");
+    expect(res.body.rescheduleCount).toBe(1);
+  });
+
+  it("complete without outcome applies the stage default (turnover → Completed)", async () => {
+    // seed a txn at KEY_TURNOVER
+    const owner = await factory.owner(); const tenant = await factory.tenant();
+    const t = await prisma.leasingTransaction.create({ data: {
+      reference: "RBU-2026-000009", stage: "KEY_TURNOVER", status: "Pending",
+      stageData: { KEY_TURNOVER: { status: "Pending" } }, tenantId: tenant.id, unitOwnerId: owner.id } });
+    const s = await request(app).post(`/api/appointments/transaction/${t.id}/KEY_TURNOVER`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
+    const res = await request(app).patch(`/api/appointments/${s.body.id}/complete`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("Completed");
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Completed");
+  });
+
+  it("complete an inspection with outcome Failed sets the stage to Failed", async () => {
+    const { t, id } = await scheduled();
+    const res = await request(app).patch(`/api/appointments/${id}/complete`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Failed" });
+    expect(res.status).toBe(200);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Failed");
+  });
+
+  it("rejects an outcome that isn't valid for the stage (400)", async () => {
+    const { id } = await scheduled();
+    const res = await request(app).patch(`/api/appointments/${id}/complete`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Completed" }); // not an inspection status
+    expect(res.status).toBe(400);
+  });
+
+  it("cancel sets the stage back to Pending; No-show is accepted", async () => {
+    const { t, id } = await scheduled();
+    const res = await request(app).patch(`/api/appointments/${id}/cancel`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "No-show", reason: "party absent" });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("No-show");
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Pending");
+  });
+
+  it("completing an already-completed appointment 409s; owner cannot complete (403)", async () => {
+    const { t, id } = await scheduled();
+    const owner = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    const forbidden = await request(app).patch(`/api/appointments/${id}/complete`)
+      .set("Authorization", `Bearer ${tokens.owner(owner.unitOwnerId)}`).send({});
+    expect(forbidden.status).toBe(403);
+    await request(app).patch(`/api/appointments/${id}/complete`).set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Passed" });
+    const again = await request(app).patch(`/api/appointments/${id}/complete`).set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Passed" });
+    expect(again.status).toBe(409);
+  });
+});

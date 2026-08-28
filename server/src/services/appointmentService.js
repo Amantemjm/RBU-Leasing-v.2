@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import {
-  SCHEDULABLE_STAGES, isSchedulableStage, stageByKey, stageIndex, isFinalStage,
+  SCHEDULABLE_STAGES, isSchedulableStage, stageByKey, stageIndex, isFinalStage, isValidStatus,
 } from "../../../shared/leasingStages.js";
 import { assertCanAccess } from "./leasingTransactionService.js";
 
@@ -63,4 +63,51 @@ export async function scheduleAppointment(user, txnId, stage, body) {
   await syncStageStatus(txn, stage, "Scheduled");
   await logEvent(txnId, user, `${stageByKey(stage).label} scheduled for ${new Date(body.scheduledAt).toISOString()}`, stage);
   return appt;
+}
+
+async function loadAppt(id) {
+  const appt = await prisma.appointment.findUnique({ where: { id } });
+  if (!appt) throw new NotFoundError("Appointment not found");
+  return appt;
+}
+async function txnOf(appt) {
+  const txn = await prisma.leasingTransaction.findUnique({ where: { id: appt.transactionId } });
+  if (!txn) throw new NotFoundError("Transaction not found");
+  return txn;
+}
+
+export async function reschedule(user, id, body) {
+  const appt = await loadAppt(id);
+  if (["Completed", "Cancelled"].includes(appt.status)) throw new ConflictError("This appointment is closed");
+  const txn = await txnOf(appt);
+  const updated = await prisma.appointment.update({
+    where: { id },
+    data: { status: "Rescheduled", scheduledAt: new Date(body.scheduledAt), location: body.location ?? appt.location, notes: body.notes ?? appt.notes, rescheduleCount: { increment: 1 } },
+  });
+  await syncStageStatus(txn, appt.stage, "Scheduled");
+  await logEvent(txn.id, user, `${stageByKey(appt.stage).label} rescheduled to ${new Date(body.scheduledAt).toISOString()}`, appt.stage);
+  return updated;
+}
+export async function complete(user, id, body) {
+  const appt = await loadAppt(id);
+  if (appt.status === "Completed") throw new ConflictError("Already completed");
+  if (appt.status === "Cancelled") throw new ConflictError("This appointment was cancelled");
+  const cfg = SCHEDULABLE_STAGES[appt.stage];
+  const outcome = body.outcome || cfg.defaultOutcome;
+  if (!isValidStatus(appt.stage, outcome)) throw new InvalidReferenceError(`"${outcome}" is not a valid result for this stage`);
+  const txn = await txnOf(appt);
+  const updated = await prisma.appointment.update({ where: { id }, data: { status: "Completed", outcome } });
+  await syncStageStatus(txn, appt.stage, outcome);
+  await logEvent(txn.id, user, `${stageByKey(appt.stage).label} completed — ${outcome}`, appt.stage);
+  return updated;
+}
+export async function cancel(user, id, body) {
+  const appt = await loadAppt(id);
+  if (["Completed", "Cancelled"].includes(appt.status)) throw new ConflictError("This appointment is closed");
+  const status = body.status || "Cancelled";
+  const txn = await txnOf(appt);
+  const updated = await prisma.appointment.update({ where: { id }, data: { status, reason: body.reason ?? null } });
+  await syncStageStatus(txn, appt.stage, "Pending");
+  await logEvent(txn.id, user, `${stageByKey(appt.stage).label} ${status.toLowerCase()}${body.reason ? ` — ${body.reason}` : ""}`, appt.stage);
+  return updated;
 }
