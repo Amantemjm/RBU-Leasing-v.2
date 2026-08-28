@@ -11,6 +11,7 @@ export function resource(path) {
 }
 
 export const owners = resource("/owners");
+owners.profile = (id) => api.get(`/owners/${id}/profile`).then((r) => r.data);
 export function ownerMe() { return api.get("/owners/me").then((r) => r.data); }
 export function tenantMe() { return api.get("/tenants/me").then((r) => r.data); }
 export const units = resource("/units");

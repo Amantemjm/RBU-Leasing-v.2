@@ -57,7 +57,7 @@ function remove(row) {
       </thead>
       <tbody>
         <tr v-for="r in rows" :key="r.id">
-          <td>{{ r.name }}</td>
+          <td><button type="button" class="name-link" @click="router.push(`/app/lessor-profile/${r.id}`)">{{ r.name }}</button></td>
           <td>{{ r.email || "—" }}</td>
           <td>{{ r.phone || "—" }}</td>
           <td class="officer-cell">
@@ -86,4 +86,5 @@ function remove(row) {
 .muted { color: var(--muted); }
 .officer-cell { min-width: 200px; }
 .officer-cell select { padding: 0.35rem 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.name-link { background: none; border: none; color: var(--accent-text); cursor: pointer; font: inherit; padding: 0; text-align: left; }
 </style>

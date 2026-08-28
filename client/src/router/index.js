@@ -25,6 +25,7 @@ import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
 import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
 import MyLessorRequirementsView from "../views/MyLessorRequirementsView.vue";
 import LessorRequirementsView from "../views/LessorRequirementsView.vue";
+import LessorProfileView from "../views/LessorProfileView.vue";
 // Lazy-loaded: pull in the PDF.js live preview, keeping it out of the main bundle.
 const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
 const TenantInfoSheetView = () => import("../views/TenantInfoSheetView.vue");
@@ -58,6 +59,7 @@ const routes = [
       { path: "transactions", component: TransactionsView, meta: { roles: STAFF } },
       { path: "transactions/:id", component: TransactionDetailView, meta: { roles: STAFF } },
       { path: "owners", component: OwnersView, meta: { roles: STAFF } },
+      { path: "lessor-profile/:id", component: LessorProfileView, meta: { roles: WRITE } },
       { path: "owners/new", component: OwnerFormView, meta: { roles: ADMIN } },
       { path: "owners/:id", component: OwnerFormView, meta: { roles: ADMIN } },
       { path: "tenants", component: TenantsView, meta: { roles: STAFF } },
