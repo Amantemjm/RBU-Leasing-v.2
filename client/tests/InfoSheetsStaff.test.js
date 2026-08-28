@@ -6,7 +6,7 @@ const CONFIG = { title: "T", sections: [{ title: "A", fields: [{ key: "lastName"
 const ROW = {
   id: "s1", status: "APPROVED", submittedAt: "2026-08-21T00:00:00.000Z", reviewedAt: "2026-08-22T00:00:00.000Z",
   submittedByName: "Ayala Land", reviewedByName: "Officer Jane", formVersion: "2026-08",
-  data: { lastName: "Reyes" }, unitOwner: { id: "o1", name: "Ayala Land" },
+  data: { lastName: "Reyes" }, unitOwner: { id: "o1", name: "Rockwell Land" },
 };
 
 function makeClient() {
