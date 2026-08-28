@@ -3,6 +3,7 @@ import { z } from "zod";
 import { NotFoundError, InvalidReferenceError, ValidationError, ConflictError } from "./errors.js";
 import { verifyJwt, requireWrite, requireRole } from "../middleware/auth.js";
 import { streamInfoSheetPdf } from "./infoSheetPdf.js";
+import { prisma } from "./prisma.js";
 
 const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 const reviewSchema = z.object({
@@ -12,9 +13,27 @@ const reviewSchema = z.object({
 
 // A generic info-sheet service. Applicants submit either structured DATA (filled
 // in-system) or an uploaded/edited PDF stored in `binaryField` — both supported.
-export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField }) {
+export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version = null }) {
   const include = { [relationName]: { select: { id: true, name: true } } };
   const readOpts = binaryField ? { include, omit: { [binaryField]: true } } : { include };
+
+  // Best-effort display name for the acting user: login user -> owner -> tenant.
+  async function resolveName(user) {
+    if (!user) return null;
+    if (user.userId) {
+      const u = await prisma.user.findUnique({ where: { id: user.userId }, select: { name: true, email: true } });
+      if (u) return u.name || u.email || null;
+    }
+    if (user.unitOwnerId) {
+      const o = await prisma.unitOwner.findUnique({ where: { id: user.unitOwnerId }, select: { name: true } });
+      if (o) return o.name || null;
+    }
+    if (user.tenantId) {
+      const t = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { name: true } });
+      if (t) return t.name || null;
+    }
+    return null;
+  }
 
   async function createRequest(parentId) {
     if (!parentId) throw new InvalidReferenceError(`${fkField} is required`);
@@ -41,7 +60,8 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
     if (sheet[fkField] !== user[fkField]) throw new NotFoundError("Info sheet not found");
     // Submitting structured data clears any previously uploaded PDF.
     const extra = binaryField ? { [binaryField]: null } : {};
-    return model.update({ where: { id }, data: { data, ...extra, status: "SUBMITTED", submittedAt: new Date() }, ...readOpts });
+    const submittedByName = await resolveName(user);
+    return model.update({ where: { id }, data: { data, ...extra, status: "SUBMITTED", submittedAt: new Date(), submittedByName, formVersion: version }, ...readOpts });
   }
   const EDITABLE = ["REQUESTED", "RETURNED"];
   function assertOwnerEditable(sheet, user) {
@@ -58,7 +78,8 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
   async function submitPdf(user, id, buffer) {
     const sheet = await get(id);
     assertOwnerEditable(sheet, user);
-    return model.update({ where: { id }, data: { [binaryField]: buffer, status: "SUBMITTED", submittedAt: new Date() }, ...readOpts });
+    const submittedByName = await resolveName(user);
+    return model.update({ where: { id }, data: { [binaryField]: buffer, status: "SUBMITTED", submittedAt: new Date(), submittedByName, formVersion: version }, ...readOpts });
   }
   // Fetch just the stored PDF (scoped to the requesting user); null if none.
   async function getBinary(user, id) {
@@ -66,9 +87,10 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
     const row = await model.findUnique({ where: { id }, select: { [binaryField]: true } });
     return row?.[binaryField] || null;
   }
-  async function review(id, { status, remarks }) {
+  async function review(actor, id, { status, remarks }) {
     await get(id);
-    return model.update({ where: { id }, data: { status, remarks: remarks ?? null, reviewedAt: new Date() }, ...readOpts });
+    const reviewedByName = await resolveName(actor);
+    return model.update({ where: { id }, data: { status, remarks: remarks ?? null, reviewedAt: new Date(), reviewedByName }, ...readOpts });
   }
   return { createRequest, list, get, getForUser, submit, savePdf, submitPdf, getBinary, review };
 }
@@ -78,7 +100,7 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
 // live preview + staff download. `binaryField` enables the upload/edit-a-PDF
 // path (store/submit/retrieve the applicant's own PDF).
 export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, relationName, config, submitSchema, title, filePrefix, pdfRenderer, binaryField }) {
-  const service = makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField });
+  const service = makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version: config?.version || null });
   const render = pdfRenderer || streamInfoSheetPdf;
   const listRoles = [...STAFF, ownerRole];
   const r = Router();
@@ -141,7 +163,7 @@ export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, re
   r.patch("/:id/review", requireWrite, async (req, res, next) => {
     try {
       const { status, remarks } = reviewSchema.parse(req.body);
-      res.json(await service.review(req.params.id, { status, remarks }));
+      res.json(await service.review(req.user, req.params.id, { status, remarks }));
     } catch (e) { next(e); }
   });
 

@@ -24,7 +24,7 @@ export async function resetCrudTables() {
 
 export const tokens = {
   admin: () => issueToken({ id: "test-admin", role: "ADMIN" }),
-  officer: () => issueToken({ id: "test-officer", role: "LEASING_OFFICER" }),
+  officer: (id = "test-officer") => issueToken({ id, role: "LEASING_OFFICER" }),
   viewer: () => issueToken({ id: "test-viewer", role: "VIEWER" }),
   owner: (unitOwnerId) => issueToken({ id: "test-owner", role: "UNIT_OWNER", unitOwnerId }),
   tenant: (tenantId) => issueToken({ id: "test-tenant", role: "TENANT", tenantId }),
