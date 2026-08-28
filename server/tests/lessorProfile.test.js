@@ -50,4 +50,19 @@ describe("Lessor profile aggregate", () => {
     const missing = await request(app).get(`/api/owners/does-not-exist/profile`).set(auth(tokens.officer()));
     expect(missing.status).toBe(404);
   });
+
+  it("acceptanceForm includes submittedByName and formVersion", async () => {
+    const o = await factory.owner({ name: "Profile Owner" });
+    const s = await request(app).post("/api/lessor-info-sheets")
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ unitOwnerId: o.id });
+    await request(app).patch(`/api/lessor-info-sheets/${s.body.id}/submit`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`)
+      .send({ data: { lastName: "X", firstName: "Y", mobile: "09170000000", email: "x@y.com",
+        estate: "Capitol Commons", buildingName: "Maven", unitNumber: "1A", sex: "Male",
+        civilStatus: "Single", preferredChannel: ["Email"], leaseTermPeriod: "Long Term (1 year and above)" } });
+    const res = await request(app).get(`/api/owners/${o.id}/profile`).set("Authorization", `Bearer ${tokens.officer()}`);
+    expect(res.status).toBe(200);
+    expect(res.body.acceptanceForm.submittedByName).toBe("Profile Owner");
+    expect(res.body.acceptanceForm.formVersion).toBe("2026-08");
+  });
 });
