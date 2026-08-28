@@ -19,6 +19,7 @@ function makeRouter() {
     { path: "/owners", component: OwnersView },
     { path: "/owners/new", component: stub },
     { path: "/owners/:id", component: stub },
+    { path: "/app/lessor-profile/:id", component: stub },
   ]});
 }
 
@@ -44,5 +45,14 @@ describe("OwnersView", () => {
   it("is read-only for a non-admin (even a write role)", async () => {
     const w = await mountView("LEASING_OFFICER");
     expect(w.text()).not.toContain("New owner");
+  });
+  it("links the owner name to their lessor profile", async () => {
+    const w = await mountView("VIEWER");
+    const nameLink = w.find("button.name-link");
+    expect(nameLink.exists()).toBe(true);
+    expect(nameLink.text()).toBe("Ayala");
+    await nameLink.trigger("click");
+    await flushPromises();
+    expect(w.vm.$router.currentRoute.value.fullPath).toBe("/app/lessor-profile/1");
   });
 });

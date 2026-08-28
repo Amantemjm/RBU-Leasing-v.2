@@ -59,7 +59,7 @@ const routes = [
       { path: "transactions", component: TransactionsView, meta: { roles: STAFF } },
       { path: "transactions/:id", component: TransactionDetailView, meta: { roles: STAFF } },
       { path: "owners", component: OwnersView, meta: { roles: STAFF } },
-      { path: "lessor-profile/:id", component: LessorProfileView, meta: { roles: WRITE } },
+      { path: "lessor-profile/:id", component: LessorProfileView, meta: { roles: STAFF } },
       { path: "owners/new", component: OwnerFormView, meta: { roles: ADMIN } },
       { path: "owners/:id", component: OwnerFormView, meta: { roles: ADMIN } },
       { path: "tenants", component: TenantsView, meta: { roles: STAFF } },

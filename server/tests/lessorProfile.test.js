@@ -29,6 +29,20 @@ describe("Lessor profile aggregate", () => {
     expect(JSON.stringify(res.body)).not.toContain('"data"');
   });
 
+  it("sorts activity newest-first and caps it at 10 entries", async () => {
+    const o = await factory.owner({ name: "Sunrise Towers" });
+    for (let i = 0; i < 12; i++) {
+      await factory.unit(o.id, { unitNumber: `U${i}`, approvalStatus: "SUBMITTED" });
+    }
+
+    const res = await request(app).get(`/api/owners/${o.id}/profile`).set(auth(tokens.officer()));
+    expect(res.status).toBe(200);
+    expect(res.body.activity.length).toBe(10);
+    expect(new Date(res.body.activity[0].at).getTime()).toBeGreaterThanOrEqual(
+      new Date(res.body.activity.at(-1).at).getTime()
+    );
+  });
+
   it("is staff-only and 404s an unknown owner", async () => {
     const o = await factory.owner();
     const forbidden = await request(app).get(`/api/owners/${o.id}/profile`).set(auth(tokens.owner(o.id)));
