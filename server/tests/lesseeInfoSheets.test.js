@@ -54,6 +54,16 @@ describe("Lessee Information Sheets", () => {
     expect(res.body.data.buildingName).toBe("Maven at Capitol Commons");
   });
 
+  it("stamps submittedByName (tenant) and formVersion on submit", async () => {
+    const t = await factory.tenant({ name: "Juan Tenant" });
+    const s = await requestFor(t.id);
+    const res = await request(app).patch(`${BASE}/${s.body.id}/submit`)
+      .set("Authorization", `Bearer ${tokens.tenant(t.id)}`).send({ data: FILLED });
+    expect(res.status).toBe(200);
+    expect(res.body.submittedByName).toBe("Juan Tenant");
+    expect(res.body.formVersion).toBe("2026-08");
+  });
+
   it("rejects a submit missing required fields (400)", async () => {
     const t = await factory.tenant();
     const s = await requestFor(t.id);

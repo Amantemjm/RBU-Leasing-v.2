@@ -54,7 +54,9 @@ onMounted(async () => {
     <div class="panel">
       <h2>Acceptance Form</h2>
       <p v-if="p.acceptanceForm"><span class="badge">{{ p.acceptanceForm.status }}</span>
-        <span v-if="p.acceptanceForm.submittedAt" class="muted small"> · submitted {{ formatDate(p.acceptanceForm.submittedAt) }}</span></p>
+        <span v-if="p.acceptanceForm.submittedByName" class="muted small"> · by {{ p.acceptanceForm.submittedByName }}</span>
+        <span v-if="p.acceptanceForm.submittedAt" class="muted small"> · submitted {{ formatDate(p.acceptanceForm.submittedAt) }}</span>
+        <span v-if="p.acceptanceForm.formVersion" class="muted small"> · v{{ p.acceptanceForm.formVersion }}</span></p>
       <p v-else class="muted">No acceptance form yet.</p>
     </div>
 

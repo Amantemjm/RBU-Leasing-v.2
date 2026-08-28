@@ -61,6 +61,30 @@ describe("Lessor Information Sheets", () => {
     expect(res.body.data.lastName).toBe("Dela Cruz");
   });
 
+  it("stamps submittedByName (owner) and formVersion on submit", async () => {
+    const o = await factory.owner({ name: "Ayala Land" });
+    const s = await requestFor(o.id);
+    const res = await request(app).patch(`${BASE}/${s.body.id}/submit`)
+      .set("Authorization", `Bearer ${tokens.owner(o.id)}`).send({ data: FILLED });
+    expect(res.status).toBe(200);
+    expect(res.body.submittedByName).toBe("Ayala Land");
+    expect(res.body.formVersion).toBe("2026-08");
+  });
+
+  it("stamps reviewedByName from the reviewing officer", async () => {
+    const { prisma } = await import("../src/lib/prisma.js");
+    const reviewer = await prisma.user.create({
+      data: { name: "Officer Jane", email: "jane.officer@example.com", passwordHash: "x", role: "LEASING_OFFICER" },
+    });
+    const o = await factory.owner();
+    const s = await requestFor(o.id);
+    const res = await request(app).patch(`${BASE}/${s.body.id}/review`)
+      .set("Authorization", `Bearer ${tokens.officer(reviewer.id)}`).send({ status: "APPROVED" });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("APPROVED");
+    expect(res.body.reviewedByName).toBe("Officer Jane");
+  });
+
   it("rejects a submit missing required fields (400)", async () => {
     const o = await factory.owner();
     const s = await requestFor(o.id);

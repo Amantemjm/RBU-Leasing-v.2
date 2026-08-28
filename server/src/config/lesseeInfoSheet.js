@@ -2,6 +2,7 @@
 // Mirrors the official O-Lease "Lessee Information Sheet • Registration" form.
 export default {
   title: "Lessee Information Sheet",
+  version: "2026-08",
   sections: [
     {
       title: "Registration",

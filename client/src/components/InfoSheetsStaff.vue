@@ -127,6 +127,18 @@ function download(row) {
         </div>
         <ConfigurableForm v-else-if="config" :config="config" :model-value="active.data || {}" readonly />
 
+        <dl class="meta">
+          <template v-if="active.submittedByName || active.submittedAt">
+            <dt>Submitted by</dt><dd>{{ active.submittedByName || "—" }}<span v-if="active.submittedAt" class="muted"> · {{ formatDate(active.submittedAt) }}</span></dd>
+          </template>
+          <template v-if="active.reviewedByName || active.reviewedAt">
+            <dt>Reviewed by</dt><dd>{{ active.reviewedByName || "—" }}<span v-if="active.reviewedAt" class="muted"> · {{ formatDate(active.reviewedAt) }}</span></dd>
+          </template>
+          <template v-if="active.formVersion">
+            <dt>Form version</dt><dd>{{ active.formVersion }}</dd>
+          </template>
+        </dl>
+
         <div v-if="active.status === 'SUBMITTED'" class="field">
           <label for="remarks">Remarks (required when returning)</label>
           <textarea id="remarks" rows="2" v-model="remarks"></textarea>
@@ -167,6 +179,9 @@ function download(row) {
   width: 100%; max-width: 52rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 .modal h2 { margin: 0 0 1rem; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.75rem; margin: 0.75rem 0; font-size: 0.85rem; }
+.meta dt { color: var(--muted); font-weight: 600; }
+.meta dd { margin: 0; }
 .pdf-preview { height: 64vh; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--paper); }
 .pdf-frame { width: 100%; height: 100%; border: 0; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.5rem 0; }

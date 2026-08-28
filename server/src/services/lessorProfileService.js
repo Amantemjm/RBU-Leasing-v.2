@@ -13,7 +13,7 @@ export async function getLessorProfile(ownerId) {
         orderBy: { createdAt: "desc" },
       },
       lessorInfoSheets: {
-        select: { status: true, submittedAt: true, reviewedAt: true, createdAt: true },
+        select: { status: true, submittedAt: true, reviewedAt: true, submittedByName: true, formVersion: true, createdAt: true },
         orderBy: { createdAt: "desc" }, take: 1,
       },
     },
@@ -42,7 +42,7 @@ export async function getLessorProfile(ownerId) {
       approvalStatus: u.approvalStatus, reviewRemarks: u.reviewRemarks, updatedAt: u.updatedAt,
     })),
     requirements: { items: requirements, summary: { approved, total: requirements.length } },
-    acceptanceForm: sheet ? { status: sheet.status, submittedAt: sheet.submittedAt, reviewedAt: sheet.reviewedAt } : null,
+    acceptanceForm: sheet ? { status: sheet.status, submittedAt: sheet.submittedAt, reviewedAt: sheet.reviewedAt, submittedByName: sheet.submittedByName, formVersion: sheet.formVersion } : null,
     activity: activity.slice(0, 10),
   };
 }

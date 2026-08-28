@@ -9,6 +9,7 @@
 // value is stored under `<key>Other` (with an optional `otherLabel` prefix).
 export default {
   title: "Unit Owner Information Sheet",
+  version: "2026-08",
   sections: [
     {
       title: "Registration",

@@ -7,7 +7,7 @@ const profile = {
   account: { contactEmail: "c@x.com", status: "APPROVED" },
   units: [{ id: "u1", unitNumber: "12A", tower: "Imperium", approvalStatus: "SUBMITTED", reviewRemarks: null, updatedAt: "2026-08-27T00:00:00Z" }],
   requirements: { items: [{ requirementKey: "GOV_ID", label: "Valid Government ID", status: "Approved" }], summary: { approved: 1, total: 7 } },
-  acceptanceForm: { status: "SUBMITTED", submittedAt: "2026-08-27T00:00:00Z", reviewedAt: null },
+  acceptanceForm: { status: "SUBMITTED", submittedAt: "2026-08-27T00:00:00Z", reviewedAt: null, submittedByName: "Ayala Land", formVersion: "2026-08" },
   activity: [{ at: "2026-08-27T00:00:00Z", kind: "unit", label: "Unit 12A — SUBMITTED" }],
 };
 vi.mock("../src/lib/resource.js", () => ({ owners: { profile: vi.fn(() => Promise.resolve(profile)) } }));
@@ -38,6 +38,8 @@ describe("LessorProfileView", () => {
     expect(w.text()).toContain("1 of 7");           // requirements summary
     expect(w.text()).toContain("Valid Government ID");
     expect(w.text()).toContain("SUBMITTED");        // form/unit status
+    expect(w.text()).toContain("Ayala Land");        // acceptance form submitted-by
+    expect(w.text()).toContain("2026-08");           // acceptance form version
     expect(w.text()).toContain("Unit 12A — SUBMITTED"); // activity
   });
 });
