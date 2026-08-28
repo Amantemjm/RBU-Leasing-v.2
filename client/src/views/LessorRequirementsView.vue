@@ -8,6 +8,7 @@ const ownerId = ref("");
 const rows = ref([]);
 const draft = reactive({}); // key -> chosen status
 const remark = reactive({}); // key -> remark text
+const expiry = reactive({}); // key -> expiry date (YYYY-MM-DD)
 const error = ref("");
 
 onMounted(async () => { ownerList.value = await owners.list(); });
@@ -15,12 +16,21 @@ onMounted(async () => { ownerList.value = await owners.list(); });
 async function loadOwner() {
   if (!ownerId.value) { rows.value = []; return; }
   rows.value = await lessorRequirements.forOwner(ownerId.value);
-  rows.value.forEach((r) => { draft[r.requirementKey] = r.status; remark[r.requirementKey] = r.remarks || ""; });
+  rows.value.forEach((r) => {
+    draft[r.requirementKey] = r.status;
+    remark[r.requirementKey] = r.remarks || "";
+    expiry[r.requirementKey] = r.expiresAt ? String(r.expiresAt).slice(0, 10) : "";
+  });
 }
 async function review(r) {
   error.value = "";
   try {
-    await lessorRequirements.review(r.id, { status: draft[r.requirementKey], remarks: remark[r.requirementKey] || null });
+    const exp = expiry[r.requirementKey];
+    await lessorRequirements.review(r.id, {
+      status: draft[r.requirementKey],
+      remarks: remark[r.requirementKey] || null,
+      expiresAt: exp ? new Date(exp).toISOString() : null,
+    });
     await loadOwner();
   } catch (e) { error.value = e.response?.data?.error || "Review failed"; }
 }
@@ -64,6 +74,7 @@ async function download(row) {
                 <option v-for="s in REQUIREMENT_STATUSES" :key="s" :value="s">{{ s }}</option>
               </select>
               <input class="remark-input" type="text" v-model="remark[r.requirementKey]" placeholder="Remark (optional)" />
+              <input class="expiry-input" type="date" v-model="expiry[r.requirementKey]" />
               <button type="button" class="review-btn" @click="review(r)">Save</button>
             </template>
             <span v-else class="muted small">no document yet</span>

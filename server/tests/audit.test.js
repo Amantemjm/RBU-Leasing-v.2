@@ -71,6 +71,16 @@ describe("Audit trail", () => {
     expect(rows).toHaveLength(0);
   });
 
+  it("records a lessor requirement upload with the correct entity/action", async () => {
+    const owner = await factory.owner();
+    await request(app).post("/api/lessor-requirements/mine/GOV_ID")
+      .set("Authorization", `Bearer ${tokens.owner(owner.id)}`)
+      .attach("file", Buffer.from("%PDF-1.4 test"), { filename: "id.pdf", contentType: "application/pdf" });
+    const rows = await latest();
+    const entry = rows.find((r) => r.entity === "Lessor Requirement" && r.action === "upload");
+    expect(entry).toBeTruthy();
+  });
+
   it("exposes the trail to a Super Admin only", async () => {
     await request(app).post("/api/owners")
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ name: "X" });

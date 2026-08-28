@@ -24,11 +24,13 @@ describe("LessorRequirementsView (staff)", () => {
     await flushPromises();
     expect(lessorRequirements.forOwner).toHaveBeenCalledWith("o1");
     expect(w.text()).toContain("Valid Government ID");
-    // choose Approved and confirm
+    // choose Approved, set an expiry date, and confirm
     await w.find("select.status-select").setValue("Approved");
+    await w.find("input.expiry-input").setValue("2027-01-15");
     await w.find("button.review-btn").trigger("click");
     await flushPromises();
     expect(lessorRequirements.review).toHaveBeenCalled();
     expect(lessorRequirements.review.mock.calls[0][1].status).toBe("Approved");
+    expect(lessorRequirements.review.mock.calls[0][1].expiresAt).toBe(new Date("2027-01-15").toISOString());
   });
 });

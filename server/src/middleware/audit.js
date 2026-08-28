@@ -15,6 +15,7 @@ const ENTITY = {
   estates: "Estate",
   towers: "Tower",
   "leasing-transactions": "Transaction",
+  "lessor-requirements": "Lessor Requirement",
 };
 
 // Derive a human action + entity from the request path/method.
@@ -50,6 +51,16 @@ function classify(path, method) {
     if (kind === "register") return { entity: "Account", action: "register", entityId: null };
     if (kind === "users") return { entity: "Account", action: method === "DELETE" ? "delete" : "update", entityId: segs[2] || null };
     return { entity: "Account", action: method.toLowerCase(), entityId: null };
+  }
+
+  if (group === "lessor-requirements") {
+    // Routes: POST /mine/:key, POST /:ownerId/:key (upload); PATCH /:id/review; GET .../download
+    const seg1 = segs[1];
+    let action;
+    if (segs[2] === "review") action = "review";
+    else if (method === "POST") action = "upload";
+    else action = method.toLowerCase();
+    return { entity: "Lessor Requirement", action, entityId: seg1 === "mine" ? null : seg1 };
   }
 
   const sub = segs[2]; // approve | reject | assign | submit | review
