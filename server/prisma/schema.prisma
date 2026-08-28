@@ -112,6 +112,7 @@ model UnitOwner {
   users      User[]
   lessorInfoSheets LessorInfoSheet[]
   leasingTransactions LeasingTransaction[]
+  lessorRequirements LessorRequirement[]
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
 }
@@ -254,6 +255,28 @@ model Requirement {
   size       Int
   data       Bytes
   uploadedAt DateTime @default(now())
+}
+
+model LessorRequirement {
+  id             String    @id @default(cuid())
+  unitOwner      UnitOwner @relation(fields: [unitOwnerId], references: [id])
+  unitOwnerId    String
+  requirementKey String
+  status         String    @default("Required")
+  filename       String?
+  mimeType       String?
+  size           Int?
+  data           Bytes?
+  remarks        String?
+  expiresAt      DateTime?
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([unitOwnerId, requirementKey])
 }
 
 model Lease {
