@@ -57,6 +57,7 @@ const STAFF_GROUPS = [
     { to: "/app/approvals", label: "Approvals", icon: "check", write: true },
     { to: "/app/lessor-sheets", label: "Lessor Sheets", icon: "clipboard", write: true },
     { to: "/app/lessee-sheets", label: "Lessee Sheets", icon: "clipboard", write: true },
+    { to: "/app/lessor-requirements-review", label: "Lessor Requirements", icon: "folder", write: true },
     { to: "/app/requirements", label: "Requirements", icon: "folder", write: true },
   ] },
   { label: "Administration", items: [
