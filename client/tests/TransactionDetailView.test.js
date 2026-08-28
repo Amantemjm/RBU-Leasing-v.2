@@ -21,6 +21,13 @@ vi.mock("../src/lib/resource.js", () => ({
   units: { list: vi.fn(() => Promise.resolve([])) },
   tenants: { list: vi.fn(() => Promise.resolve([])) },
   owners: { list: vi.fn(() => Promise.resolve([])) },
+  appointments: {
+    forTransaction: vi.fn(() => Promise.resolve([])),
+    schedule: vi.fn(() => Promise.resolve({})),
+    reschedule: vi.fn(() => Promise.resolve({})),
+    complete: vi.fn(() => Promise.resolve({})),
+    cancel: vi.fn(() => Promise.resolve({})),
+  },
 }));
 
 import TransactionDetailView from "../src/views/TransactionDetailView.vue";

@@ -352,6 +352,7 @@ model LeasingTransaction {
   events      TransactionEvent[]
   documents   TransactionDocument[]
   approvalSteps ApprovalStep[]
+  appointments Appointment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -405,6 +406,29 @@ model TransactionEvent {
   message       String
   createdAt     DateTime @default(now())
 
+  @@index([transactionId])
+}
+
+// A scheduled visit for a transaction's Inspection / Turnover / Photoshoot stage.
+// One row per (transaction, stage); reschedule edits it in place.
+model Appointment {
+  id              String   @id @default(cuid())
+  transaction     LeasingTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId   String
+  stage           String
+  status          String   @default("Scheduled")
+  scheduledAt     DateTime
+  location        String?
+  notes           String?
+  outcome         String?
+  reason          String?
+  rescheduleCount Int      @default(0)
+  createdById     String?
+  createdByName   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([transactionId, stage])
   @@index([transactionId])
 }
 

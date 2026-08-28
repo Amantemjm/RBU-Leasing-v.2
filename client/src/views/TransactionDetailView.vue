@@ -7,6 +7,7 @@ import { stageByKey, nextStageKey, prevStageKey } from "../../../shared/leasingS
 import DeliveryTracker from "../components/DeliveryTracker.vue";
 import ApprovalRouting from "../components/ApprovalRouting.vue";
 import TransactionDocuments from "../components/TransactionDocuments.vue";
+import SchedulingPanel from "../components/SchedulingPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -110,6 +111,11 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
                 {{ busy === 'advance' ? 'Advancing…' : nextCfg ? `Advance to ${nextCfg.short} →` : 'Final stage' }}
               </button>
             </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__label">Scheduling</div>
+            <SchedulingPanel :transaction="txn" @changed="reloadTxn" />
           </div>
 
           <div class="panel">

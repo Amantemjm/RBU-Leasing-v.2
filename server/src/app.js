@@ -19,6 +19,7 @@ import auditRoutes from "./routes/auditRoutes.js";
 import cmsFormRoutes from "./routes/cmsFormRoutes.js";
 import { cmsPageFormRouter, pageFormRouter } from "./routes/pageFormRoutes.js";
 import leasingTransactionRoutes from "./routes/leasingTransactionRoutes.js";
+import appointmentRoutes from "./routes/appointmentRoutes.js";
 import { auditMiddleware } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/error.js";
 
@@ -46,6 +47,7 @@ export function createApp() {
   app.use("/api/cms/page-forms", cmsPageFormRouter);
   app.use("/api/page-forms", pageFormRouter);
   app.use("/api/leasing-transactions", leasingTransactionRoutes);
+  app.use("/api/appointments", appointmentRoutes);
 
   // Production: serve the built Vue client as a single deployable. The API
   // routes above take precedence; any other GET falls back to index.html so

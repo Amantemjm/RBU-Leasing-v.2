@@ -10,7 +10,7 @@ vi.mock("../src/lib/api.js", () => ({
 }));
 
 import { api } from "../src/lib/api.js";
-import { resource } from "../src/lib/resource.js";
+import { resource, appointments } from "../src/lib/resource.js";
 
 describe("resource factory", () => {
   it("list() GETs the path with params and returns data", async () => {
@@ -34,5 +34,22 @@ describe("resource factory", () => {
   it("remove() DELETEs path/:id", async () => {
     await resource("/units").remove("u1");
     expect(api.delete).toHaveBeenCalledWith("/units/u1");
+  });
+});
+
+describe("appointments", () => {
+  it("appointments wrapper hits the right endpoints", async () => {
+    await appointments.forTransaction("t1");
+    expect(api.get).toHaveBeenCalledWith("/appointments/transaction/t1");
+    await appointments.mine();
+    expect(api.get).toHaveBeenCalledWith("/appointments/mine");
+    await appointments.schedule("t1", "UNIT_INSPECTION", { scheduledAt: "x" });
+    expect(api.post).toHaveBeenCalledWith("/appointments/transaction/t1/UNIT_INSPECTION", { scheduledAt: "x" });
+    await appointments.reschedule("a1", { scheduledAt: "y" });
+    expect(api.patch).toHaveBeenCalledWith("/appointments/a1/reschedule", { scheduledAt: "y" });
+    await appointments.complete("a1", { outcome: "Passed" });
+    expect(api.patch).toHaveBeenCalledWith("/appointments/a1/complete", { outcome: "Passed" });
+    await appointments.cancel("a1", { reason: "n/a" });
+    expect(api.patch).toHaveBeenCalledWith("/appointments/a1/cancel", { reason: "n/a" });
   });
 });
