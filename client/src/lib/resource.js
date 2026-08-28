@@ -99,3 +99,21 @@ export function updateUser(id, payload) {
 export function deleteUser(id) {
   return api.delete(`/auth/users/${id}`).then((r) => r.data);
 }
+
+export const lessorRequirements = {
+  mine: () => api.get("/lessor-requirements/mine").then((r) => r.data),
+  forOwner: (id) => api.get(`/lessor-requirements/${id}`).then((r) => r.data),
+  uploadMine: (key, file) => {
+    const form = new FormData(); form.append("file", file);
+    return api.post(`/lessor-requirements/mine/${key}`, form).then((r) => r.data);
+  },
+  uploadFor: (ownerId, key, file) => {
+    const form = new FormData(); form.append("file", file);
+    return api.post(`/lessor-requirements/${ownerId}/${key}`, form).then((r) => r.data);
+  },
+  review: (id, body) => api.patch(`/lessor-requirements/${id}/review`, body).then((r) => r.data),
+  download: async (id) => {
+    const res = await api.get(`/lessor-requirements/${id}/download`, { responseType: "blob" });
+    return res.data;
+  },
+};

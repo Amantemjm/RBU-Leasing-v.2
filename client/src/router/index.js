@@ -23,6 +23,7 @@ import TenantLeaseView from "../views/TenantLeaseView.vue";
 import ApprovalsView from "../views/ApprovalsView.vue";
 import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
 import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
+import MyLessorRequirementsView from "../views/MyLessorRequirementsView.vue";
 // Lazy-loaded: pull in the PDF.js live preview, keeping it out of the main bundle.
 const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
 const TenantInfoSheetView = () => import("../views/TenantInfoSheetView.vue");
@@ -75,6 +76,7 @@ const routes = [
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "my-leases", component: OwnerLeasesView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "info-sheet", component: OwnerInfoSheetView, meta: { roles: ["UNIT_OWNER"] } },
+      { path: "lessor-requirements", component: MyLessorRequirementsView, meta: { roles: ["UNIT_OWNER"] } },
       // Lessee + Lessor leasing progress (portal tracker)
       { path: "leasing-progress", component: MyLeasingProgressView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
       // Tenant (Lessee)

@@ -70,6 +70,7 @@ const OWNER_GROUPS = [{ label: null, items: [
   { to: "/app/my-units", label: "My Units", icon: "building" },
   { to: "/app/leasing-progress", label: "Leasing Progress", icon: "activity" },
   { to: "/app/info-sheet", label: "Acceptance Form", icon: "clipboard" },
+  { to: "/app/lessor-requirements", label: "Requirements", icon: "folder" },
   { to: "/app/my-leases", label: "My Leases", icon: "file" },
   { to: "/app/my-profile", label: "My Profile", icon: "user" },
 ] }];
