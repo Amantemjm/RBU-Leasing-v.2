@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { APPOINTMENT_STATUSES } from "../../../shared/leasingStages.js";
 
 export const scheduleSchema = z.object({
   scheduledAt: z.string().datetime(),
@@ -18,4 +17,3 @@ export const cancelSchema = z.object({
   status: z.enum(["Cancelled", "No-show"]).default("Cancelled"),
   reason: z.string().optional().nullable(),
 });
-export { APPOINTMENT_STATUSES };

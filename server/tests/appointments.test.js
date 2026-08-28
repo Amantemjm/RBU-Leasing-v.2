@@ -116,6 +116,21 @@ describe("Appointments — schedule/list", () => {
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
     expect(res.status).toBe(404);
   });
+
+  it("scheduling a stage the transaction has already completed 409s", async () => {
+    const owner = await factory.owner(); const tenant = await factory.tenant();
+    const t = await prisma.leasingTransaction.create({ data: {
+      reference: "RBU-2026-000010", stage: "KEY_TURNOVER", status: "Pending",
+      stageData: {
+        UNIT_INSPECTION: { status: "Passed", completedAt: new Date().toISOString() },
+        KEY_TURNOVER: { status: "Pending" },
+      },
+      tenantId: tenant.id, unitOwnerId: owner.id,
+    } });
+    const res = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_INSPECTION`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
+    expect(res.status).toBe(409);
+  });
 });
 
 describe("Appointments — lifecycle", () => {
@@ -164,6 +179,15 @@ describe("Appointments — lifecycle", () => {
     const { id } = await scheduled();
     const res = await request(app).patch(`/api/appointments/${id}/complete`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Completed" }); // not an inspection status
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an outcome that is a real stage status but not a curated option (400)", async () => {
+    const { id } = await scheduled();
+    // "Scheduled" is a genuine UNIT_INSPECTION status, but not one of the curated
+    // outcome options — proves outcome validation is restricted to outcomeOptions.
+    const res = await request(app).patch(`/api/appointments/${id}/complete`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ outcome: "Scheduled" });
     expect(res.status).toBe(400);
   });
 

@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import {
-  SCHEDULABLE_STAGES, isSchedulableStage, stageByKey, stageIndex, isFinalStage, isValidStatus,
+  SCHEDULABLE_STAGES, isSchedulableStage, stageByKey, stageIndex, isFinalStage,
 } from "../../../shared/leasingStages.js";
 import { assertCanAccess } from "./leasingTransactionService.js";
 
@@ -26,8 +26,6 @@ async function syncStageStatus(txn, stage, status) {
   if (stage === txn.stage) { patch.status = status; if (isFinalStage(stage)) patch.finalStatus = status; }
   await prisma.leasingTransaction.update({ where: { id: txn.id }, data: patch });
 }
-
-const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 
 export async function listForTransaction(user, txnId) {
   await assertCanAccess(user, txnId); // 404 if not staff/owner/tenant
@@ -94,7 +92,8 @@ export async function complete(user, id, body) {
   if (appt.status === "Cancelled") throw new ConflictError("This appointment was cancelled");
   const cfg = SCHEDULABLE_STAGES[appt.stage];
   const outcome = body.outcome || cfg.defaultOutcome;
-  if (!isValidStatus(appt.stage, outcome)) throw new InvalidReferenceError(`"${outcome}" is not a valid result for this stage`);
+  const allowed = cfg.outcomeOptions ?? [cfg.defaultOutcome];
+  if (!allowed.includes(outcome)) throw new InvalidReferenceError(`"${outcome}" is not a valid result for this stage`);
   const txn = await txnOf(appt);
   const updated = await prisma.appointment.update({ where: { id }, data: { status: "Completed", outcome } });
   await syncStageStatus(txn, appt.stage, outcome);
