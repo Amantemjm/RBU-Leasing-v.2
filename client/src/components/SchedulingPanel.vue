@@ -35,7 +35,11 @@ const targetStage = computed(() =>
 );
 const stageCfg = computed(() => (targetStage.value ? SCHEDULABLE_STAGES[targetStage.value] : null));
 const current = computed(() => rows.value.find((a) => a.stage === targetStage.value) || null);
-const isDone = computed(() => current.value && ["Completed", "Cancelled"].includes(current.value.status));
+// An appointment that was Cancelled or marked No-show is no longer "active" --
+// it should be treated like there's no appointment yet, so the schedule form
+// reopens and staff can rebook the stage. Completed stays terminal.
+const active = computed(() => current.value && !["Cancelled", "No-show"].includes(current.value.status));
+const isDone = computed(() => current.value && current.value.status === "Completed");
 
 async function load() {
   if (!props.transaction?.id) return;
@@ -63,8 +67,8 @@ async function schedule() {
   try {
     await appointments.schedule(props.transaction.id, targetStage.value, {
       scheduledAt: new Date(scheduledAt.value).toISOString(),
-      location: location.value,
-      notes: notes.value,
+      location: location.value || null,
+      notes: notes.value || null,
     });
     resetFormFields();
     await load();
@@ -93,8 +97,8 @@ async function reschedule() {
   try {
     await appointments.reschedule(current.value.id, {
       scheduledAt: new Date(scheduledAt.value).toISOString(),
-      location: location.value,
-      notes: notes.value,
+      location: location.value || null,
+      notes: notes.value || null,
     });
     rescheduling.value = false;
     resetFormFields();
@@ -153,6 +157,13 @@ function statusClass(s) {
   if (s === "Rescheduled") return "warn";
   return "pending";
 }
+
+function formatTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 </script>
 
 <template>
@@ -162,8 +173,8 @@ function statusClass(s) {
     <template v-else>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <!-- No appointment yet: schedule form -->
-      <div v-if="!current" class="form">
+      <!-- No active appointment (none yet, or the prior one was Cancelled/No-show): schedule form -->
+      <div v-if="!active" class="form">
         <div class="field">
           <label>Date &amp; time</label>
           <input type="datetime-local" v-model="scheduledAt" />
@@ -181,11 +192,16 @@ function statusClass(s) {
         </div>
       </div>
 
-      <!-- Existing appointment -->
-      <div v-else class="appt">
+      <!-- Prior appointment was Cancelled/No-show: keep a small record of it -->
+      <p v-if="current && !active" class="muted prev-status">
+        Previous: {{ current.status }}<span v-if="current.reason"> — {{ current.reason }}</span>
+      </p>
+
+      <!-- Existing, active or completed appointment -->
+      <div v-if="active" class="appt">
         <div class="appt__top">
           <span class="badge" :class="statusClass(current.status)">{{ current.status }}</span>
-          <span class="appt__when">{{ formatDate(current.scheduledAt) }}</span>
+          <span class="appt__when">{{ formatDate(current.scheduledAt) }} · {{ formatTime(current.scheduledAt) }}</span>
         </div>
         <dl class="meta">
           <div v-if="current.location"><dt>Location</dt><dd>{{ current.location }}</dd></div>

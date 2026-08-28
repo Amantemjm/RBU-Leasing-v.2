@@ -32,4 +32,14 @@ describe("SchedulingPanel", () => {
     // outcome select present for inspection
     expect(w.find("select").exists()).toBe(true);
   });
+
+  it("reopens the schedule form after a Cancelled appointment, while noting the prior status", async () => {
+    appointments.forTransaction.mockResolvedValueOnce([
+      { id: "a1", stage: "UNIT_INSPECTION", status: "Cancelled", scheduledAt: "2026-09-01T09:00:00.000Z", reason: "x" },
+    ]);
+    const w = mount(SchedulingPanel, { props: { transaction: txn } });
+    await flushPromises();
+    expect(w.find('input[type="datetime-local"]').exists()).toBe(true);
+    expect(w.text()).toContain("Cancelled");
+  });
 });
