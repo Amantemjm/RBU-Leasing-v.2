@@ -75,3 +75,18 @@ export function isValidStatus(stageKey, status) {
   const s = stageByKey(stageKey);
   return !!s && s.statuses.includes(status);
 }
+
+// --- Scheduling (sub-project H) ---------------------------------------------
+// The stages that carry an appointment. `defaultOutcome` is the stage status
+// set when the appointment is completed; `outcomeOptions` (inspection) lets the
+// officer pick a specific result. Every value is a real status of its stage.
+export const SCHEDULABLE_STAGES = {
+  UNIT_INSPECTION: { defaultOutcome: "Passed", outcomeOptions: ["Passed", "Passed with Remarks", "For Rectification", "Failed"] },
+  KEY_TURNOVER:    { defaultOutcome: "Completed" },
+  PHOTOSHOOT:      { defaultOutcome: "Completed" },
+};
+export const SCHEDULABLE_STAGE_KEYS = Object.keys(SCHEDULABLE_STAGES);
+export const APPOINTMENT_STATUSES = ["Scheduled", "Rescheduled", "Completed", "Cancelled", "No-show"];
+export function isSchedulableStage(key) {
+  return Object.prototype.hasOwnProperty.call(SCHEDULABLE_STAGES, key);
+}
