@@ -16,6 +16,7 @@ export async function resetCrudTables() {
   await prisma.lesseeInfoSheet.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.lessorInfoSheet.deleteMany();
+  await prisma.lessorRequirement.deleteMany();
   await prisma.unitOwner.deleteMany();
   await prisma.tower.deleteMany();
   await prisma.estate.deleteMany();

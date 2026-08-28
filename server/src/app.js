@@ -11,6 +11,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import estateRoutes from "./routes/estateRoutes.js";
 import towerRoutes from "./routes/towerRoutes.js";
 import requirementRoutes from "./routes/requirementRoutes.js";
+import lessorRequirementRoutes from "./routes/lessorRequirementRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 import lessorInfoSheetRoutes from "./routes/lessorInfoSheetRoutes.js";
 import lesseeInfoSheetRoutes from "./routes/lesseeInfoSheetRoutes.js";
@@ -36,6 +37,7 @@ export function createApp() {
   app.use("/api/estates", estateRoutes);
   app.use("/api/towers", towerRoutes);
   app.use("/api/requirements", requirementRoutes);
+  app.use("/api/lessor-requirements", lessorRequirementRoutes);
   app.use("/api/inquiries", inquiryRoutes);
   app.use("/api/lessor-info-sheets", lessorInfoSheetRoutes);
   app.use("/api/lessee-info-sheets", lesseeInfoSheetRoutes);
