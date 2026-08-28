@@ -73,4 +73,47 @@ describe("Appointments — schedule/list", () => {
     const stranger = await request(app).get(`/api/appointments/transaction/${t.id}`).set("Authorization", `Bearer ${tokens.owner("other-owner")}`);
     expect(stranger.status).toBe(404);
   });
+
+  it("GET /mine scopes to the caller: linked owner/tenant see it, others don't", async () => {
+    const t = await txnAtInspection();
+    await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_INSPECTION`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
+
+    const ownerRes = await request(app).get("/api/appointments/mine")
+      .set("Authorization", `Bearer ${tokens.owner(t.unitOwnerId)}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body).toHaveLength(1);
+
+    const tenantRes = await request(app).get("/api/appointments/mine")
+      .set("Authorization", `Bearer ${tokens.tenant(t.tenantId)}`);
+    expect(tenantRes.status).toBe(200);
+    expect(tenantRes.body).toHaveLength(1);
+
+    const strangerRes = await request(app).get("/api/appointments/mine")
+      .set("Authorization", `Bearer ${tokens.owner("someone-else")}`);
+    expect(strangerRes.status).toBe(200);
+    expect(strangerRes.body).toEqual([]);
+
+    const officerRes = await request(app).get("/api/appointments/mine")
+      .set("Authorization", `Bearer ${tokens.officer()}`);
+    expect(officerRes.status).toBe(200);
+    expect(officerRes.body).toEqual([]);
+  });
+
+  it("scheduling a non-current schedulable stage syncs only stageData, not top-level status", async () => {
+    const t = await txnAtInspection();
+    const res = await request(app).post(`/api/appointments/transaction/${t.id}/KEY_TURNOVER`)
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-05T09:00:00.000Z" });
+    expect(res.status).toBe(201);
+    expect(res.body.stage).toBe("KEY_TURNOVER");
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Pending");
+    expect(txn.stageData.KEY_TURNOVER.status).toBe("Scheduled");
+  });
+
+  it("scheduling against an unknown transaction 404s", async () => {
+    const res = await request(app).post("/api/appointments/transaction/does-not-exist/UNIT_INSPECTION")
+      .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
+    expect(res.status).toBe(404);
+  });
 });
