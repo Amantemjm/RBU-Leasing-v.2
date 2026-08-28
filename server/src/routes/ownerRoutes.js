@@ -6,6 +6,7 @@ const router = Router();
 router.use(verifyJwt);
 router.get("/me", requireRole("UNIT_OWNER"), ctrl.me); // must precede "/:id"
 router.get("/", requireStaff, ctrl.list);
+router.get("/:id/profile", requireStaff, ctrl.profile);
 router.get("/:id", requireStaff, ctrl.get);
 router.post("/", requireWrite, ctrl.create);
 router.patch("/:id/assign", requireRole("ADMIN"), ctrl.assign);

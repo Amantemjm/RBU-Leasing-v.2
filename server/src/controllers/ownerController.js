@@ -1,5 +1,6 @@
 import * as service from "../services/ownerService.js";
 import { ownerCreateSchema, ownerUpdateSchema, ownerAssignSchema } from "../validation/owner.js";
+import { getLessorProfile } from "../services/lessorProfileService.js";
 
 export async function list(req, res, next) {
   try { res.json(await service.listOwners(req.user)); } catch (e) { next(e); }
@@ -15,6 +16,9 @@ export async function me(req, res, next) {
 }
 export async function get(req, res, next) {
   try { res.json(await service.getOwner(req.params.id)); } catch (e) { next(e); }
+}
+export async function profile(req, res, next) {
+  try { res.json(await getLessorProfile(req.params.id)); } catch (e) { next(e); }
 }
 export async function create(req, res, next) {
   try {
