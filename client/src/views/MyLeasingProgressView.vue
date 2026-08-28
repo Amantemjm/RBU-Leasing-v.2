@@ -6,6 +6,7 @@ import { stageByKey, nextStageKey } from "../../../shared/leasingStages.js";
 import DeliveryTracker from "../components/DeliveryTracker.vue";
 import ApprovalRouting from "../components/ApprovalRouting.vue";
 import TransactionDocuments from "../components/TransactionDocuments.vue";
+import UpcomingAppointment from "../components/UpcomingAppointment.vue";
 
 const list = ref([]);
 const active = ref(null);
@@ -39,6 +40,8 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
 <template>
   <section>
     <header><h1>Leasing Progress</h1><p class="muted">Track your leasing transaction from inquiry to contract.</p></header>
+
+    <UpcomingAppointment />
 
     <p v-if="error" class="error">{{ error }}</p>
     <p v-else-if="loading" class="muted">Loading…</p>
