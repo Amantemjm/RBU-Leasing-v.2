@@ -3,14 +3,21 @@ import { createPinia, setActivePinia } from "pinia";
 import router from "../src/router/index.js";
 import InquiryStartView from "../src/views/InquiryStartView.vue";
 import InquiryView from "../src/views/InquiryView.vue";
+import AvailableUnitsView from "../src/views/AvailableUnitsView.vue";
 import { useAuthStore } from "../src/stores/auth.js";
 
 describe("router", () => {
   beforeEach(() => setActivePinia(createPinia()));
 
-  it("serves the user-type start page at / and the Inquiry form at /inquiry", () => {
-    expect(router.resolve("/").matched[0].components.default).toBe(InquiryStartView);
+  it("serves Available Units at /, the user-type start page at /inquire, and the Inquiry form at /inquiry", () => {
+    expect(router.resolve("/").matched[0].components.default).toBe(AvailableUnitsView);
+    expect(router.resolve("/inquire").matched[0].components.default).toBe(InquiryStartView);
     expect(router.resolve("/inquiry").matched[0].components.default).toBe(InquiryView);
+  });
+
+  it("redirects the old /units-for-lease list path to the home page", async () => {
+    await router.push("/units-for-lease");
+    expect(router.currentRoute.value.path).toBe("/");
   });
 
   it("sends an unauthenticated visitor from the app to /login", async () => {

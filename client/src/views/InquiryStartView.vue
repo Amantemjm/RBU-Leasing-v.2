@@ -44,7 +44,7 @@ function select(as) { router.push({ path: "/inquiry", query: { as } }); }
     </div>
 
     <p class="browse-link">
-      <RouterLink to="/units-for-lease">Browse available units &rarr;</RouterLink>
+      <RouterLink to="/">Browse available units &rarr;</RouterLink>
     </p>
 
     <template #foot>Across Capitol Commons · Circulo Verde · Greenhills Center · Ortigas East</template>

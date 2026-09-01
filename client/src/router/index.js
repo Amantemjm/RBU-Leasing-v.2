@@ -47,9 +47,10 @@ const WRITE = ["ADMIN", "LEASING_OFFICER"];
 const ADMIN = ["ADMIN"];
 
 const routes = [
-  { path: "/", component: InquiryStartView }, // public landing: "I am a…" user-type selection
+  { path: "/", component: AvailableUnitsView }, // public front page: browse published listings
+  { path: "/inquire", component: InquiryStartView }, // "I am a…" user-type selection
   { path: "/inquiry", component: InquiryView }, // Quick Inquiry form (user type via ?as=)
-  { path: "/units-for-lease", component: AvailableUnitsView }, // public: browse published listings
+  { path: "/units-for-lease", redirect: "/" }, // legacy list path → front page
   { path: "/units-for-lease/:id", component: UnitDetailPublicView },
   { path: "/login", component: LoginView },
   { path: "/signup", component: SignupView }, // public self-registration (lessor/lessee)
