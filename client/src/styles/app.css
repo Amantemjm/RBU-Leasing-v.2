@@ -218,68 +218,79 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Primary — page actions, form submit, sign-in */
+/* PRIMARY — the one main action. Explicit .primary, plus the positional
+   defaults (page-header action, form submit, auth) so header buttons need no
+   class. A .secondary/.ghost/.danger/.link class overrides these (class beats
+   the element selector). */
+.app-main button.primary,
 .app-main section > header button,
+.app-main .head button,
 .app-main form button[type="submit"],
 .auth button {
   background: var(--accent);
   color: #fff;
+  border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
-
+.app-main button.primary:hover,
 .app-main section > header button:hover,
+.app-main .head button:hover,
 .app-main form button[type="submit"]:hover,
 .auth button:hover {
   background: var(--accent-600);
   box-shadow: 0 8px 18px -8px rgba(10, 105, 6, 0.55);
   transform: translateY(-1px);
 }
+.app-main button.primary:active,
 .app-main section > header button:active,
+.app-main .head button:active,
 .app-main form button[type="submit"]:active,
 .auth button:active {
   transform: translateY(0) scale(0.99);
   box-shadow: var(--shadow-sm);
 }
 
-/* Secondary — form cancel */
+/* SECONDARY — safe, non-primary actions (Cancel, secondary controls).
+   .ghost is kept as an alias; form .cancel maps here too. */
+.app-main button.secondary,
+.app-main button.ghost,
 .app-main form button.cancel {
   background: var(--surface);
   color: var(--ink-700);
   border-color: var(--line-strong);
+  box-shadow: none;
 }
-
+.app-main button.secondary:hover,
+.app-main button.ghost:hover,
 .app-main form button.cancel:hover {
   background: var(--paper);
   border-color: var(--muted);
 }
 
-/* Primary / ghost — used by the Administration (Users) actions and modal */
-.app-main button.primary {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
-}
-
-.app-main button.primary:hover {
-  background: var(--accent-600);
-  box-shadow: 0 8px 18px -8px rgba(10, 105, 6, 0.55);
-  transform: translateY(-1px);
-}
-.app-main button.primary:active {
-  transform: translateY(0) scale(0.99);
-  box-shadow: var(--shadow-sm);
-}
-
-.app-main button.ghost {
+/* DANGER — destructive actions (Delete, Reject). Bordered, danger-tinted. */
+.app-main button.danger {
   background: var(--surface);
-  color: var(--ink-700);
-  border-color: var(--line-strong);
+  color: var(--danger);
+  border-color: var(--danger);
+  box-shadow: none;
+}
+.app-main button.danger:hover {
+  background: var(--danger-050);
+  border-color: var(--danger);
 }
 
-.app-main button.ghost:hover {
-  background: var(--paper);
-  border-color: var(--muted);
+/* LINK — inline text action; reads as a link, not a button. */
+.app-main button.link {
+  background: transparent;
+  color: var(--accent-text);
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0.2rem 0.15rem;
+  font-weight: 600;
 }
+.app-main button.link:hover { text-decoration: underline; background: transparent; }
+.app-main button.link.danger { color: var(--danger); border-color: transparent; }
+.app-main button.link.danger:hover { background: transparent; }
 
 /* --------------------------------------------------------------------------
    App shell — left sidebar + topbar
@@ -475,8 +486,9 @@ button:disabled {
   padding: 2.25rem 2.5rem 3rem;
 }
 
-/* Page header (list + form views use <section> > <header>/<h1>) */
-.app-main section > header {
+/* Page header — one rule for both the semantic <header> and the .head div. */
+.app-main section > header,
+.app-main .head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -694,6 +706,18 @@ button:disabled {
   grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
   gap: 1.1rem;
 }
+
+/* Panel — the surface card used by detail/profile pages (one global rule so
+   views stop re-declaring it). Quieter than the interactive dashboard .card. */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.35rem 1.4rem;
+}
+.panel + .panel { margin-top: 1.1rem; }
+.panel > h2 { margin: 0 0 0.9rem; font-size: 1.05rem; }
 
 .card {
   position: relative;
@@ -991,9 +1015,39 @@ button:disabled {
 }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 
-/* Modal / dialog backdrops fade, panels pop */
-.modal-backdrop { animation: fade-in var(--dur-2) ease both; }
-.modal, .menu { animation: pop-in var(--dur-2) var(--ease-out) both; transform-origin: top right; }
+/* Modal / dialog — one global chrome (backdrop dim + centered panel). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 22, 33, 0.55);
+  animation: fade-in var(--dur-2) ease both;
+}
+.modal {
+  width: 100%;
+  max-width: 34rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  animation: pop-in var(--dur-2) var(--ease-out) both;
+  transform-origin: center;
+}
+.menu { animation: pop-in var(--dur-2) var(--ease-out) both; transform-origin: top right; }
+.modal h2 { margin: 0 0 1rem; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+  flex-wrap: wrap;
+}
 
 /* Refined scrollbars (WebKit) that match the theme */
 .sidebar__nav, .app-main, .preview__canvas, .modal {
