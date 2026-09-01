@@ -57,3 +57,51 @@ export async function updateListing(user, unitId, { details, visibleFields, head
   const listing = await prisma.unitListing.upsert({ where: { unitId }, create: { unitId, ...data }, update: data });
   return getForUnit(unitId);
 }
+
+async function assertPhotoInUnit(unitId, photoId) {
+  const photo = await prisma.unitPhoto.findUnique({ where: { id: photoId } });
+  if (!photo || photo.unitId !== unitId) throw new NotFoundError("Photo not found");
+  return photo;
+}
+
+export async function addPhoto(user, unitId, file) {
+  await loadUnit(unitId);
+  if (!file) throw new InvalidReferenceError("An image file is required");
+  const max = await prisma.unitPhoto.aggregate({ where: { unitId }, _max: { sortOrder: true } });
+  const photo = await prisma.unitPhoto.create({
+    data: { unitId, data: file.buffer, mimeType: file.mimetype, size: file.size,
+      sortOrder: (max._max.sortOrder || 0) + 1, createdById: user?.userId || null, createdByName: await resolveName(user) },
+    select: PHOTO_META,
+  });
+  return photo;
+}
+export async function deletePhoto(user, unitId, photoId) {
+  await assertPhotoInUnit(unitId, photoId);
+  await prisma.unitPhoto.delete({ where: { id: photoId } });
+  const listing = await prisma.unitListing.findUnique({ where: { unitId } });
+  if (listing?.coverPhotoId === photoId) await prisma.unitListing.update({ where: { unitId }, data: { coverPhotoId: null } });
+  return getForUnit(unitId);
+}
+export async function reorderPhotos(user, unitId, orderedIds) {
+  await loadUnit(unitId);
+  for (const id of orderedIds) await assertPhotoInUnit(unitId, id);
+  await prisma.$transaction(orderedIds.map((id, i) => prisma.unitPhoto.update({ where: { id }, data: { sortOrder: i + 1 } })));
+  return getForUnit(unitId);
+}
+export async function updatePhotoCaption(user, unitId, photoId, caption) {
+  await assertPhotoInUnit(unitId, photoId);
+  await prisma.unitPhoto.update({ where: { id: photoId }, data: { caption: caption ?? null } });
+  return getForUnit(unitId);
+}
+export async function setCover(user, unitId, photoId) {
+  await loadUnit(unitId);
+  await assertPhotoInUnit(unitId, photoId);
+  const data = { coverPhotoId: photoId };
+  await prisma.unitListing.upsert({ where: { unitId }, create: { unitId, ...data, details: {}, visibleFields: DEFAULT_VISIBLE_FIELDS }, update: data });
+  return getForUnit(unitId);
+}
+export async function getPhotoForStaff(unitId, photoId) {
+  const photo = await assertPhotoInUnit(unitId, photoId);
+  const row = await prisma.unitPhoto.findUnique({ where: { id: photoId }, select: { data: true, mimeType: true } });
+  return row;
+}

@@ -47,3 +47,62 @@ describe("Unit listing — get/update", () => {
     expect(nf.status).toBe(404);
   });
 });
+
+const PNG = Buffer.from("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c6360000002000154a24f5c0000000049454e44ae426082", "hex");
+
+describe("Unit listing — photos", () => {
+  async function withPhoto() {
+    const owner = await factory.owner();
+    const u = await factory.unit(owner.id, { unitNumber: "5C", baseRent: 30000 });
+    const up = await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff())
+      .attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    return { u, photoId: up.body.id, up };
+  }
+
+  it("uploads a photo with incrementing sortOrder + createdByName", async () => {
+    const { u, up } = await withPhoto();
+    expect(up.status).toBe(201);
+    expect(up.body.sortOrder).toBe(1);
+    expect(up.body).toHaveProperty("createdByName");
+    const up2 = await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff()).attach("file", PNG, { filename: "b.png", contentType: "image/png" });
+    expect(up2.body.sortOrder).toBe(2);
+    // no bytes in the metadata payload
+    expect(up.body.data).toBeUndefined();
+  });
+
+  it("rejects a non-image upload (400)", async () => {
+    const owner = await factory.owner(); const u = await factory.unit(owner.id, { baseRent: 1 });
+    const res = await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff())
+      .attach("file", Buffer.from("not an image"), { filename: "x.txt", contentType: "text/plain" });
+    expect(res.status).toBe(400);
+  });
+
+  it("serves the staff image bytes", async () => {
+    const { u, photoId } = await withPhoto();
+    const img = await request(app).get(`/api/unit-listings/${u.id}/photos/${photoId}/image`).set(staff());
+    expect(img.status).toBe(200);
+    expect(img.headers["content-type"]).toContain("image/png");
+  });
+
+  it("reorders, captions, sets cover, and deletes (foreign photo 404)", async () => {
+    const { u, photoId } = await withPhoto();
+    const p2 = await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff()).attach("file", PNG, { filename: "b.png", contentType: "image/png" });
+    const reo = await request(app).patch(`/api/unit-listings/${u.id}/photos/reorder`).set(staff()).send({ orderedIds: [p2.body.id, photoId] });
+    expect(reo.status).toBe(200);
+    expect(reo.body.photos[0].id).toBe(p2.body.id);
+    const cap = await request(app).patch(`/api/unit-listings/${u.id}/photos/${photoId}`).set(staff()).send({ caption: "Living room" });
+    expect(cap.body.photos.find((p) => p.id === photoId).caption).toBe("Living room");
+    const cov = await request(app).patch(`/api/unit-listings/${u.id}/cover`).set(staff()).send({ photoId });
+    expect(cov.status).toBe(200);
+    expect(cov.body.listing.coverPhotoId).toBe(photoId);
+    // foreign photo id 404
+    const other = await factory.owner().then((o) => factory.unit(o.id, { baseRent: 1 }));
+    const bad = await request(app).delete(`/api/unit-listings/${other.id}/photos/${photoId}`).set(staff());
+    expect(bad.status).toBe(404);
+    // delete the cover clears coverPhotoId
+    const del = await request(app).delete(`/api/unit-listings/${u.id}/photos/${photoId}`).set(staff());
+    expect(del.status).toBe(200);
+    const after = await request(app).get(`/api/unit-listings/${u.id}`).set(staff());
+    expect(after.body.listing.coverPhotoId).toBeNull();
+  });
+});
