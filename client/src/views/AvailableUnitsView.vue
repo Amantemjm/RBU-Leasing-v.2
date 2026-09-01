@@ -72,7 +72,10 @@ const isFiltered = computed(() => !!(estateId.value || type.value));
 <template>
   <div class="units-page">
     <header class="units-page__head">
-      <RouterLink to="/inquire" class="home-link">Make an inquiry &rarr;</RouterLink>
+      <div class="head-actions">
+        <RouterLink to="/inquire" class="home-link">Make an inquiry &rarr;</RouterLink>
+        <RouterLink to="/inquiry?as=LESSOR" class="cta-list">List your unit</RouterLink>
+      </div>
       <h1>Available Units for Lease</h1>
       <p class="lede">Browse published listings across our managed estates.</p>
     </header>
@@ -117,13 +120,35 @@ const isFiltered = computed(() => !!(estateId.value || type.value));
 .units-page__head {
   margin-bottom: 1.25rem;
 }
+.head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
 .home-link {
   display: inline-block;
-  margin-bottom: 0.5rem;
   color: var(--accent-text, inherit);
   text-decoration: none;
   font-size: 0.85rem;
 }
+.home-link:hover { text-decoration: underline; }
+.cta-list {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent, #0c7a4d);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.12));
+  transition: background 0.16s ease;
+}
+.cta-list:hover { background: var(--accent-600, #0a6641); }
 .units-page__head h1 {
   margin: 0 0 0.25rem;
   font-family: var(--display, inherit);

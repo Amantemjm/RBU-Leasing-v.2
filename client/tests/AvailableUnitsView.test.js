@@ -11,7 +11,7 @@ vi.mock("../src/lib/resource.js", () => ({
 }));
 import AvailableUnitsView from "../src/views/AvailableUnitsView.vue";
 import { publicUnits } from "../src/lib/resource.js";
-const stubs = { RouterLink: { template: "<a><slot /></a>", props: ["to"] } };
+const stubs = { RouterLink: { template: "<a :href='to'><slot /></a>", props: ["to"] } };
 
 describe("AvailableUnitsView", () => {
   it("renders a card per unit and derives filter options", async () => {
@@ -35,5 +35,12 @@ describe("AvailableUnitsView", () => {
     const w = mount(AvailableUnitsView, { global: { stubs } });
     await flushPromises();
     expect(w.text()).toMatch(/no units/i);
+  });
+  it("shows a 'List your unit' CTA linking to the lessor inquiry", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    const cta = w.findAll("a").find((a) => /list your unit/i.test(a.text()));
+    expect(cta).toBeTruthy();
+    expect(cta.attributes("href")).toBe("/inquiry?as=LESSOR");
   });
 });
