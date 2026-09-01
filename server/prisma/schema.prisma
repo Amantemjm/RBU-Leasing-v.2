@@ -56,6 +56,7 @@ enum InquiryStatus {
   NEW
   IN_PROGRESS
   CLOSED
+  CONVERTED
 }
 
 enum InfoSheetStatus {
@@ -91,6 +92,7 @@ model User {
   tenant       Tenant?    @relation(fields: [tenantId], references: [id])
   tenantId     String?
   assignedInquiries Inquiry[] @relation("InquiryAssignee")
+  convertedInquiries Inquiry[] @relation("InquiryConversion")
   assignedOwners UnitOwner[] @relation("OwnerOfficer")
   assignedTransactions LeasingTransaction[] @relation("TxnOfficer")
   pageFormEntries PageFormEntry[]
@@ -353,6 +355,8 @@ model Inquiry {
   status       InquiryStatus   @default(NEW)
   assignedTo   User?           @relation("InquiryAssignee", fields: [assignedToId], references: [id])
   assignedToId String?
+  convertedUser   User?        @relation("InquiryConversion", fields: [convertedUserId], references: [id])
+  convertedUserId String?
   leasingTransaction LeasingTransaction?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt

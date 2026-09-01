@@ -120,6 +120,19 @@ export async function signupPortalUser({ name, email, contactEmail, password, ro
     },
   });
 
+  // Best-effort: link the applicant's most recent open inquiry to this account so
+  // the journey from first contact to onboarding is captured. Never fails signup.
+  try {
+    const inquirerType = role === "UNIT_OWNER" ? "LESSOR" : "LESSEE";
+    const match = await prisma.inquiry.findFirst({
+      where: { email: contactEmail, inquirerType, status: { in: ["NEW", "IN_PROGRESS"] } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (match) {
+      await prisma.inquiry.update({ where: { id: match.id }, data: { status: "CONVERTED", convertedUserId: user.id } });
+    }
+  } catch { /* linkage is best-effort */ }
+
   return {
     status: user.status,
     user: { id: user.id, name: user.name, email: user.email, role: user.role, contactEmail: user.contactEmail },

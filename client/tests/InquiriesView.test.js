@@ -7,7 +7,11 @@ vi.mock("../src/lib/inquiries.js", () => ({
     { id: "i1", category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability",
       fullName: "Maria Santos", email: "maria@example.com",
       message: "Interested in a 2BR", assignedToId: null, assignedTo: null,
-      createdAt: "2026-08-12T00:00:00Z" },
+      status: "NEW", createdAt: "2026-08-12T00:00:00Z" },
+    { id: "i2", category: "OFFICES", inquirerType: "LESSOR", inquiryType: "Listing",
+      fullName: "Pedro Cruz", email: "pedro@example.com",
+      message: "Signed up as a lessor", assignedToId: null, assignedTo: null,
+      status: "CONVERTED", createdAt: "2026-08-13T00:00:00Z" },
   ])),
   deleteInquiry: vi.fn(() => Promise.resolve()),
   assignInquiry: vi.fn(() => Promise.resolve({ id: "i1", assignedToId: "o1", assignedTo: { id: "o1", name: "Officer Jane" } })),
@@ -47,7 +51,16 @@ describe("InquiriesView (staff)", () => {
     expect(headers).toContain("I am a");
     expect(headers).toContain("Inquiry Type");
     expect(headers).toContain("Assigned to");
-    expect(headers).not.toContain("Status");
+    expect(headers).toContain("Status");
+  });
+
+  it("renders a Converted badge for a converted inquiry and a New badge for a new one", async () => {
+    const w = mountAs("VIEWER");
+    await flushPromises();
+    const tags = w.findAll(".status-tag").map((t) => t.text());
+    expect(tags).toContain("Converted");
+    expect(tags).toContain("New");
+    expect(w.find(".status-tag.converted").exists()).toBe(true);
   });
 
   it("is read-only for a viewer (no assign control, no delete)", async () => {

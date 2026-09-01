@@ -108,4 +108,12 @@ describe("Lessee Information Sheets", () => {
     expect(res.headers["content-type"]).toContain("application/pdf");
     expect(res.headers["content-disposition"]).toContain("LesseeAcceptanceForm-");
   });
+
+  it("lessee acceptance-form approval is not gated by lessor prerequisites", async () => {
+    const t = await factory.tenant();
+    const s = await requestFor(t.id);
+    await request(app).patch(`${BASE}/${s.body.id}/submit`).set("Authorization", `Bearer ${tokens.tenant(t.id)}`).send({ data: FILLED });
+    const res = await request(app).patch(`${BASE}/${s.body.id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
+    expect(res.status).toBe(200);
+  });
 });

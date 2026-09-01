@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
+import { prisma } from "../src/lib/prisma.js";
 
 const app = createApp();
 beforeEach(async () => { await resetCrudTables(); });
@@ -72,11 +73,12 @@ describe("Lessor Information Sheets", () => {
   });
 
   it("stamps reviewedByName from the reviewing officer", async () => {
-    const { prisma } = await import("../src/lib/prisma.js");
     const reviewer = await prisma.user.create({
       data: { name: "Officer Jane", email: "jane.officer@example.com", passwordHash: "x", role: "LEASING_OFFICER" },
     });
     const o = await factory.owner();
+    await factory.unit(o.id, { approvalStatus: "APPROVED" });
+    await approveAllReqs(o.id);
     const s = await requestFor(o.id);
     const res = await request(app).patch(`${BASE}/${s.body.id}/review`)
       .set("Authorization", `Bearer ${tokens.officer(reviewer.id)}`).send({ status: "APPROVED" });
@@ -112,6 +114,8 @@ describe("Lessor Information Sheets", () => {
 
   it("staff review approves a sheet (APPROVED, reviewedAt set)", async () => {
     const o = await factory.owner();
+    await factory.unit(o.id, { approvalStatus: "APPROVED" });
+    await approveAllReqs(o.id);
     const s = await requestFor(o.id);
     const res = await request(app).patch(`${BASE}/${s.body.id}/review`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
@@ -181,5 +185,47 @@ describe("Lessor Information Sheets", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/pdf");
     expect(res.headers["content-disposition"]).toContain("UnitOwnerAcceptanceForm-");
+  });
+
+  async function submittedSheet(ownerId) {
+    const s = await requestFor(ownerId);
+    await request(app).patch(`${BASE}/${s.body.id}/submit`).set("Authorization", `Bearer ${tokens.owner(ownerId)}`).send({ data: FILLED });
+    return s.body.id;
+  }
+  async function approveAllReqs(ownerId) {
+    const { REQUIREMENT_KEYS } = await import("../../shared/lessorRequirements.js");
+    for (const key of REQUIREMENT_KEYS) {
+      await prisma.lessorRequirement.upsert({
+        where: { unitOwnerId_requirementKey: { unitOwnerId: ownerId, requirementKey: key } },
+        create: { unitOwnerId: ownerId, requirementKey: key, status: "Approved" },
+        update: { status: "Approved" },
+      });
+    }
+  }
+
+  it("blocks acceptance-form approval without an approved unit (409)", async () => {
+    const o = await factory.owner();
+    const id = await submittedSheet(o.id);
+    const res = await request(app).patch(`${BASE}/${id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
+    expect(res.status).toBe(409);
+  });
+
+  it("blocks approval when requirements are incomplete (409), allows once complete", async () => {
+    const o = await factory.owner();
+    await factory.unit(o.id, { approvalStatus: "APPROVED" });
+    const id = await submittedSheet(o.id);
+    const blocked = await request(app).patch(`${BASE}/${id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
+    expect(blocked.status).toBe(409);
+    await approveAllReqs(o.id);
+    const ok = await request(app).patch(`${BASE}/${id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.status).toBe("APPROVED");
+  });
+
+  it("RETURNED review is not gated by the guard", async () => {
+    const o = await factory.owner();
+    const id = await submittedSheet(o.id);
+    const res = await request(app).patch(`${BASE}/${id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "RETURNED", remarks: "fix" });
+    expect(res.status).toBe(200);
   });
 });

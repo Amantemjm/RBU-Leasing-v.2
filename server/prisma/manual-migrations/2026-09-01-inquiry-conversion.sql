@@ -1,0 +1,6 @@
+ALTER TYPE "InquiryStatus" ADD VALUE IF NOT EXISTS 'CONVERTED';
+ALTER TABLE "Inquiry" ADD COLUMN IF NOT EXISTS "convertedUserId" TEXT;
+DO $$ BEGIN
+  ALTER TABLE "Inquiry" ADD CONSTRAINT "Inquiry_convertedUserId_fkey"
+    FOREIGN KEY ("convertedUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
