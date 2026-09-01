@@ -49,7 +49,7 @@ describe("Unit lifecycle", () => {
     expect(res.body.reviewRemarks).toBeNull();
   });
 
-  it("staff reject requires remarks and records them; approve clears them", async () => {
+  it("staff reject requires remarks and records them; approve after resubmit clears them", async () => {
     const o = await factory.owner();
     const u = await factory.unit(o.id, { approvalStatus: "SUBMITTED" });
     const noReason = await request(app).patch(`/api/units/${u.id}/reject`).set(auth(tokens.officer())).send({});
@@ -58,9 +58,33 @@ describe("Unit lifecycle", () => {
       .send({ remarks: "Missing slot number" });
     expect(rej.body.approvalStatus).toBe("REJECTED");
     expect(rej.body.reviewRemarks).toBe("Missing slot number");
+    // A rejected unit must be resubmitted before it can be approved.
+    await request(app).patch(`/api/units/${u.id}/submit`).set(auth(tokens.owner(o.id)));
     const app2 = await request(app).patch(`/api/units/${u.id}/approve`).set(auth(tokens.officer()));
     expect(app2.body.approvalStatus).toBe("APPROVED");
     expect(app2.body.reviewRemarks).toBeNull();
+  });
+
+  it("approve/reject act only on a SUBMITTED unit (state guard)", async () => {
+    const o = await factory.owner();
+    // DRAFT cannot be approved (never submitted)
+    const draft = await factory.unit(o.id, { unitNumber: "D1", approvalStatus: "DRAFT" });
+    expect((await request(app).patch(`/api/units/${draft.id}/approve`).set(auth(tokens.officer()))).status).toBe(409);
+    // an already-APPROVED unit cannot be re-approved or rejected (terminal)
+    const approved = await factory.unit(o.id, { unitNumber: "A1", approvalStatus: "APPROVED" });
+    expect((await request(app).patch(`/api/units/${approved.id}/reject`).set(auth(tokens.officer())).send({ remarks: "late" })).status).toBe(409);
+    expect((await request(app).patch(`/api/units/${approved.id}/approve`).set(auth(tokens.officer()))).status).toBe(409);
+  });
+
+  it("staff-created units enter the workflow (DRAFT by default, SUBMITTED with submit:true) — not auto-approved", async () => {
+    const o = await factory.owner();
+    const draft = await request(app).post("/api/units").set(auth(tokens.officer()))
+      .send({ ownerId: o.id, unitNumber: "S1", baseRent: 1000 });
+    expect(draft.status).toBe(201);
+    expect(draft.body.approvalStatus).toBe("DRAFT");
+    const submitted = await request(app).post("/api/units").set(auth(tokens.officer()))
+      .send({ ownerId: o.id, unitNumber: "S2", baseRent: 1000, submit: true });
+    expect(submitted.body.approvalStatus).toBe("SUBMITTED");
   });
 
   it("a lessor cannot fetch another owner's unit (404), but can fetch their own", async () => {
