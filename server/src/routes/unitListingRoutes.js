@@ -13,6 +13,8 @@ r.patch("/:unitId", requireWrite, ctrl.update);
 r.post("/:unitId/photos", requireWrite, upload.single("file"), ctrl.addPhoto);
 r.patch("/:unitId/photos/reorder", requireWrite, ctrl.reorderPhotos);
 r.patch("/:unitId/cover", requireWrite, ctrl.setCover);
+r.patch("/:unitId/publish", requireWrite, ctrl.publish);
+r.patch("/:unitId/unpublish", requireWrite, ctrl.unpublish);
 r.get("/:unitId/photos/:photoId/image", requireRole(...STAFF), ctrl.staffImage);
 r.patch("/:unitId/photos/:photoId", requireWrite, ctrl.captionPhoto);
 r.delete("/:unitId/photos/:photoId", requireWrite, ctrl.deletePhoto);

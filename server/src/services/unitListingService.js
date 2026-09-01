@@ -94,14 +94,92 @@ export async function updatePhotoCaption(user, unitId, photoId, caption) {
   return getForUnit(unitId);
 }
 export async function setCover(user, unitId, photoId) {
-  await loadUnit(unitId);
+  const unit = await loadUnit(unitId);
   await assertPhotoInUnit(unitId, photoId);
   const data = { coverPhotoId: photoId };
-  await prisma.unitListing.upsert({ where: { unitId }, create: { unitId, ...data, details: {}, visibleFields: DEFAULT_VISIBLE_FIELDS }, update: data });
+  await prisma.unitListing.upsert({ where: { unitId }, create: { unitId, ...data, details: defaultDetails(unit), visibleFields: DEFAULT_VISIBLE_FIELDS }, update: data });
   return getForUnit(unitId);
 }
 export async function getPhotoForStaff(unitId, photoId) {
   const photo = await assertPhotoInUnit(unitId, photoId);
   const row = await prisma.unitPhoto.findUnique({ where: { id: photoId }, select: { data: true, mimeType: true } });
   return row;
+}
+
+function cardDetails(listing) {
+  const details = listing.details || {};
+  const visible = Array.isArray(listing.visibleFields) ? listing.visibleFields : [];
+  const out = {};
+  for (const k of visible) if (details[k] !== undefined) out[k] = details[k];
+  return out;
+}
+
+export async function publish(user, unitId) {
+  const unit = await loadUnit(unitId);
+  if (unit.approvalStatus !== "APPROVED") throw new ConflictError("Only an approved unit can be published");
+  const count = await prisma.unitPhoto.count({ where: { unitId } });
+  if (count === 0) throw new ConflictError("Add at least one photo before publishing");
+  await prisma.unitListing.upsert({
+    where: { unitId },
+    create: { unitId, published: true, publishedAt: new Date(), details: defaultDetails(unit), visibleFields: DEFAULT_VISIBLE_FIELDS },
+    update: { published: true, publishedAt: new Date() },
+  });
+  return getForUnit(unitId);
+}
+export async function unpublish(user, unitId) {
+  const unit = await loadUnit(unitId);
+  await prisma.unitListing.upsert({
+    where: { unitId }, create: { unitId, published: false, details: defaultDetails(unit), visibleFields: DEFAULT_VISIBLE_FIELDS },
+    update: { published: false },
+  });
+  return getForUnit(unitId);
+}
+
+export async function listPublic({ estateId, type } = {}) {
+  const unitFilter = {};
+  if (type) unitFilter.type = type;
+  if (estateId) unitFilter.tower = { is: { estateId } };
+  const listings = await prisma.unitListing.findMany({
+    where: { published: true, unit: { is: { status: "VACANT", approvalStatus: "APPROVED", ...unitFilter } } },
+    include: { unit: { select: { id: true, type: true, tower: { select: { name: true, estate: { select: { id: true, name: true } } } } } } },
+    orderBy: { publishedAt: "desc" },
+  });
+  const cards = [];
+  for (const l of listings) {
+    const photos = await prisma.unitPhoto.findMany({ where: { unitId: l.unitId }, orderBy: { sortOrder: "asc" }, select: { id: true } });
+    const photoIds = photos.map((p) => p.id);
+    cards.push({
+      unitId: l.unitId, headline: l.headline, type: l.unit.type,
+      location: [l.unit.tower?.name, l.unit.tower?.estate?.name].filter(Boolean).join(", ") || null,
+      estate: l.unit.tower?.estate || null,
+      details: cardDetails(l),
+      coverPhotoId: l.coverPhotoId && photoIds.includes(l.coverPhotoId) ? l.coverPhotoId : (photoIds[0] || null),
+      photoIds,
+    });
+  }
+  return cards;
+}
+export async function getPublic(unitId) {
+  const l = await prisma.unitListing.findUnique({
+    where: { unitId },
+    include: { unit: { select: { id: true, type: true, status: true, approvalStatus: true, tower: { select: { name: true, estate: { select: { id: true, name: true } } } } } } },
+  });
+  if (!l || !l.published || l.unit.status !== "VACANT" || l.unit.approvalStatus !== "APPROVED") throw new NotFoundError("Unit not found");
+  const photos = await prisma.unitPhoto.findMany({ where: { unitId }, orderBy: { sortOrder: "asc" }, select: { id: true, caption: true } });
+  const photoIds = photos.map((p) => p.id);
+  return {
+    unitId, headline: l.headline, type: l.unit.type,
+    location: [l.unit.tower?.name, l.unit.tower?.estate?.name].filter(Boolean).join(", ") || null,
+    details: cardDetails(l), photos, photoIds,
+    coverPhotoId: l.coverPhotoId && photoIds.includes(l.coverPhotoId) ? l.coverPhotoId : (photoIds[0] || null),
+  };
+}
+export async function getPhotoBytes(photoId, { requirePublished } = {}) {
+  const photo = await prisma.unitPhoto.findUnique({ where: { id: photoId }, select: { data: true, mimeType: true, unitId: true } });
+  if (!photo) throw new NotFoundError("Photo not found");
+  if (requirePublished) {
+    const l = await prisma.unitListing.findUnique({ where: { unitId: photo.unitId }, include: { unit: { select: { status: true, approvalStatus: true } } } });
+    if (!l || !l.published || l.unit.status !== "VACANT" || l.unit.approvalStatus !== "APPROVED") throw new NotFoundError("Photo not found");
+  }
+  return { data: photo.data, mimeType: photo.mimeType };
 }

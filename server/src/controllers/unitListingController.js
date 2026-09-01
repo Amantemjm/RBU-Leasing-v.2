@@ -28,3 +28,9 @@ export async function staffImage(req, res, next) {
     res.setHeader("Content-Type", row.mimeType); res.setHeader("Cache-Control", "no-store"); res.send(row.data);
   } catch (e) { next(e); }
 }
+export async function publish(req, res, next) {
+  try { res.json(await svc.publish(req.user, req.params.unitId)); } catch (e) { next(e); }
+}
+export async function unpublish(req, res, next) {
+  try { res.json(await svc.unpublish(req.user, req.params.unitId)); } catch (e) { next(e); }
+}

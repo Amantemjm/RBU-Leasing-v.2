@@ -105,4 +105,36 @@ describe("Unit listing — photos", () => {
     const after = await request(app).get(`/api/unit-listings/${u.id}`).set(staff());
     expect(after.body.listing.coverPhotoId).toBeNull();
   });
+
+  it("setCover on a fresh unit still pre-fills listing details from the unit", async () => {
+    const owner = await factory.owner();
+    const u = await factory.unit(owner.id, { unitNumber: "7Z", building: "Maven", type: "2BR", baseRent: 22000, sizeSqm: 40 });
+    const up = await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff())
+      .attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    const cov = await request(app).patch(`/api/unit-listings/${u.id}/cover`).set(staff()).send({ photoId: up.body.id });
+    expect(cov.status).toBe(200);
+    const res = await request(app).get(`/api/unit-listings/${u.id}`).set(staff());
+    expect(res.body.listing.details.unitNumber).toBe("7Z");
+    expect(res.body.listing.details.rentalRate).toBe(22000);
+  });
+});
+
+describe("Unit listing — publish", () => {
+  it("blocks publish with no photos (409) and when unit not APPROVED (409)", async () => {
+    const owner = await factory.owner();
+    const u = await factory.unit(owner.id, { baseRent: 1, approvalStatus: "APPROVED" });
+    const noPhoto = await request(app).patch(`/api/unit-listings/${u.id}/publish`).set(staff());
+    expect(noPhoto.status).toBe(409);
+    await request(app).post(`/api/unit-listings/${u.id}/photos`).set(staff()).attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    const u2 = await factory.unit(owner.id, { baseRent: 1, approvalStatus: "DRAFT" });
+    await request(app).post(`/api/unit-listings/${u2.id}/photos`).set(staff()).attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    const notApproved = await request(app).patch(`/api/unit-listings/${u2.id}/publish`).set(staff());
+    expect(notApproved.status).toBe(409);
+    const ok = await request(app).patch(`/api/unit-listings/${u.id}/publish`).set(staff());
+    expect(ok.status).toBe(200);
+    expect(ok.body.listing.published).toBe(true);
+    expect(ok.body.listing.publishedAt).toBeTruthy();
+    const un = await request(app).patch(`/api/unit-listings/${u.id}/unpublish`).set(staff());
+    expect(un.body.listing.published).toBe(false);
+  });
 });
