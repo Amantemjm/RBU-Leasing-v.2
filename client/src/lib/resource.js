@@ -127,3 +127,25 @@ export const lessorRequirements = {
     return res.data;
   },
 };
+
+export const unitListings = {
+  get: (unitId) => api.get(`/unit-listings/${unitId}`).then((r) => r.data),
+  update: (unitId, body) => api.patch(`/unit-listings/${unitId}`, body).then((r) => r.data),
+  addPhoto: (unitId, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post(`/unit-listings/${unitId}/photos`, form).then((r) => r.data);
+  },
+  deletePhoto: (unitId, photoId) => api.delete(`/unit-listings/${unitId}/photos/${photoId}`).then((r) => r.data),
+  reorder: (unitId, orderedIds) => api.patch(`/unit-listings/${unitId}/photos/reorder`, { orderedIds }).then((r) => r.data),
+  caption: (unitId, photoId, caption) => api.patch(`/unit-listings/${unitId}/photos/${photoId}`, { caption }).then((r) => r.data),
+  setCover: (unitId, photoId) => api.patch(`/unit-listings/${unitId}/cover`, { photoId }).then((r) => r.data),
+  publish: (unitId) => api.patch(`/unit-listings/${unitId}/publish`).then((r) => r.data),
+  unpublish: (unitId) => api.patch(`/unit-listings/${unitId}/unpublish`).then((r) => r.data),
+  staffImageUrl: (unitId, photoId) => `/api/unit-listings/${unitId}/photos/${photoId}/image`,
+};
+export const publicUnits = {
+  list: (params) => api.get("/public/units", { params }).then((r) => r.data),
+  get: (unitId) => api.get(`/public/units/${unitId}`).then((r) => r.data),
+  photoUrl: (photoId) => `/api/public/units/photo/${photoId}`,
+};
