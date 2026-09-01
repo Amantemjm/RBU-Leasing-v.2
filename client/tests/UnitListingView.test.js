@@ -41,4 +41,18 @@ describe("UnitListingView", () => {
     await pub.trigger("click"); await flushPromises();
     expect(unitListings.publish).toHaveBeenCalledWith("u1");
   });
+
+  it("coerces number-type detail fields to Number via v-model.number", async () => {
+    const w = mount(UnitListingView);
+    await flushPromises();
+    const numberInput = w.find('input#bedrooms[type="number"]');
+    expect(numberInput.exists()).toBe(true);
+    await numberInput.setValue("3");
+    // "bedrooms" is a "number"-type catalog field bound with v-model.number;
+    // its underlying reactive value should be coerced to a Number, not left as a string.
+    if (w.vm.details) {
+      expect(w.vm.details.bedrooms).toBe(3);
+      expect(typeof w.vm.details.bedrooms).toBe("number");
+    }
+  });
 });

@@ -279,7 +279,7 @@ async function togglePublish() {
             v-else-if="f.type === 'number'"
             :id="f.key"
             type="number"
-            v-model="details[f.key]"
+            v-model.number="details[f.key]"
           />
           <input
             v-else-if="f.type === 'list'"
