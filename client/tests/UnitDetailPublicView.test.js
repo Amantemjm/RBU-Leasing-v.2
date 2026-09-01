@@ -21,10 +21,10 @@ describe("UnitDetailPublicView", () => {
     expect(w.text()).toContain("12A");
     expect(w.text()).toMatch(/45,000/);
     expect(w.text()).toContain("Pool, Gym");
-    expect(w.find("img").attributes("src")).toBe("/api/public/units/photo/p1");
+    expect(w.find(".gallery__main img").attributes("src")).toBe("/api/public/units/photo/p1");
     const next = w.findAll("button").find((b) => b.attributes("aria-label")?.match(/next/i) || /▶|›|next/i.test(b.text()));
     await next.trigger("click");
-    expect(w.find("img").attributes("src")).toBe("/api/public/units/photo/p2");
+    expect(w.find(".gallery__main img").attributes("src")).toBe("/api/public/units/photo/p2");
   });
   it("shows a not-available message on 404", async () => {
     publicUnits.get.mockRejectedValueOnce({ response: { status: 404 } });
