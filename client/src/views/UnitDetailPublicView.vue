@@ -55,7 +55,7 @@ const details = computed(() => orderedDetails(unit.value?.details, { exclude: ["
 
 <template>
   <div class="unit-detail-page">
-    <RouterLink to="/units-for-lease" class="back-link">&larr; Back to Available Units</RouterLink>
+    <RouterLink to="/" class="back-link">&larr; Back to Available Units</RouterLink>
 
     <p v-if="notFound" class="not-found">This unit is no longer available.</p>
 

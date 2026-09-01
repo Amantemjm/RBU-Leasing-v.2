@@ -72,7 +72,7 @@ const isFiltered = computed(() => !!(estateId.value || type.value));
 <template>
   <div class="units-page">
     <header class="units-page__head">
-      <RouterLink to="/" class="home-link">&larr; Home</RouterLink>
+      <RouterLink to="/inquire" class="home-link">Make an inquiry &rarr;</RouterLink>
       <h1>Available Units for Lease</h1>
       <p class="lede">Browse published listings across our managed estates.</p>
     </header>
