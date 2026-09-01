@@ -39,8 +39,10 @@ export async function createUnitForUser(user, data) {
   if (payload.baseRent == null) payload.baseRent = 0; // base rent lives on the lease
   if (user.role === "UNIT_OWNER") {
     payload.ownerId = user.unitOwnerId; // force own owner
-    payload.approvalStatus = submit ? "SUBMITTED" : "DRAFT";
   }
+  // Every API-created unit enters the approval workflow — staff-created units are
+  // no exception (they must be submitted and approved, not silently APPROVED).
+  payload.approvalStatus = submit ? "SUBMITTED" : "DRAFT";
   await assertOwnerExists(payload.ownerId);
   if (payload.towerId) await assertTowerExists(payload.towerId);
   return prisma.unit.create({ data: payload, include: withHierarchy });
@@ -59,15 +61,25 @@ export async function submitUnit(user, id) {
   });
 }
 
+// A review decision can only be made on a unit that is awaiting one. Approving a
+// DRAFT would skip the submit step; approving/rejecting an already-decided
+// (APPROVED/REJECTED) unit would re-open a terminal state. A rejected unit must
+// be resubmitted by the owner before it can be approved.
 export async function approveUnit(id) {
-  await getUnit(id);
+  const unit = await getUnit(id);
+  if (unit.approvalStatus !== "SUBMITTED") {
+    throw new ConflictError("Only a submitted unit can be approved");
+  }
   return prisma.unit.update({
     where: { id }, data: { approvalStatus: "APPROVED", reviewRemarks: null }, include: withHierarchy,
   });
 }
 
 export async function rejectUnit(id, remarks) {
-  await getUnit(id);
+  const unit = await getUnit(id);
+  if (unit.approvalStatus !== "SUBMITTED") {
+    throw new ConflictError("Only a submitted unit can be rejected");
+  }
   return prisma.unit.update({
     where: { id }, data: { approvalStatus: "REJECTED", reviewRemarks: remarks }, include: withHierarchy,
   });
