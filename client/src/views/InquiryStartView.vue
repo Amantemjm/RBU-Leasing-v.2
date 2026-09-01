@@ -43,6 +43,10 @@ function select(as) { router.push({ path: "/inquiry", query: { as } }); }
       </button>
     </div>
 
+    <p class="browse-link">
+      <RouterLink to="/units-for-lease">Browse available units &rarr;</RouterLink>
+    </p>
+
     <template #foot>Across Capitol Commons · Circulo Verde · Greenhills Center · Ortigas East</template>
   </InquiryShell>
 </template>
@@ -71,6 +75,9 @@ function select(as) { router.push({ path: "/inquiry", query: { as } }); }
 .role__head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
 .role__t { font-family: var(--display); font-size: 1.35rem; font-weight: 600; color: var(--ink-800); line-height: 1; }
 .role__meta { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
+.browse-link { text-align: center; margin: 1.5rem 0 0; }
+.browse-link a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
+.browse-link a:hover { text-decoration: underline; }
 .role__d { color: var(--muted); font-size: 0.9rem; line-height: 1.5; flex: 1; }
 .role__go { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--accent-text); font-weight: 700; font-size: 0.85rem; margin-top: 0.15rem; }
 .role__go svg { transition: transform 0.18s ease; }
