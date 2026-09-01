@@ -4,7 +4,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { publicUnits } from "../lib/resource.js";
-import { orderedDetails, formatDetail } from "../lib/listingFormat.js";
+import { orderedDetails } from "../lib/listingFormat.js";
 import logoUrl from "../assets/ortigas-logo.svg";
 
 const route = useRoute();
@@ -53,7 +53,7 @@ function goTo(i) {
 const d = computed(() => unit.value?.details || {});
 const has = (k) => d.value[k] != null && d.value[k] !== "";
 const title = computed(() => unit.value?.headline || unit.value?.details?.propertyName || "Unit");
-const price = computed(() => (has("rentalRate") ? formatDetail("rentalRate", d.value.rentalRate) : null));
+const price = computed(() => (has("rentalRate") ? `PHP ${Number(d.value.rentalRate).toLocaleString("en-PH")}` : null));
 const typeChip = computed(() => unit.value?.type || d.value.unitType || null);
 const details = computed(() =>
   orderedDetails(unit.value?.details, { exclude: ["location", "rentalRate", "bedrooms", "bathrooms", "floorArea", "unitType"] })
@@ -151,7 +151,7 @@ const details = computed(() =>
 </template>
 
 <style scoped>
-.detail-portal { min-height: 100vh; background: var(--paper); }
+.detail-portal { --brand: #0b463c; --brand-600: #00392f; --brand-tint: #e7efec; min-height: 100vh; background: var(--paper); }
 .nav {
   position: sticky;
   top: 0;
@@ -168,16 +168,16 @@ const details = computed(() =>
 }
 .brand { display: inline-flex; align-items: baseline; gap: 0.5rem; text-decoration: none; }
 .brand__logo { width: 26px; height: 26px; align-self: center; }
-.brand__name { font-family: var(--display, Georgia, serif); font-size: 1.15rem; font-weight: 600; color: var(--ink-800); }
+.brand__name { font-family: var(--display, Georgia, serif); font-size: 1.15rem; font-weight: 600; color: var(--brand); }
 .brand__sub { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
 .nav__inquire {
-  color: var(--accent-text); font-weight: 650; font-size: 0.86rem; text-decoration: none;
+  color: var(--brand); font-weight: 650; font-size: 0.86rem; text-decoration: none;
   padding: 0.5rem 0.85rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
 }
-.nav__inquire:hover { background: var(--accent-050); }
+.nav__inquire:hover { background: var(--brand-tint); }
 
 .wrap { max-width: 68rem; margin: 0 auto; padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 3.5rem; }
-.back-link { display: inline-block; margin-bottom: 1.1rem; color: var(--accent-text); text-decoration: none; font-size: 0.88rem; font-weight: 600; }
+.back-link { display: inline-block; margin-bottom: 1.1rem; color: var(--brand); text-decoration: none; font-size: 0.88rem; font-weight: 600; }
 .back-link:hover { text-decoration: underline; }
 
 .detail { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(1.25rem, 3vw, 2.25rem); align-items: start; }
@@ -215,7 +215,7 @@ const details = computed(() =>
 }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb:hover { opacity: 1; }
-.thumb--active { opacity: 1; border-color: var(--accent); }
+.thumb--active { opacity: 1; border-color: var(--brand); }
 
 /* info */
 .info {
@@ -227,30 +227,30 @@ const details = computed(() =>
   position: sticky;
   top: 5rem;
 }
-.price { margin: 0; font-family: var(--display, Georgia, serif); font-size: 1.9rem; font-weight: 600; color: var(--accent-text); line-height: 1.1; }
+.price { margin: 0; font-family: var(--display, Georgia, serif); font-size: 1.9rem; font-weight: 600; color: var(--brand); line-height: 1.1; }
 .price .per { font-size: 0.9rem; font-weight: 500; color: var(--muted); }
 .price--tba { color: var(--muted); font-size: 1.4rem; }
 .headline { margin: 0.5rem 0 0; font-size: 1.2rem; font-weight: 600; color: var(--ink-800); line-height: 1.3; }
 .location { display: flex; align-items: center; gap: 0.35rem; margin: 0.4rem 0 0; color: var(--muted); font-size: 0.9rem; }
 .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 0; }
-.chip { background: var(--accent-050); color: var(--ink-700); border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.82rem; }
-.chip b { color: var(--accent-text); font-weight: 700; }
+.chip { background: var(--brand-tint); color: var(--ink-700); border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.82rem; }
+.chip b { color: var(--brand); font-weight: 700; }
 .specs { margin: 1.1rem 0 0; padding: 1.1rem 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; }
 .specs dt { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
 .specs dd { margin: 0; color: var(--ink-800); font-size: 0.88rem; }
 .inquire-cta {
   display: block; text-align: center; margin-top: 1.4rem;
-  background: var(--accent); color: #fff; text-decoration: none; font-weight: 650;
+  background: var(--brand); color: #fff; text-decoration: none; font-weight: 650;
   padding: 0.7rem 1rem; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); transition: background 0.16s ease;
 }
-.inquire-cta:hover { background: var(--accent-600); }
+.inquire-cta:hover { background: var(--brand-600); }
 
 /* not found */
 .not-found { text-align: center; padding: 4rem 1rem; }
 .not-found h1 { margin: 0 0 0.5rem; font-family: var(--display, Georgia, serif); font-size: 1.5rem; color: var(--ink-800); }
 .not-found p { margin: 0 auto 1.4rem; max-width: 26rem; color: var(--muted); }
 .not-found__cta {
-  background: var(--accent); color: #fff; text-decoration: none; font-weight: 650;
+  background: var(--brand); color: #fff; text-decoration: none; font-weight: 650;
   padding: 0.6rem 1.2rem; border-radius: var(--radius-sm);
 }
 
