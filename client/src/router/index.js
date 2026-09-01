@@ -4,6 +4,7 @@ import AppLayout from "../components/AppLayout.vue";
 import InquiryStartView from "../views/InquiryStartView.vue";
 import InquiryView from "../views/InquiryView.vue";
 import AvailableUnitsView from "../views/AvailableUnitsView.vue";
+import UnitDetailPublicView from "../views/UnitDetailPublicView.vue";
 import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
@@ -49,6 +50,7 @@ const routes = [
   { path: "/", component: InquiryStartView }, // public landing: "I am a…" user-type selection
   { path: "/inquiry", component: InquiryView }, // Quick Inquiry form (user type via ?as=)
   { path: "/units-for-lease", component: AvailableUnitsView }, // public: browse published listings
+  { path: "/units-for-lease/:id", component: UnitDetailPublicView },
   { path: "/login", component: LoginView },
   { path: "/signup", component: SignupView }, // public self-registration (lessor/lessee)
   {
