@@ -7,7 +7,7 @@ export async function getLessorProfile(ownerId) {
     where: { id: ownerId },
     include: {
       assignedOfficer: { select: { id: true, name: true } },
-      users: { select: { contactEmail: true, status: true }, take: 1 },
+      users: { select: { id: true, contactEmail: true, status: true }, take: 1 },
       units: {
         select: { id: true, unitNumber: true, approvalStatus: true, reviewRemarks: true, updatedAt: true, tower: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
@@ -31,6 +31,27 @@ export async function getLessorProfile(ownerId) {
   if (sheet?.reviewedAt) activity.push({ at: sheet.reviewedAt, kind: "form", label: `Acceptance Form ${sheet.status}` });
   activity.sort((a, b) => new Date(b.at) - new Date(a.at));
 
+  const approvedUnits = owner.units.filter((u) => u.approvalStatus === "APPROVED").length;
+  const reqTotal = requirements.length;
+  const steps = [
+    { key: "account",        label: "Account approved",         done: true },
+    { key: "units",          label: "Unit approved",            done: approvedUnits >= 1, detail: `${approvedUnits} approved` },
+    { key: "requirements",   label: "Requirements complete",    done: reqTotal > 0 && approved === reqTotal, detail: `${approved} of ${reqTotal}` },
+    { key: "acceptanceForm", label: "Acceptance form approved", done: sheet?.status === "APPROVED", detail: sheet?.status || "Not started" },
+  ];
+  const firstOutstanding = steps.find((s) => !s.done);
+  const onboarding = {
+    steps,
+    stage: firstOutstanding ? firstOutstanding.label : "Complete",
+    percent: Math.round(steps.filter((s) => s.done).length / steps.length * 100),
+  };
+  const userId = owner.users[0]?.id || null;
+  let originInquiry = null;
+  if (userId) {
+    const inq = await prisma.inquiry.findFirst({ where: { convertedUserId: userId }, orderBy: { createdAt: "desc" }, select: { id: true, inquiryType: true, createdAt: true } });
+    if (inq) originInquiry = inq;
+  }
+
   return {
     owner: {
       id: owner.id, name: owner.name, email: owner.email, phone: owner.phone, address: owner.address,
@@ -44,5 +65,7 @@ export async function getLessorProfile(ownerId) {
     requirements: { items: requirements, summary: { approved, total: requirements.length } },
     acceptanceForm: sheet ? { status: sheet.status, submittedAt: sheet.submittedAt, reviewedAt: sheet.reviewedAt, submittedByName: sheet.submittedByName, formVersion: sheet.formVersion } : null,
     activity: activity.slice(0, 10),
+    onboarding,
+    originInquiry,
   };
 }

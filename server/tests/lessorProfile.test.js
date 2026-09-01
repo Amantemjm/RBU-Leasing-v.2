@@ -65,4 +65,26 @@ describe("Lessor profile aggregate", () => {
     expect(res.body.acceptanceForm.submittedByName).toBe("Profile Owner");
     expect(res.body.acceptanceForm.formVersion).toBe("2026-08");
   });
+
+  it("returns an onboarding tracker reflecting progress", async () => {
+    const o = await factory.owner({ name: "Track Owner" });
+    await factory.unit(o.id, { approvalStatus: "APPROVED" });
+    const res = await request(app).get(`/api/owners/${o.id}/profile`).set("Authorization", `Bearer ${tokens.officer()}`);
+    expect(res.status).toBe(200);
+    const ob = res.body.onboarding;
+    expect(ob.steps.find((s) => s.key === "units").done).toBe(true);
+    expect(ob.steps.find((s) => s.key === "requirements").done).toBe(false); // none approved
+    expect(ob.stage).toBe("Requirements complete"); // first not-done after account+units
+    expect(ob.percent).toBe(50); // account + units done of 4
+  });
+
+  it("exposes the originating inquiry linked to the owner's account", async () => {
+    const o = await factory.owner({ name: "Origin Owner", email: "origin@example.com" });
+    // a user linked to this owner, and an inquiry converted to that user
+    const u = await prisma.user.create({ data: { name: "Origin Owner", email: "originlogin", contactEmail: "origin@example.com", role: "UNIT_OWNER", passwordHash: "x", status: "APPROVED", unitOwnerId: o.id } });
+    const inq = await prisma.inquiry.create({ data: { category: "RESIDENCES", inquirerType: "LESSOR", inquiryType: "List Unit for Lease", fullName: "Origin Owner", email: "origin@example.com", consent: true, status: "CONVERTED", convertedUserId: u.id } });
+    const res = await request(app).get(`/api/owners/${o.id}/profile`).set("Authorization", `Bearer ${tokens.officer()}`);
+    expect(res.body.originInquiry?.id).toBe(inq.id);
+    expect(res.body.originInquiry?.inquiryType).toBe("List Unit for Lease");
+  });
 });
