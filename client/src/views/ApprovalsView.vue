@@ -60,8 +60,8 @@ async function confirmReject() {
           <td>{{ u.owner?.name || "—" }}</td>
           <td>{{ formatPHP(u.baseRent) }}</td>
           <td v-if="canWrite">
-            <button type="button" class="approve" @click="approve(u.id)">Approve</button>
-            <button type="button" class="reject" @click="openReject(u)">Reject</button>
+            <button type="button" class="primary" @click="approve(u.id)">Approve</button>
+            <button type="button" class="danger" @click="openReject(u)">Reject</button>
           </td>
         </tr>
       </tbody>

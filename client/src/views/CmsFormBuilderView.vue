@@ -183,7 +183,7 @@ function entryPairs(entry) {
       <div class="head__actions">
         <span v-if="savedAt" class="saved">Saved {{ savedAt }}</span>
         <button v-if="tab === 'build'" type="button" class="primary" :disabled="saving" @click="save">
-          {{ saving ? "Saving…" : "Save fields" }}
+          {{ saving ? "Saving…" : "Save" }}
         </button>
       </div>
     </div>
@@ -237,7 +237,7 @@ function entryPairs(entry) {
             </div>
           </div>
 
-          <button type="button" class="add" @click="addField">+ Add field</button>
+          <button type="button" class="add" @click="addField">Add field</button>
           <p v-if="saveError" class="error">{{ saveError }}</p>
         </div>
 

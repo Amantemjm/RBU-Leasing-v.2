@@ -98,8 +98,8 @@ async function confirmReject() {
           <td><span class="role-tag">{{ roleLabel(r.role) }}</span></td>
           <td>{{ formatDate(r.createdAt) }}</td>
           <td class="row-actions">
-            <button type="button" class="link approve" :disabled="busy[r.id]" @click="approve(r)">Approve</button>
-            <button type="button" class="link danger" :disabled="busy[r.id]" @click="openReject(r)">Reject</button>
+            <button type="button" class="primary" :disabled="busy[r.id]" @click="approve(r)">Approve</button>
+            <button type="button" class="danger" :disabled="busy[r.id]" @click="openReject(r)">Reject</button>
           </td>
         </tr>
       </tbody>

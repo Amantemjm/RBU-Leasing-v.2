@@ -165,7 +165,7 @@ async function remove(u) {
           <p v-if="error" class="error">{{ error }}</p>
           <div class="modal-actions">
             <button type="button" class="ghost" @click="closeForm" :disabled="submitting">Cancel</button>
-            <button type="submit" class="primary" :disabled="submitting">{{ isEditing ? "Save changes" : "Create login" }}</button>
+            <button type="submit" class="primary" :disabled="submitting">{{ isEditing ? "Save" : "Create account" }}</button>
           </div>
         </form>
       </div>
