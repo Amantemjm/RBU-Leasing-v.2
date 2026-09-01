@@ -4,7 +4,7 @@
     {
       "name": "client",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--workspace", "client", "run", "dev"],
+      "runtimeArgs": ["run", "dev:client"],
       "port": 5173
     }
   ]
