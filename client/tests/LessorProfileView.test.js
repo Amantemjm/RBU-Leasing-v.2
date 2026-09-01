@@ -9,6 +9,13 @@ const profile = {
   requirements: { items: [{ requirementKey: "GOV_ID", label: "Valid Government ID", status: "Approved" }], summary: { approved: 1, total: 7 } },
   acceptanceForm: { status: "SUBMITTED", submittedAt: "2026-08-27T00:00:00Z", reviewedAt: null, submittedByName: "Ayala Land", formVersion: "2026-08" },
   activity: [{ at: "2026-08-27T00:00:00Z", kind: "unit", label: "Unit 12A — SUBMITTED" }],
+  onboarding: { stage: "Requirements complete", percent: 50, steps: [
+    { key: "account", label: "Account approved", done: true },
+    { key: "units", label: "Unit approved", done: true, detail: "1 approved" },
+    { key: "requirements", label: "Requirements complete", done: false, detail: "2 of 7" },
+    { key: "acceptanceForm", label: "Acceptance form approved", done: false, detail: "Not started" },
+  ] },
+  originInquiry: { id: "i1", inquiryType: "List Unit for Lease", createdAt: "2026-08-01T00:00:00.000Z" },
 };
 vi.mock("../src/lib/resource.js", () => ({ owners: { profile: vi.fn(() => Promise.resolve(profile)) } }));
 
@@ -41,5 +48,8 @@ describe("LessorProfileView", () => {
     expect(w.text()).toContain("Ayala Land");        // acceptance form submitted-by
     expect(w.text()).toContain("2026-08");           // acceptance form version
     expect(w.text()).toContain("Unit 12A — SUBMITTED"); // activity
+    expect(w.text()).toContain("Requirements complete"); // onboarding stage
+    expect(w.text()).toContain("Unit approved");          // onboarding step label
+    expect(w.text()).toContain("List Unit for Lease");    // originating inquiry
   });
 });

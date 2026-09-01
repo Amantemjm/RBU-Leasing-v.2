@@ -23,8 +23,21 @@ onMounted(async () => {
         <h1>{{ p.owner.name }}</h1>
         <p class="muted">{{ [p.owner.email, p.owner.phone, p.owner.address].filter(Boolean).join(" · ") || "—" }}</p>
         <p class="muted small">Officer: {{ p.owner.assignedOfficer?.name || "Unassigned" }}<span v-if="p.account"> · Account: {{ p.account.status }}</span></p>
+        <p v-if="p.originInquiry" class="muted small">Originating inquiry: {{ p.originInquiry.inquiryType }} · {{ formatDate(p.originInquiry.createdAt) }}</p>
       </div>
     </header>
+
+    <div class="panel" v-if="p.onboarding">
+      <h2>Onboarding <span class="count">{{ p.onboarding.stage }}</span></h2>
+      <div class="progress"><div class="progress-bar" :style="{ width: p.onboarding.percent + '%' }"></div></div>
+      <ul class="rows">
+        <li v-for="step in p.onboarding.steps" :key="step.key" class="row">
+          <span class="step-indicator">{{ step.done ? "✓" : "○" }}</span>
+          <span>{{ step.label }}</span>
+          <span v-if="step.detail" class="muted small">{{ step.detail }}</span>
+        </li>
+      </ul>
+    </div>
 
     <div class="panel">
       <h2>Units <span class="count">{{ p.units.length }}</span></h2>
@@ -85,4 +98,7 @@ onMounted(async () => {
 .badge.approved { background: var(--good-050); color: var(--good); }
 .link { background: none; border: none; color: var(--accent-text); cursor: pointer; padding: 0; }
 .error { color: var(--danger); }
+.progress { height: 6px; border-radius: 999px; background: var(--accent-050); overflow: hidden; margin-bottom: 0.6rem; }
+.progress-bar { height: 100%; background: var(--accent-text); border-radius: 999px; }
+.step-indicator { width: 1.2em; display: inline-block; text-align: center; }
 </style>
