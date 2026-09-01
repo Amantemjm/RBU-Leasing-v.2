@@ -61,9 +61,9 @@ function decidedLabel(step) {
           <div v-if="s.decidedAt" class="node__meta">{{ decidedLabel(s) }}</div>
           <div v-if="s.remarks" class="node__remarks">{{ s.remarks }}</div>
           <div v-if="actionable(s) && s.status !== 'Approved'" class="node__acts">
-            <button type="button" class="mini ok" :disabled="busy === s.id" @click="decide(s, 'Approved')">Approve</button>
-            <button type="button" class="mini warn" :disabled="busy === s.id" @click="decide(s, 'Returned')">Return</button>
-            <button type="button" class="mini bad" :disabled="busy === s.id" @click="decide(s, 'Rejected')">Reject</button>
+            <button type="button" class="primary" :disabled="busy === s.id" @click="decide(s, 'Approved')">Approve</button>
+            <button type="button" class="secondary" :disabled="busy === s.id" @click="decide(s, 'Returned')">Return</button>
+            <button type="button" class="danger" :disabled="busy === s.id" @click="decide(s, 'Rejected')">Reject</button>
           </div>
         </div>
       </li>

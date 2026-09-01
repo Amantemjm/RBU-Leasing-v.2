@@ -121,7 +121,7 @@ async function submit() {
       <div class="form-actions">
         <button type="submit" :disabled="submitting">Save</button>
         <button type="button" class="cancel" @click="router.push('/app/units')">Cancel</button>
-        <button v-if="isEdit" type="button" @click="router.push('/app/units/' + id + '/listing')">Manage listing &amp; photos</button>
+        <button v-if="isEdit" type="button" class="secondary" @click="router.push('/app/units/' + id + '/listing')">Manage listing &amp; photos</button>
       </div>
     </form>
   </section>

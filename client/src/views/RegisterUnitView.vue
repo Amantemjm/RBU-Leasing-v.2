@@ -163,7 +163,7 @@ async function save(submitForApproval) {
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="form-actions">
-        <button type="button" class="draft" :disabled="submitting" @click="save(false)">Save as draft</button>
+        <button type="button" class="secondary" :disabled="submitting" @click="save(false)">Save as draft</button>
         <button type="submit" class="submit" :disabled="submitting" @click.prevent="save(true)">Submit for approval</button>
         <button type="button" class="cancel" @click="router.push('/app/my-units')">Cancel</button>
       </div>

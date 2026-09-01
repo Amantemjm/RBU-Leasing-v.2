@@ -109,7 +109,7 @@ describe("RegisterUnitView", () => {
   it("saves a draft without submitting for approval", async () => {
     const w = await mountView();
     await w.find("#unitNumber").setValue("6D");
-    await w.find("button.draft").trigger("click");
+    await w.findAll("button").find((b) => b.text() === "Save as draft").trigger("click");
     await flushPromises();
     const payload = units.create.mock.calls[0][0];
     expect(payload.unitNumber).toBe("6D");
