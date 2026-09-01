@@ -50,7 +50,7 @@ function goTo(i) {
 }
 
 const title = computed(() => unit.value?.headline || unit.value?.details?.propertyName || "Unit");
-const details = computed(() => orderedDetails(unit.value?.details));
+const details = computed(() => orderedDetails(unit.value?.details, { exclude: ["location"] }));
 </script>
 
 <template>

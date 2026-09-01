@@ -49,7 +49,7 @@ const title = computed(() => {
   return c.headline || c.details?.propertyName || c.details?.unitNumber || "Unit";
 });
 
-const details = computed(() => orderedDetails(props.card.details));
+const details = computed(() => orderedDetails(props.card.details, { exclude: ["location"] }));
 </script>
 
 <template>

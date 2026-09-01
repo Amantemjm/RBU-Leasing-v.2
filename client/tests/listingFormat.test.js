@@ -19,4 +19,10 @@ describe("listingFormat", () => {
     expect(keys.indexOf("unitNumber")).toBeLessThan(keys.indexOf("rentalRate")); // catalog order
     expect(keys).not.toContain("bogus"); // not a catalog key
   });
+  it("excludes keys listed in the exclude option", () => {
+    const out = orderedDetails({ location: "X", unitNumber: "12A" }, { exclude: ["location"] });
+    const keys = out.map((d) => d.key);
+    expect(keys).not.toContain("location");
+    expect(keys).toContain("unitNumber");
+  });
 });
