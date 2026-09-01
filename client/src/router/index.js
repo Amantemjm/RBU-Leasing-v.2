@@ -13,6 +13,7 @@ import TenantsView from "../views/TenantsView.vue";
 import TenantFormView from "../views/TenantFormView.vue";
 import UnitsView from "../views/UnitsView.vue";
 import UnitFormView from "../views/UnitFormView.vue";
+import UnitListingView from "../views/UnitListingView.vue";
 import LeasesView from "../views/LeasesView.vue";
 import LeaseFormView from "../views/LeaseFormView.vue";
 import MyUnitsView from "../views/MyUnitsView.vue";
@@ -68,6 +69,7 @@ const routes = [
       { path: "units", component: UnitsView, meta: { roles: STAFF } },
       { path: "units/new", component: UnitFormView, meta: { roles: ADMIN } },
       { path: "units/:id", component: UnitFormView, meta: { roles: ADMIN } },
+      { path: "units/:id/listing", component: UnitListingView, meta: { roles: WRITE } },
       { path: "leases", component: LeasesView, meta: { roles: STAFF } },
       { path: "leases/new", component: LeaseFormView, meta: { roles: ADMIN } },
       { path: "leases/:id", component: LeaseFormView, meta: { roles: ADMIN } },

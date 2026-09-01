@@ -10,7 +10,7 @@ vi.mock("../src/lib/api.js", () => ({
 }));
 
 import { api } from "../src/lib/api.js";
-import { resource, appointments } from "../src/lib/resource.js";
+import { resource, appointments, unitListings, publicUnits } from "../src/lib/resource.js";
 
 describe("resource factory", () => {
   it("list() GETs the path with params and returns data", async () => {
@@ -51,5 +51,38 @@ describe("appointments", () => {
     expect(api.patch).toHaveBeenCalledWith("/appointments/a1/complete", { outcome: "Passed" });
     await appointments.cancel("a1", { reason: "n/a" });
     expect(api.patch).toHaveBeenCalledWith("/appointments/a1/cancel", { reason: "n/a" });
+  });
+});
+
+describe("unitListings + publicUnits", () => {
+  it("unitListings + publicUnits wrappers hit the right endpoints", async () => {
+    await unitListings.get("u1");
+    expect(api.get).toHaveBeenCalledWith("/unit-listings/u1");
+    await unitListings.update("u1", { headline: "x" });
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1", { headline: "x" });
+    await unitListings.reorder("u1", ["a", "b"]);
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1/photos/reorder", { orderedIds: ["a", "b"] });
+    await unitListings.setCover("u1", "p1");
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1/cover", { photoId: "p1" });
+    await unitListings.publish("u1");
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1/publish");
+    await unitListings.unpublish("u1");
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1/unpublish");
+    await unitListings.caption("u1", "p1", "hello");
+    expect(api.patch).toHaveBeenCalledWith("/unit-listings/u1/photos/p1", { caption: "hello" });
+    await unitListings.deletePhoto("u1", "p1");
+    expect(api.delete).toHaveBeenCalledWith("/unit-listings/u1/photos/p1");
+    expect(unitListings.staffImageUrl("u1", "p1")).toBe("/api/unit-listings/u1/photos/p1/image");
+    await publicUnits.list({ type: "2BR" });
+    expect(api.get).toHaveBeenCalledWith("/public/units", { params: { type: "2BR" } });
+    await publicUnits.get("u1");
+    expect(api.get).toHaveBeenCalledWith("/public/units/u1");
+    expect(publicUnits.photoUrl("p1")).toBe("/api/public/units/photo/p1");
+  });
+
+  it("addPhoto uploads via FormData", async () => {
+    const file = new Blob(["x"]);
+    await unitListings.addPhoto("u1", file);
+    expect(api.post).toHaveBeenCalledWith("/unit-listings/u1/photos", expect.any(FormData));
   });
 });

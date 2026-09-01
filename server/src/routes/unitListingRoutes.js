@@ -1,0 +1,21 @@
+import { Router } from "express";
+import multer from "multer";
+import { verifyJwt, requireRole, requireWrite } from "../middleware/auth.js";
+import * as ctrl from "../controllers/unitListingController.js";
+
+const STAFF = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
+const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (req, file, cb) => cb(null, ALLOWED.has(file.mimetype)) });
+const r = Router();
+r.use(verifyJwt);
+r.get("/:unitId", requireRole(...STAFF), ctrl.get);
+r.patch("/:unitId", requireWrite, ctrl.update);
+r.post("/:unitId/photos", requireWrite, upload.single("file"), ctrl.addPhoto);
+r.patch("/:unitId/photos/reorder", requireWrite, ctrl.reorderPhotos);
+r.patch("/:unitId/cover", requireWrite, ctrl.setCover);
+r.patch("/:unitId/publish", requireWrite, ctrl.publish);
+r.patch("/:unitId/unpublish", requireWrite, ctrl.unpublish);
+r.get("/:unitId/photos/:photoId/image", requireRole(...STAFF), ctrl.staffImage);
+r.patch("/:unitId/photos/:photoId", requireWrite, ctrl.captionPhoto);
+r.delete("/:unitId/photos/:photoId", requireWrite, ctrl.deletePhoto);
+export default r;
