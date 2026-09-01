@@ -13,7 +13,7 @@ const reviewSchema = z.object({
 
 // A generic info-sheet service. Applicants submit either structured DATA (filled
 // in-system) or an uploaded/edited PDF stored in `binaryField` — both supported.
-export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version = null }) {
+export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version = null, approveGuard = null }) {
   const include = { [relationName]: { select: { id: true, name: true } } };
   const readOpts = binaryField ? { include, omit: { [binaryField]: true } } : { include };
 
@@ -88,7 +88,8 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
     return row?.[binaryField] || null;
   }
   async function review(actor, id, { status, remarks }) {
-    await get(id);
+    const sheet = await get(id);
+    if (status === "APPROVED" && approveGuard) await approveGuard(sheet[fkField]);
     const reviewedByName = await resolveName(actor);
     return model.update({ where: { id }, data: { status, remarks: remarks ?? null, reviewedAt: new Date(), reviewedByName }, ...readOpts });
   }
@@ -99,8 +100,8 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
 // filled-PDF layout (defaults to the generic label:value renderer), backing the
 // live preview + staff download. `binaryField` enables the upload/edit-a-PDF
 // path (store/submit/retrieve the applicant's own PDF).
-export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, relationName, config, submitSchema, title, filePrefix, pdfRenderer, binaryField }) {
-  const service = makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version: config?.version || null });
+export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, relationName, config, submitSchema, title, filePrefix, pdfRenderer, binaryField, approveGuard = null }) {
+  const service = makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version: config?.version || null, approveGuard });
   const render = pdfRenderer || streamInfoSheetPdf;
   const listRoles = [...STAFF, ownerRole];
   const r = Router();
