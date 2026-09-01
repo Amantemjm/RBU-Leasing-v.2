@@ -16,6 +16,7 @@ const officers = ref([]); // O-Lease users an admin can assign to
 const error = ref("");
 const CATEGORY_LABEL = { RESIDENCES: "Residences", OFFICES: "Offices" };
 const INQUIRER_LABEL = { LESSOR: "Lessor", LESSEE: "Lessee" };
+const STATUS_LABEL = { NEW: "New", IN_PROGRESS: "In Progress", CLOSED: "Closed", CONVERTED: "Converted" };
 
 
 async function load() {
@@ -90,13 +91,14 @@ async function remove(row) {
     <table>
       <thead>
         <tr>
-          <th>Received</th><th>Category</th><th>I am a</th><th>Inquiry Type</th><th>Full name</th><th>Email</th>
+          <th>Received</th><th>Status</th><th>Category</th><th>I am a</th><th>Inquiry Type</th><th>Full name</th><th>Email</th>
           <th>Message</th><th>Assigned to</th><th v-if="canWrite"></th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="r in rows" :key="r.id">
           <td>{{ formatDate(r.createdAt) }}</td>
+          <td><span :class="['status-tag', r.status.toLowerCase().replace('_','-')]">{{ STATUS_LABEL[r.status] || r.status }}</span></td>
           <td><span class="cat-tag">{{ CATEGORY_LABEL[r.category] || r.category }}</span></td>
           <td>{{ INQUIRER_LABEL[r.inquirerType] || r.inquirerType }}</td>
           <td>{{ r.inquiryType }}</td>
@@ -128,7 +130,7 @@ async function remove(row) {
           </td>
         </tr>
         <tr v-if="rows.length === 0">
-          <td :colspan="canWrite ? 9 : 8" class="muted">No inquiries yet.</td>
+          <td :colspan="canWrite ? 10 : 9" class="muted">No inquiries yet.</td>
         </tr>
       </tbody>
     </table>
@@ -158,4 +160,13 @@ async function remove(row) {
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
   background: var(--accent-050); color: var(--accent-text);
 }
+.status-tag {
+  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);
+  white-space: nowrap;
+}
+.status-tag.new { color: var(--accent-text); border-color: var(--accent-text); }
+.status-tag.in-progress { color: var(--warn); border-color: var(--warn); }
+.status-tag.closed { color: var(--muted); border-color: var(--line); }
+.status-tag.converted { color: #fff; background: var(--good); border-color: var(--good); }
 </style>
