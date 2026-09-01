@@ -39,7 +39,7 @@ export async function getForUnit(unitId) {
   const photos = await prisma.unitPhoto.findMany({ where: { unitId }, orderBy: { sortOrder: "asc" }, select: PHOTO_META });
   const effective = listing || {
     unitId, published: false, publishedAt: null, headline: null,
-    details: defaultDetails(unit), visibleFields: DEFAULT_VISIBLE_FIELDS, coverPhotoId: null,
+    details: defaultDetails(unit), visibleFields: [...DEFAULT_VISIBLE_FIELDS], coverPhotoId: null,
   };
   return { unit: unitCore(unit), listing: effective, photos };
 }
