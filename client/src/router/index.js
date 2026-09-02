@@ -27,7 +27,6 @@ import ApprovalsView from "../views/ApprovalsView.vue";
 import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
 import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
 import MyLessorRequirementsView from "../views/MyLessorRequirementsView.vue";
-import LessorRequirementsView from "../views/LessorRequirementsView.vue";
 import LessorProfileView from "../views/LessorProfileView.vue";
 // Lazy-loaded: pull in the PDF.js live preview, keeping it out of the main bundle.
 const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
@@ -83,7 +82,6 @@ const routes = [
       { path: "approvals", component: ApprovalsView, meta: { roles: WRITE } },
       { path: "lessor-sheets", component: LessorInfoSheetsView, meta: { roles: WRITE } },
       { path: "lessee-sheets", component: LesseeInfoSheetsView, meta: { roles: WRITE } },
-      { path: "lessor-requirements-review", component: LessorRequirementsView, meta: { roles: WRITE } },
       // Unit Owner (Lessor)
       { path: "my-units", component: MyUnitsView, meta: { roles: ["UNIT_OWNER"] } },
       { path: "register-unit", component: RegisterUnitView, meta: { roles: ["UNIT_OWNER"] } },

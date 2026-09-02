@@ -1,81 +1,54 @@
 <script setup>
-import { ref, onMounted } from "vue";
+// Requirements module. Staff get one screen with Lessor / Lessee tabs; a tenant
+// sees only their own documents (no tabs).
+import { ref } from "vue";
 import { useAuthStore } from "../stores/auth.js";
-import { listRequirements, uploadRequirement, downloadRequirement } from "../lib/requirements.js";
+import LessorRequirementsView from "./LessorRequirementsView.vue";
+import LesseeRequirementsPanel from "./LesseeRequirementsPanel.vue";
 
 const auth = useAuthStore();
-const rows = ref([]);
-const file = ref(null);
-const uploading = ref(false);
-const error = ref("");
-
-async function load() { rows.value = await listRequirements(); }
-onMounted(load);
-
-function onFile(e) { file.value = e.target.files[0] || null; }
-
-async function submit() {
-  if (!file.value) return;
-  error.value = "";
-  uploading.value = true;
-  try {
-    await uploadRequirement(file.value);
-    file.value = null;
-    await load();
-  } catch (e) {
-    error.value = e.response?.data?.error || "Upload failed";
-  } finally {
-    uploading.value = false;
-  }
-}
-
-function fmtSize(b) { return b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.ceil(b / 1024)} KB`; }
-function fmtDate(iso) { return String(iso).slice(0, 10); }
+const tab = ref("lessor"); // lessor | lessee
 </script>
 
 <template>
-  <section class="requirements">
-    <h1>{{ auth.isTenant ? "My Requirements" : "Tenant Requirements" }}</h1>
+  <section>
+    <header><h1>Requirements</h1></header>
 
-    <form v-if="auth.isTenant" class="upload" @submit.prevent="submit">
-      <input type="file" @change="onFile" accept=".pdf,.jpg,.jpeg,.png,.docx" />
-      <button type="submit" :disabled="!file || uploading">Upload</button>
-      <span v-if="error" class="error">{{ error }}</span>
-    </form>
+    <template v-if="auth.isTenant">
+      <LesseeRequirementsPanel />
+    </template>
 
-    <p v-if="rows.length === 0" class="muted">No documents yet.</p>
-    <table v-else>
-      <thead>
-        <tr>
-          <th v-if="!auth.isTenant">Tenant</th>
-          <th>File</th><th>Size</th><th>Uploaded</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="r in rows" :key="r.id">
-          <td v-if="!auth.isTenant">{{ r.tenant?.name || "—" }}</td>
-          <td>{{ r.filename }}</td>
-          <td>{{ fmtSize(r.size) }}</td>
-          <td>{{ fmtDate(r.uploadedAt) }}</td>
-          <td><button type="button" @click="downloadRequirement(r.id, r.filename)">Download</button></td>
-        </tr>
-      </tbody>
-    </table>
+    <template v-else>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" :aria-selected="tab === 'lessor'" :class="['tab', { on: tab === 'lessor' }]" @click="tab = 'lessor'">Lessor</button>
+        <button type="button" role="tab" :aria-selected="tab === 'lessee'" :class="['tab', { on: tab === 'lessee' }]" @click="tab = 'lessee'">Lessee</button>
+      </div>
+      <LessorRequirementsView v-if="tab === 'lessor'" />
+      <LesseeRequirementsPanel v-else />
+    </template>
   </section>
 </template>
 
 <style scoped>
-.upload {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--surface);
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  border-radius: 999px;
 }
-.muted { color: var(--muted); }
-.error { color: var(--danger); font-size: 0.88rem; }
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.45rem 1.2rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--ink-800); }
+.tab.on { background: var(--surface); color: var(--accent-text); box-shadow: var(--shadow-sm); }
 </style>
