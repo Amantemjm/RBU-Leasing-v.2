@@ -735,6 +735,10 @@ button:disabled {
 }
 .panel + .panel { margin-top: 1.1rem; }
 .panel > h2 { margin: 0 0 0.9rem; font-size: 1.05rem; }
+/* A panel that wraps a full-bleed table (Users, Audit, Listings). */
+.panel--table { padding: 0; overflow: hidden; }
+.panel--table > table { width: 100%; border-collapse: collapse; margin: 0; }
+.panel--table th { background: var(--paper); }
 
 .card {
   position: relative;

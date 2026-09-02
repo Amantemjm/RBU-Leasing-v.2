@@ -96,7 +96,8 @@ async function remove(u) {
 
     <p v-if="listError" class="error">{{ listError }}</p>
     <p v-else-if="loading" class="muted">Loading…</p>
-    <table v-else class="grid">
+    <div v-else class="panel panel--table">
+    <table class="grid">
       <thead>
         <tr><th>Display name</th><th>Username</th><th>Role</th><th>Password</th><th>Created</th><th></th></tr>
       </thead>
@@ -144,6 +145,7 @@ async function remove(u) {
         <tr v-if="!accounts.length"><td colspan="6" class="muted">No accounts yet.</td></tr>
       </tbody>
     </table>
+    </div>
 
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <div class="modal" role="dialog" aria-modal="true" :aria-label="isEditing ? 'Edit account' : 'New account'">
