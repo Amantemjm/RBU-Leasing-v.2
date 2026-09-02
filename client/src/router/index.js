@@ -47,13 +47,13 @@ const WRITE = ["ADMIN", "LEASING_OFFICER"];
 const ADMIN = ["ADMIN"];
 
 const routes = [
-  { path: "/", component: AvailableUnitsView }, // public front page: browse published listings
-  { path: "/inquire", component: InquiryStartView }, // "I am a…" user-type selection
-  { path: "/inquiry", component: InquiryView }, // Quick Inquiry form (user type via ?as=)
+  { path: "/", component: AvailableUnitsView, meta: { ownsThemeToggle: true } }, // public front page: browse published listings
+  { path: "/inquire", component: InquiryStartView, meta: { ownsThemeToggle: true } }, // "I am a…" user-type selection
+  { path: "/inquiry", component: InquiryView, meta: { ownsThemeToggle: true } }, // Quick Inquiry form (user type via ?as=)
   { path: "/units-for-lease", redirect: "/" }, // legacy list path → front page
-  { path: "/units-for-lease/:id", component: UnitDetailPublicView },
-  { path: "/login", component: LoginView },
-  { path: "/signup", component: SignupView }, // public self-registration (lessor/lessee)
+  { path: "/units-for-lease/:id", component: UnitDetailPublicView, meta: { ownsThemeToggle: true } },
+  { path: "/login", component: LoginView, meta: { ownsThemeToggle: true } },
+  { path: "/signup", component: SignupView, meta: { ownsThemeToggle: true } }, // public self-registration (lessor/lessee)
   {
     path: "/app",
     component: AppLayout,

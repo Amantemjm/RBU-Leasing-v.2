@@ -7,33 +7,40 @@
 
 :root {
   /* Deep greens — shell + headings (constant across modes) */
-  --ink-900: #0c2c21;  /* top bar + auth backdrop */
-  --ink-800: #103a2b;  /* headings / display numerals */
-  --ink-700: #1c4a39;
-  --ink-600: #2f5a48;
+  --ink-900: #0D3A2F;  /* top bar + auth backdrop */
+  --ink-800: #13493B;  /* headings / display numerals */
+  --ink-700: #1A5B4B;
+  --ink-600: #257460;
 
   /* Neutrals */
-  --paper: #eef4f0;
-  --surface: #ffffff;
-  --line: #e0eae4;
-  --line-strong: #cddbd3;
-  --text: #16241d;
-  --muted: #5d7269;
-  --faint: #93a49b;
-  --thead-bg: #f2f8f4;
-  --row-hover: #f4faf6;
+  --paper: #F3F6F6;
+  --surface: #FFFFFF;
+  --line: #E8EDEC;
+  --line-strong: #D5DDDB;
+  --text: #111C18;
+  /* Two levels of secondary text, both legible. --faint was #93a49b, which is
+     2.6:1 on white and 2.4:1 on --paper — it is used for hints, captions and
+     timestamps in 26 places, so that was the system's worst readability
+     problem. Both now clear 4.5:1 on white and on --paper. */
+  --muted: #41544C;
+  --faint: #4F6459;
+  --thead-bg: #F9FBFA;
+  --row-hover: #F9FBFA;
 
   /* Brand accent — Green Pea base, Japanese Laurel on hover */
-  --accent: #1D6142;       /* fills: buttons, badges, active nav, meters */
-  --accent-600: #0A6906;   /* hover fill (Japanese Laurel) */
-  --accent-050: #e6f1eb;   /* focus ring / tint background */
-  --accent-text: #17624a;  /* accent as text / links / borders on a surface */
+  --accent: #257460;       /* fills: buttons, badges, active nav, meters */
+  --accent-600: #1A5B4B;   /* hover: the same green, deepened — the old #0A6906
+                              was a different hue, so buttons changed colour
+                              rather than darkening on hover */
+  --accent-050: #D6F0E9;   /* focus ring / tint background */
+  --accent-text: #257460;  /* accent as text / links / borders on a surface */
   --brand-mint: #8fd3b0;   /* highlight against the deep-green shell */
 
   /* Status */
-  --good: #157a3e;   --good-050: #e7f3ec;
-  --warn: #a9741f;   --warn-050: #f6efe0;
-  --danger: #bf4238; --danger-050: #f8e9e7;
+  --good: #12783D;   --good-050: #e7f3ec;
+  --warn: #845412;   --warn-050: #f6efe0;
+  --danger: #B23A31;
+  --on-danger: #FFFFFF;  /* label on a --danger fill */ --danger-050: #f8e9e7;
 
   --radius: 12px;
   --radius-sm: 8px;
@@ -68,81 +75,91 @@
 
 /* Smooth whole-page cross-fade between light and dark.
 
-   The `theme-anim` class is added to <html> by lib/theme.js only for the moment
-   of a switch (then removed), so these blanket transitions never slow down
-   ordinary interactions or the initial paint. Only colour properties fade —
-   transforms/opacity are left alone, so the toggle keeps its own slide. The
-   toggle's own parts are re-asserted below so their motion is not overridden. */
-html.theme-anim,
-html.theme-anim *,
-html.theme-anim *::before,
-html.theme-anim *::after {
-  transition: background-color var(--theme-dur) var(--theme-ease),
-    color var(--theme-dur) var(--theme-ease),
-    border-color var(--theme-dur) var(--theme-ease),
-    fill var(--theme-dur) var(--theme-ease),
-    stroke var(--theme-dur) var(--theme-ease),
-    box-shadow var(--theme-dur) var(--theme-ease) !important;
-}
-html.theme-anim .themeswitch__track {
-  transition: background var(--tsw-dur) var(--tsw-glide), border-color var(--tsw-dur) var(--tsw-glide) !important;
-}
-html.theme-anim .themeswitch__knob {
-  transition: transform var(--tsw-dur) var(--tsw-spring),
-    border-color var(--tsw-dur) var(--tsw-glide), box-shadow var(--tsw-dur) var(--tsw-glide) !important;
-}
-html.theme-anim .themeswitch__ico {
-  transition: opacity calc(var(--tsw-dur) * 0.6) var(--tsw-glide), transform var(--tsw-dur) var(--tsw-spring) !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after { transition: none !important; }
+   The fade is the browser's, not ours: lib/theme.js applies the theme inside
+   document.startViewTransition(), so the old page is snapshotted and dissolved
+   into the new one as a single image. That is the only way this reads correctly
+   — a theme switch repaints the whole window, and animating the elements
+   individually left parts of the page in different themes at the same moment.
+
+   These rules only set the timing; the cross-fade itself is the default.
+   Browsers without view transitions switch instantly, as does reduced-motion
+   (handled in theme.js, which skips the transition entirely). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--theme-dur);
+  animation-timing-function: var(--theme-ease);
 }
 
 /* Dark palette — shared by the auto (OS) and manual (data-theme) paths */
 :root[data-theme="dark"],
 :root.is-dark {
-  --paper: #0d1611;
-  --surface: #14211a;
-  --line: #26362d;
-  --line-strong: #33473c;
-  --text: #dfeae4;
-  --muted: #93a89d;
-  --faint: #6f857a;
-  --thead-bg: #17251e;
-  --row-hover: #1b2a22;
-  --ink-800: #e8f2ec;   /* headings become light on dark surfaces */
-  --ink-700: #cfe0d6;
-  --ink-600: #b3c8bd;
-  --accent-050: rgba(92, 196, 146, 0.16);
-  --accent-text: #5cc492;
-  --good-050: rgba(21, 122, 62, 0.20);
-  --warn-050: rgba(169, 116, 31, 0.20);
-  --danger-050: rgba(191, 66, 56, 0.22);
+  --paper: #0F1513;
+  --surface: #25312E;
+  --line: #364541;
+  --line-strong: #4B5D59;
+  --text: #E4EDE9;
+  --muted: #A2B5AD;
+  --faint: #93A9A0;
+  --thead-bg: #1A2321;
+  --row-hover: #2F3D39;
+  --ink-800: #F0F6F3;   /* headings become light on dark surfaces */
+  --ink-700: #D3E0DA;
+  --ink-600: #B6C8C0;
+  /* Dark mode previously inherited --accent from light, so buttons stayed
+     #1D6142 against a near-black surface and barely separated from it. These
+     are the same hues lifted for a dark ground, so the two themes read as one
+     palette at two luminances rather than two different designs. */
+  --accent: #29836D;
+  --accent-600: #226D5A;
+  --accent-050: rgba(96, 190, 166, 0.16);
+  --accent-text: #8DCEBE;
+  /* Status colours were inherited from light too, and were too dark to read
+     against dark surfaces. */
+  --good: #5FD69C;
+  --warn: #E8BA66;
+  --danger: #F59C92;
+  --on-danger: #2A0F0C;  /* the dark-mode danger is light; a white label on it is 2.09 */
+  --good-050: rgba(76, 187, 131, 0.18);
+  --warn-050: rgba(217, 164, 65, 0.18);
+  --danger-050: rgba(228, 121, 108, 0.18);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
   --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
-  /* Follow the OS unless the user has explicitly chosen light */
+  /* Generated from the :root[data-theme="dark"] block above — keep it that
+     way. Editing only one of the two leaves everyone whose OS is dark, but
+     who never touched the switch, on the previous palette. */
   :root:not([data-theme="light"]) {
-    --paper: #0d1611;
-    --surface: #14211a;
-    --line: #26362d;
-    --line-strong: #33473c;
-    --text: #dfeae4;
-    --muted: #93a89d;
-    --faint: #6f857a;
-    --thead-bg: #17251e;
-    --row-hover: #1b2a22;
-    --ink-800: #e8f2ec;
-    --ink-700: #cfe0d6;
-    --ink-600: #b3c8bd;
-    --accent-050: rgba(92, 196, 146, 0.16);
-    --accent-text: #5cc492;
-    --good-050: rgba(21, 122, 62, 0.20);
-    --warn-050: rgba(169, 116, 31, 0.20);
-    --danger-050: rgba(191, 66, 56, 0.22);
+    --paper: #0F1513;
+    --surface: #25312E;
+    --line: #364541;
+    --line-strong: #4B5D59;
+    --text: #E4EDE9;
+    --muted: #A2B5AD;
+    --faint: #93A9A0;
+    --thead-bg: #1A2321;
+    --row-hover: #2F3D39;
+    --ink-800: #F0F6F3;   /* headings become light on dark surfaces */
+    --ink-700: #D3E0DA;
+    --ink-600: #B6C8C0;
+    /* Dark mode previously inherited --accent from light, so buttons stayed
+       #1D6142 against a near-black surface and barely separated from it. These
+       are the same hues lifted for a dark ground, so the two themes read as one
+       palette at two luminances rather than two different designs. */
+    --accent: #29836D;
+    --accent-600: #226D5A;
+    --accent-050: rgba(96, 190, 166, 0.16);
+    --accent-text: #8DCEBE;
+    /* Status colours were inherited from light too, and were too dark to read
+       against dark surfaces. */
+    --good: #5FD69C;
+    --warn: #E8BA66;
+    --danger: #F59C92;
+    --good-050: rgba(76, 187, 131, 0.18);
+    --warn-050: rgba(217, 164, 65, 0.18);
+    --danger-050: rgba(228, 121, 108, 0.18);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
     --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
@@ -372,7 +389,7 @@ button:disabled {
   margin-left: auto; flex-shrink: 0;
   min-width: 20px; padding: 0 0.35rem; height: 18px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px; background: var(--danger); color: #fff;
+  border-radius: 999px; background: var(--danger); color: var(--on-danger);
   font-size: 0.66rem; font-weight: 700; line-height: 1;
 }
 .navlink.active .navlink__badge { background: var(--danger); }
@@ -392,7 +409,7 @@ button:disabled {
   position: absolute; top: 1px; right: 0;
   min-width: 16px; height: 16px; padding: 0 0.25rem;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px; background: var(--danger); color: #fff;
+  border-radius: 999px; background: var(--danger); color: var(--on-danger);
   font-size: 0.6rem; font-weight: 700; line-height: 1;
   border: 2px solid var(--surface);
 }
@@ -416,7 +433,7 @@ button:disabled {
 .actions-panel__n {
   flex-shrink: 0; min-width: 22px; height: 22px; padding: 0 0.3rem;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px; background: var(--danger); color: #fff;
+  border-radius: 999px; background: var(--danger); color: var(--on-danger);
   font-size: 0.7rem; font-weight: 700;
 }
 .actions-panel__empty { margin: 0; padding: 0.5rem 0.55rem 0.75rem; font-size: 0.82rem; color: var(--muted); }
@@ -811,34 +828,13 @@ button:disabled {
    Auth / login
    -------------------------------------------------------------------------- */
 
+/* The public auth pages now sit inside the shared public shell — site header,
+   themed body, site footer — so this is a content wrapper, not a page canvas.
+   It used to be a full-viewport deep-green void with a drifting mint glow,
+   which is exactly why login and signup ignored the light/dark theme. */
 .auth {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 1.5rem;
-  background:
-    radial-gradient(120% 120% at 15% 0%, #14503a 0%, var(--ink-900) 60%),
-    var(--ink-900);
-}
-/* slow drifting mint glow behind the card */
-.auth::before {
-  content: "";
-  position: absolute;
-  width: 60vmax;
-  height: 60vmax;
-  top: -20vmax;
-  right: -15vmax;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(143, 211, 176, 0.20), transparent 68%);
-  filter: blur(30px);
-  animation: auth-drift 22s var(--ease-out) infinite alternate;
-  pointer-events: none;
-}
-@keyframes auth-drift {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(-6vmax, 6vmax) scale(1.15); }
 }
 
 .auth__card {
@@ -846,9 +842,10 @@ button:disabled {
   width: 100%;
   max-width: 460px;
   background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 18px;
-  box-shadow: var(--shadow-lg);
-  padding: 2.75rem 2.75rem;
+  box-shadow: var(--shadow-sm);
+  padding: 2.4rem 2.75rem;
   animation: auth-in 0.5s var(--ease-out) both;
 }
 @keyframes auth-in {
@@ -894,7 +891,12 @@ button:disabled {
   border-radius: var(--radius-sm);
   padding: 0.85rem 0.9rem;
   width: 100%;
+  /* Without these the field fell back to the browser default — white with black
+     text — which sat inside a dark card in dark mode. */
+  background: var(--paper);
+  color: var(--text);
 }
+.auth input::placeholder { color: var(--faint); }
 
 .auth__alt { margin: 1rem 0 0; font-size: 0.85rem; color: var(--muted); text-align: center; }
 .auth__alt a { color: var(--accent-text); font-weight: 550; text-decoration: none; }

@@ -4,13 +4,16 @@ import { useRoute } from "vue-router";
 import ThemeToggle from "./components/ThemeToggle.vue";
 
 const route = useRoute();
-// Inside the app shell (/app/*) the switch lives in the nav bar (AppLayout).
-// On public pages (login, signup, inquiry) there is no nav bar, so keep the
-// floating switch there.
-const isPublic = computed(() => !route.path.startsWith("/app"));
+// The switch is docked in the nav bar wherever a page has one — AppLayout for
+// /app/*, and the public portal, which declares `ownsThemeToggle` in its route
+// meta. Anywhere else (login, signup, inquiry) has no bar, so it floats.
+// Declared in meta rather than by path so a page and its toggle stay together.
+const floatToggle = computed(
+  () => !route.path.startsWith("/app") && !route.meta.ownsThemeToggle,
+);
 </script>
 
 <template>
   <router-view />
-  <ThemeToggle v-if="isPublic" />
+  <ThemeToggle v-if="floatToggle" />
 </template>

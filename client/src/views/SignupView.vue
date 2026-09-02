@@ -2,7 +2,8 @@
 import { ref, computed, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { api } from "../lib/api.js";
-import logoUrl from "../assets/ortigas-logo.svg";
+import PublicShell from "../components/PublicShell.vue";
+// The brand lockup comes from the shell's header; the card used to repeat it.
 
 const role = ref("TENANT"); // "TENANT" (lessee) | "UNIT_OWNER" (lessor)
 const name = ref("");
@@ -81,124 +82,127 @@ async function submit() {
 </script>
 
 <template>
-  <div class="auth">
-    <div class="auth__card">
-      <img :src="logoUrl" class="auth__logo" alt="Ortigas Land" style="width:52px;height:52px;display:block;margin:0 auto 0.6rem;" />
-      <div class="auth__brand">Ortigas Land</div>
-      <p class="auth__eyebrow">Leasing Portal</p>
+  <PublicShell main-label="Create your account" skip-label="Skip to the form" narrow>
+    <template #nav-actions>
+      <RouterLink to="/login" class="nav__signin">Sign in</RouterLink>
+    </template>
 
-      <!-- Submitted: the account exists but cannot be used until approved. -->
-      <div v-if="submitted" class="done">
-        <h1>Application received</h1>
-        <p class="done__body">
-          Thanks, {{ name.trim() }}. Our leasing team will review your account request and
-          approve it shortly. You will not be able to sign in until it is approved.
-        </p>
-        <p class="done__note">We will reach you at <strong>{{ contactEmail.trim() }}</strong>.</p>
-        <RouterLink class="done__link" to="/login">Back to sign in</RouterLink>
-      </div>
+    <div class="auth">
+      <div class="auth__card">
 
-      <template v-else>
-        <h1>Create your account</h1>
-
-        <div class="roles">
-          <button type="button" :class="{ on: role === 'UNIT_OWNER' }" @click="role = 'UNIT_OWNER'">
-            <span class="roles__t">I'm a Lessor</span>
-            <span class="roles__s">Unit Owner</span>
-          </button>
-          <button type="button" :class="{ on: role === 'TENANT' }" @click="role = 'TENANT'">
-            <span class="roles__t">I'm a Lessee</span>
-            <span class="roles__s">Prospective Tenant</span>
-          </button>
+        <!-- Submitted: the account exists but cannot be used until approved. -->
+        <div v-if="submitted" class="done">
+          <h1>Application received</h1>
+          <p class="done__body">
+            Thanks, {{ name.trim() }}. Our leasing team will review your account request and
+            approve it shortly. You will not be able to sign in until it is approved.
+          </p>
+          <p class="done__note">We will reach you at <strong>{{ contactEmail.trim() }}</strong>.</p>
+          <RouterLink class="done__link" to="/login">Back to sign in</RouterLink>
         </div>
 
-        <form @submit.prevent="submit" novalidate>
-          <div class="fld">
-            <input id="name" v-model="name" type="text" placeholder="Full name" autocomplete="name" />
-            <p v-if="errors.name" class="fld__err">{{ errors.name }}</p>
+        <template v-else>
+          <h1>Create your account</h1>
+
+          <div class="roles">
+            <button type="button" :class="{ on: role === 'UNIT_OWNER' }" @click="role = 'UNIT_OWNER'">
+              <span class="roles__t">I'm a Lessor</span>
+              <span class="roles__s">Unit Owner</span>
+            </button>
+            <button type="button" :class="{ on: role === 'TENANT' }" @click="role = 'TENANT'">
+              <span class="roles__t">I'm a Lessee</span>
+              <span class="roles__s">Prospective Tenant</span>
+            </button>
           </div>
 
-          <div class="fld">
-            <input id="username" v-model="username" type="text" placeholder="Username" autocomplete="username" />
-            <p v-if="errors.username" class="fld__err">{{ errors.username }}</p>
-          </div>
-
-          <div class="fld">
-            <input id="contactEmail" v-model="contactEmail" type="email" placeholder="Email address" autocomplete="email" />
-            <p v-if="errors.contactEmail" class="fld__err">{{ errors.contactEmail }}</p>
-            <p v-else class="fld__hint">So the leasing team can reach you about your application.</p>
-          </div>
-
-          <div class="fld">
-            <div class="pw-wrap">
-              <input
-                id="password"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Password (8+ characters)"
-                autocomplete="new-password"
-              />
-              <button
-                type="button" class="pw-toggle"
-                :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                :aria-pressed="showPassword"
-                @click="showPassword = !showPassword"
-              >
-                <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
-              </button>
+          <form @submit.prevent="submit" novalidate>
+            <div class="fld">
+              <input id="name" v-model="name" type="text" placeholder="Full name" autocomplete="name" />
+              <p v-if="errors.name" class="fld__err">{{ errors.name }}</p>
             </div>
-            <p v-if="errors.password" class="fld__err">{{ errors.password }}</p>
-            <p v-else-if="strength" class="strength" :class="'is-' + strength.level">
-              <span class="strength__bar"><span></span></span>{{ strength.label }}
-            </p>
-          </div>
 
-          <div class="fld">
-            <div class="pw-wrap">
-              <input
-                id="confirm"
-                v-model="confirm"
-                :type="showConfirm ? 'text' : 'password'"
-                placeholder="Confirm password"
-                autocomplete="new-password"
-              />
-              <button
-                type="button" class="pw-toggle"
-                :aria-label="showConfirm ? 'Hide password' : 'Show password'"
-                :aria-pressed="showConfirm"
-                @click="showConfirm = !showConfirm"
-              >
-                <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
-              </button>
+            <div class="fld">
+              <input id="username" v-model="username" type="text" placeholder="Username" autocomplete="username" />
+              <p v-if="errors.username" class="fld__err">{{ errors.username }}</p>
             </div>
-            <p v-if="errors.confirm" class="fld__err">{{ errors.confirm }}</p>
-          </div>
 
-          <label class="consent">
-            <input id="consent" type="checkbox" v-model="consent" />
-            <span>I consent to Ortigas and Company collecting and processing my details for this leasing application.</span>
-          </label>
-          <p v-if="errors.consent" class="fld__err">{{ errors.consent }}</p>
+            <div class="fld">
+              <input id="contactEmail" v-model="contactEmail" type="email" placeholder="Email address" autocomplete="email" />
+              <p v-if="errors.contactEmail" class="fld__err">{{ errors.contactEmail }}</p>
+              <p v-else class="fld__hint">So the leasing team can reach you about your application.</p>
+            </div>
 
-          <button type="submit" :disabled="submitting">{{ submitting ? "Submitting…" : "Submit application" }}</button>
-          <p v-if="formError" class="error">{{ formError }}</p>
-          <p class="approve-note">Accounts are reviewed by the leasing team before they can be used.</p>
-        </form>
-      </template>
+            <div class="fld">
+              <div class="pw-wrap">
+                <input
+                  id="password"
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="Password (8+ characters)"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button" class="pw-toggle"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                  :aria-pressed="showPassword"
+                  @click="showPassword = !showPassword"
+                >
+                  <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="errors.password" class="fld__err">{{ errors.password }}</p>
+              <p v-else-if="strength" class="strength" :class="'is-' + strength.level">
+                <span class="strength__bar"><span></span></span>{{ strength.label }}
+              </p>
+            </div>
 
-      <p v-if="!submitted" class="auth__alt">Already have an account? <RouterLink to="/login">Sign in</RouterLink></p>
+            <div class="fld">
+              <div class="pw-wrap">
+                <input
+                  id="confirm"
+                  v-model="confirm"
+                  :type="showConfirm ? 'text' : 'password'"
+                  placeholder="Confirm password"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button" class="pw-toggle"
+                  :aria-label="showConfirm ? 'Hide password' : 'Show password'"
+                  :aria-pressed="showConfirm"
+                  @click="showConfirm = !showConfirm"
+                >
+                  <svg v-if="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="errors.confirm" class="fld__err">{{ errors.confirm }}</p>
+            </div>
+
+            <label class="consent">
+              <input id="consent" type="checkbox" v-model="consent" />
+              <span>I consent to Ortigas and Company collecting and processing my details for this leasing application.</span>
+            </label>
+            <p v-if="errors.consent" class="fld__err">{{ errors.consent }}</p>
+
+            <button type="submit" :disabled="submitting">{{ submitting ? "Submitting…" : "Submit application" }}</button>
+            <p v-if="formError" class="error">{{ formError }}</p>
+            <p class="approve-note">Accounts are reviewed by the leasing team before they can be used.</p>
+          </form>
+        </template>
+
+        <p v-if="!submitted" class="auth__alt">Already have an account? <RouterLink to="/login">Sign in</RouterLink></p>
+      </div>
     </div>
-  </div>
+  </PublicShell>
 </template>
 
 <style scoped>

@@ -22,6 +22,61 @@ describe("AvailableUnitsView", () => {
     expect(w.text()).toContain("Capitol");
     expect(w.text()).toContain("Ortigas");
   });
+  // The floating switch used to sit on top of "Sign in"; it now lives in the bar.
+  it("docks the theme switch inside the header actions", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    const actions = w.find(".nav__actions");
+    expect(actions.exists()).toBe(true);
+    const sw = actions.find(".themeswitch");
+    expect(sw.exists()).toBe(true);
+    expect(sw.classes()).toContain("themeswitch--inline");
+    expect(sw.attributes("role")).toBe("switch");
+  });
+
+  // The header button is gone; the hero's lessor card stays.
+  it("drops the List your unit button from the header", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    expect(w.find(".nav__list").exists()).toBe(false);
+    const headerLinks = w.find(".nav__actions").findAll("a").map((a) => a.attributes("href"));
+    expect(headerLinks).toEqual(["/login"]);
+  });
+
+  it("keeps Sign in as the way through to the portal", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    expect(w.find(".nav__signin").attributes("href")).toBe("/login");
+  });
+
+  it("lays the header out corner to corner", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    // Brand hard left, actions hard right, inside a full-bleed bar.
+    const inner = w.find(".nav__inner");
+    expect(inner.exists()).toBe(true);
+    expect(inner.find(".brand").exists()).toBe(true);
+    expect(inner.find(".nav__actions").exists()).toBe(true);
+  });
+
+  // Losing sign-in on a phone left portal users with no way in.
+  it("keeps Sign in reachable at every width", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    const signin = w.find(".nav__signin");
+    expect(signin.exists()).toBe(true);
+    expect(signin.attributes("href")).toBe("/login");
+  });
+
+  it("offers a skip link and labelled landmarks", async () => {
+    const w = mount(AvailableUnitsView, { global: { stubs } });
+    await flushPromises();
+    expect(w.find(".skip").exists()).toBe(true);
+    expect(w.find("#main").exists()).toBe(true);
+    expect(w.find("header").attributes("aria-label")).toBeTruthy();
+    expect(w.find("footer").attributes("aria-label")).toBeTruthy();
+  });
+
   it("re-queries with filter params", async () => {
     const w = mount(AvailableUnitsView, { global: { stubs } });
     await flushPromises();

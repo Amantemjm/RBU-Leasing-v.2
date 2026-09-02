@@ -434,15 +434,26 @@ function cellValue(r, c) {
 
 .dash {
   font-family: var(--ui); display: flex; flex-direction: column; gap: 1.15rem;
-  --good: #157a3e; --good-bg: #e7f3ec; --warn: #b5751a; --warn-bg: #f8efdd; --crit: #b23a2e; --crit-bg: #f7e0dc; --neutral: #6b7a72; --neutral-bg: var(--paper);
+  --good: #12783D; --good-bg: #E7F3EC; --warn: #845412; --warn-bg: #F6EFE0; --crit: #B23A31; --crit-bg: #F8E9E7; --neutral: #4F6459; --neutral-bg: var(--paper);
 }
 /* Status colours track the browser theme too (parity with light) */
+/* This block used to be a bare `@media (prefers-color-scheme: dark)` with no
+   data-theme counterpart, so the OS always won: picking light on a dark OS left
+   the dashboard's status colours at their dark values on a light surface, which
+   measured 2.21:1. Both paths are now declared, from one source. */
+:root[data-theme="dark"] .dash,
+:root.is-dark .dash {
+  --good: #5FD69C; --good-bg: rgba(95, 214, 156, 0.18);
+  --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
+  --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
+  --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
+}
 @media (prefers-color-scheme: dark) {
-  .dash {
-    --good: #5cc492; --good-bg: rgba(21, 122, 62, 0.22);
-    --warn: #d6a24f; --warn-bg: rgba(181, 117, 26, 0.22);
-    --crit: #e0897c; --crit-bg: rgba(178, 58, 46, 0.22);
-    --neutral: #9fb3a8; --neutral-bg: rgba(255, 255, 255, 0.05);
+  :root:not([data-theme="light"]) .dash {
+    --good: #5FD69C; --good-bg: rgba(95, 214, 156, 0.18);
+    --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
+    --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
+    --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
   }
 }
 .muted { color: var(--muted); } .small { font-size: .85rem; }

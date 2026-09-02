@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-vi.mock("vue-router", () => ({ useRoute: () => ({ params: { id: "u1" } }), useRouter: () => ({ push: vi.fn() }) }));
+// PublicShell (the shared public chrome) imports RouterLink, so the mock has to
+// provide it as well as the composables.
+vi.mock("vue-router", () => ({
+  useRoute: () => ({ params: { id: "u1" } }),
+  useRouter: () => ({ push: vi.fn() }),
+  RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" },
+}));
 vi.mock("../src/lib/resource.js", () => ({
   publicUnits: {
     get: vi.fn(() => Promise.resolve({

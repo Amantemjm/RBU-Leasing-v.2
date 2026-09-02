@@ -5,7 +5,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { publicUnits } from "../lib/resource.js";
 import { orderedDetails } from "../lib/listingFormat.js";
-import logoUrl from "../assets/ortigas-logo.svg";
+import PublicShell from "../components/PublicShell.vue";
 
 const route = useRoute();
 
@@ -61,15 +61,11 @@ const details = computed(() =>
 </script>
 
 <template>
-  <div class="detail-portal">
-    <header class="nav">
-      <RouterLink to="/" class="brand">
-        <img :src="logoUrl" alt="" class="brand__logo" />
-        <span class="brand__name">Ortigas Land</span>
-        <span class="brand__sub">Leasing</span>
-      </RouterLink>
+  <PublicShell main-label="Unit details" skip-label="Skip to unit details">
+    <template #nav-actions>
       <RouterLink to="/inquiry?as=LESSEE" class="nav__inquire">Make an inquiry</RouterLink>
-    </header>
+      <RouterLink to="/login" class="nav__signin">Sign in</RouterLink>
+    </template>
 
     <div class="wrap">
       <RouterLink to="/" class="back-link">&larr; Back to Available Units</RouterLink>
@@ -147,34 +143,17 @@ const details = computed(() =>
         </aside>
       </div>
     </div>
-  </div>
+  </PublicShell>
 </template>
 
 <style scoped>
-.detail-portal { --brand: #0b463c; --brand-600: #00392f; --brand-tint: #e7efec; min-height: 100vh; background: var(--paper); }
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.7rem clamp(1rem, 4vw, 2.5rem);
-  background: var(--surface);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-}
-.brand { display: inline-flex; align-items: baseline; gap: 0.5rem; text-decoration: none; }
-.brand__logo { width: 26px; height: 26px; align-self: center; }
-.brand__name { font-family: var(--display, Georgia, serif); font-size: 1.15rem; font-weight: 600; color: var(--brand); }
-.brand__sub { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
+/* Sits in the shell's header, which is a white slab in both themes — so it is
+   coloured for a light ground rather than following the theme. */
 .nav__inquire {
-  color: var(--brand); font-weight: 650; font-size: 0.86rem; text-decoration: none;
-  padding: 0.5rem 0.85rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  color: var(--brand-deep); font-weight: 650; font-size: 0.86rem; text-decoration: none;
+  padding: 0.5rem 0.85rem; border: 1px solid #cdd9d3; border-radius: var(--radius-sm);
 }
-.nav__inquire:hover { background: var(--brand-tint); }
+.nav__inquire:hover { background: #e7efec; }
 
 .wrap { max-width: 68rem; margin: 0 auto; padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 3.5rem; }
 .back-link { display: inline-block; margin-bottom: 1.1rem; color: var(--brand); text-decoration: none; font-size: 0.88rem; font-weight: 600; }
@@ -258,4 +237,5 @@ const details = computed(() =>
   .detail { grid-template-columns: 1fr; }
   .info { position: static; }
 }
+
 </style>

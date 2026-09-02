@@ -134,4 +134,5 @@ const amenities = computed(() => (Array.isArray(d.value.amenities) ? d.value.ame
   .card:hover { transform: none; }
   .card:hover .photo img { transform: none; }
 }
+
 </style>

@@ -35,21 +35,41 @@ function apply(choice) {
   document.documentElement.setAttribute("data-theme", choice);
 }
 
-// Turn on a brief, page-wide colour cross-fade for the moment of a switch. The
-// `theme-anim` class (see app.css) enables blanket colour transitions; we remove
-// it once the fade is done so it never slows ordinary interactions. Skipped when
-// the user prefers reduced motion.
-let animTimer;
-function animateThemeChange() {
-  const el = document.documentElement;
+function prefersReducedMotion() {
   try {
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   } catch {
+    return true; // can't ask — take the still, non-animated path
+  }
+}
+
+// Apply the theme, cross-fading the page as one image.
+//
+// A theme switch repaints the entire window, so animating only part of it does
+// not work: fading the body while the header and footer flipped instantly left
+// the frame and the content in different themes for the length of the fade,
+// which read as a tear rather than a transition. View Transitions hand the job
+// to the browser — it snapshots the old page, applies the change in a single
+// frame, then dissolves the whole viewport from the old image to the new one,
+// so no element is ever out of step with its neighbour.
+//
+// Browsers without the API simply switch instantly, which is the right fallback
+// and also what we do for reduced-motion.
+function commit(choice) {
+  const paint = () => apply(choice);
+  if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
+    paint();
     return;
   }
-  el.classList.add("theme-anim");
-  clearTimeout(animTimer);
-  animTimer = setTimeout(() => el.classList.remove("theme-anim"), 600);
+  const transition = document.startViewTransition(paint);
+  // Aborting a transition — which a fast double-toggle does — rejects every one
+  // of its promises, not just `finished`. The theme is already applied by then,
+  // so swallow all three; leaving any unhandled fills the console with
+  // InvalidStateError. Older Chrome omits `updateCallbackDone`, hence the
+  // optional chaining.
+  for (const p of [transition?.ready, transition?.finished, transition?.updateCallbackDone]) {
+    p?.catch?.(() => {});
+  }
 }
 
 // Module-level so every caller shares one value.
@@ -59,9 +79,10 @@ apply(theme.value); // initial paint — no animation
 export function useTheme() {
   function setTheme(choice) {
     if (!CHOICES.includes(choice)) return;
-    if (choice !== theme.value) animateThemeChange();
+    const changed = choice !== theme.value;
     theme.value = choice;
-    apply(choice);
+    if (changed) commit(choice);
+    else apply(choice);
     try {
       localStorage.setItem(KEY, choice);
     } catch {
