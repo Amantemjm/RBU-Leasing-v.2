@@ -141,24 +141,33 @@ export async function listAll() {
   const units = await prisma.unit.findMany({
     include: {
       tower: { select: { name: true, estate: { select: { id: true, name: true } } } },
-      listing: { select: { published: true, publishedAt: true, coverPhotoId: true } },
+      listing: { select: { published: true, publishedAt: true, coverPhotoId: true, details: true } },
       _count: { select: { photos: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
-  return units.map((u) => ({
-    unitId: u.id,
-    unitNumber: u.unitNumber,
-    propertyName: u.building || u.tower?.name || null,
-    location: [u.tower?.name, u.tower?.estate?.name].filter(Boolean).join(", ") || null,
-    approvalStatus: u.approvalStatus,
-    status: u.status,
-    published: u.listing?.published || false,
-    publishedAt: u.listing?.publishedAt || null,
-    coverPhotoId: u.listing?.coverPhotoId || null,
-    photoCount: u._count.photos,
-    updatedAt: u.updatedAt,
-  }));
+  return units.map((u) => {
+    const det = u.listing?.details || {};
+    const pick = (k) => (det[k] != null && det[k] !== "" ? det[k] : null);
+    return {
+      unitId: u.id,
+      unitNumber: u.unitNumber,
+      propertyName: u.building || u.tower?.name || null,
+      location: [u.tower?.name, u.tower?.estate?.name].filter(Boolean).join(", ") || null,
+      type: pick("unitType") || u.type || null,
+      bedrooms: pick("bedrooms"),
+      bathrooms: pick("bathrooms"),
+      floorArea: pick("floorArea") ?? (u.sizeSqm != null ? Number(u.sizeSqm) : null),
+      rentalRate: pick("rentalRate") ?? (u.baseRent != null ? Number(u.baseRent) : null),
+      approvalStatus: u.approvalStatus,
+      status: u.status,
+      published: u.listing?.published || false,
+      publishedAt: u.listing?.publishedAt || null,
+      coverPhotoId: u.listing?.coverPhotoId || null,
+      photoCount: u._count.photos,
+      updatedAt: u.updatedAt,
+    };
+  });
 }
 
 export async function listPublic({ estateId, type } = {}) {
