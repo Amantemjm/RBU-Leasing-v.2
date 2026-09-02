@@ -8,6 +8,7 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (req, file, cb) => cb(null, ALLOWED.has(file.mimetype)) });
 const r = Router();
 r.use(verifyJwt);
+r.get("/", requireRole(...STAFF), ctrl.list);
 r.get("/:unitId", requireRole(...STAFF), ctrl.get);
 r.patch("/:unitId", requireWrite, ctrl.update);
 r.post("/:unitId/photos", requireWrite, upload.single("file"), ctrl.addPhoto);

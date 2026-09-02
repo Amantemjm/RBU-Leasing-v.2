@@ -56,6 +56,8 @@ describe("appointments", () => {
 
 describe("unitListings + publicUnits", () => {
   it("unitListings + publicUnits wrappers hit the right endpoints", async () => {
+    await unitListings.listAll();
+    expect(api.get).toHaveBeenCalledWith("/unit-listings");
     await unitListings.get("u1");
     expect(api.get).toHaveBeenCalledWith("/unit-listings/u1");
     await unitListings.update("u1", { headline: "x" });

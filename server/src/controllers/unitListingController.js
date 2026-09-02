@@ -1,6 +1,9 @@
 import * as svc from "../services/unitListingService.js";
 import { updateListingSchema, reorderSchema, captionSchema, coverSchema } from "../validation/unitListing.js";
 
+export async function list(req, res, next) {
+  try { res.json(await svc.listAll()); } catch (e) { next(e); }
+}
 export async function get(req, res, next) {
   try { res.json(await svc.getForUnit(req.params.unitId)); } catch (e) { next(e); }
 }

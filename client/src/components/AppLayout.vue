@@ -62,7 +62,7 @@ const STAFF_GROUPS = [
   ] },
   { label: "Administration", items: [
     { to: "/app/account-approvals", label: "Account Approvals", icon: "shield", write: true },
-    { to: "/app/forms", label: "Content Manager", icon: "columns", admin: true },
+    { to: "/app/content", label: "Content Manager", icon: "columns", write: true },
     { to: "/app/users", label: "System Users", icon: "shield", admin: true },
     { to: "/app/audit", label: "Audit Trail", icon: "list", admin: true },
   ] },

@@ -135,6 +135,32 @@ export async function unpublish(user, unitId) {
   return getForUnit(unitId);
 }
 
+// Staff Content-Manager listing table: every unit with a listing summary
+// (metadata only — never photo bytes).
+export async function listAll() {
+  const units = await prisma.unit.findMany({
+    include: {
+      tower: { select: { name: true, estate: { select: { id: true, name: true } } } },
+      listing: { select: { published: true, publishedAt: true, coverPhotoId: true } },
+      _count: { select: { photos: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  return units.map((u) => ({
+    unitId: u.id,
+    unitNumber: u.unitNumber,
+    propertyName: u.building || u.tower?.name || null,
+    location: [u.tower?.name, u.tower?.estate?.name].filter(Boolean).join(", ") || null,
+    approvalStatus: u.approvalStatus,
+    status: u.status,
+    published: u.listing?.published || false,
+    publishedAt: u.listing?.publishedAt || null,
+    coverPhotoId: u.listing?.coverPhotoId || null,
+    photoCount: u._count.photos,
+    updatedAt: u.updatedAt,
+  }));
+}
+
 export async function listPublic({ estateId, type } = {}) {
   const unitFilter = {};
   if (type) unitFilter.type = type;

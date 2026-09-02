@@ -124,7 +124,7 @@ describe("AppLayout (sidebar shell)", () => {
   it("names the CMS section Content Manager, not Forms", () => {
     const nav = mountAs("ADMIN").find(".sidebar__nav");
     expect(nav.text()).toContain("Content Manager");
-    const link = nav.findAll("a").find((a) => a.attributes("href") === "/app/forms");
+    const link = nav.findAll("a").find((a) => a.attributes("href") === "/app/content");
     expect(link.text()).toBe("Content Manager");
   });
 
@@ -133,7 +133,7 @@ describe("AppLayout (sidebar shell)", () => {
     const auth = useAuthStore();
     auth.setSession({ token: "t", user: { name: "Test User", role: "ADMIN" } });
     const router = makeRouter();
-    router.push("/app/forms");
+    router.push("/app/content");
     await router.isReady();
     const w = mount(AppLayout, { global: { plugins: [router] } });
     expect(w.find(".crumbs__here").text()).toBe("Content Manager");
