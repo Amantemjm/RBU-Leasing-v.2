@@ -37,6 +37,8 @@ import UsersView from "../views/UsersView.vue";
 import AccountApprovalsView from "../views/AccountApprovalsView.vue";
 import AuditView from "../views/AuditView.vue";
 import CmsFormsView from "../views/CmsFormsView.vue";
+import ContentManagerView from "../views/ContentManagerView.vue";
+import ListingsManagerView from "../views/ListingsManagerView.vue";
 const CmsFormBuilderView = () => import("../views/CmsFormBuilderView.vue");
 import TransactionsView from "../views/TransactionsView.vue";
 const TransactionDetailView = () => import("../views/TransactionDetailView.vue");
@@ -101,6 +103,8 @@ const routes = [
       { path: "account-approvals", component: AccountApprovalsView, meta: { roles: ["ADMIN", "LEASING_OFFICER"] } },
       { path: "users", component: UsersView, meta: { roles: ["ADMIN"] } },
       { path: "audit", component: AuditView, meta: { roles: ["ADMIN"] } },
+      { path: "content", component: ContentManagerView, meta: { roles: WRITE } },
+      { path: "content/listings", component: ListingsManagerView, meta: { roles: WRITE } },
       { path: "forms", component: CmsFormsView, meta: { roles: ["ADMIN"] } },
       { path: "forms/:role/:pageKey", component: CmsFormBuilderView, meta: { roles: ["ADMIN"] } },
     ],

@@ -129,6 +129,7 @@ export const lessorRequirements = {
 };
 
 export const unitListings = {
+  listAll: () => api.get("/unit-listings").then((r) => r.data),
   get: (unitId) => api.get(`/unit-listings/${unitId}`).then((r) => r.data),
   update: (unitId, body) => api.patch(`/unit-listings/${unitId}`, body).then((r) => r.data),
   addPhoto: (unitId, file) => {

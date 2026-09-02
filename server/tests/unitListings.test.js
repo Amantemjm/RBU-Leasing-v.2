@@ -138,3 +138,27 @@ describe("Unit listing — publish", () => {
     expect(un.body.listing.published).toBe(false);
   });
 });
+
+describe("Unit listing — list all (Content Manager)", () => {
+  it("returns every unit with a listing summary (published + photoCount)", async () => {
+    const owner = await factory.owner();
+    const a = await factory.unit(owner.id, { unitNumber: "CM-1", baseRent: 1, approvalStatus: "APPROVED", building: "Maven" });
+    await factory.unit(owner.id, { unitNumber: "CM-2", baseRent: 1 });
+    // give unit A a photo and publish it
+    await request(app).post(`/api/unit-listings/${a.id}/photos`).set(staff()).attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    await request(app).patch(`/api/unit-listings/${a.id}/publish`).set(staff());
+    const res = await request(app).get("/api/unit-listings").set(staff());
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
+    const rowA = res.body.find((r) => r.unitId === a.id);
+    expect(rowA.published).toBe(true);
+    expect(rowA.photoCount).toBe(1);
+    expect(rowA.propertyName).toBe("Maven");
+    expect(JSON.stringify(res.body)).not.toContain('"data"');
+  });
+  it("is staff-only (owner 403)", async () => {
+    const owner = await factory.owner();
+    const res = await request(app).get("/api/unit-listings").set("Authorization", `Bearer ${tokens.owner(owner.id)}`);
+    expect(res.status).toBe(403);
+  });
+});
