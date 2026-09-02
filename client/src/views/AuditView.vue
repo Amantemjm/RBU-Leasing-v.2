@@ -26,6 +26,7 @@ onMounted(async () => {
     <p class="muted">Every action taken in the system, and who took it (most recent first).</p>
 
     <p v-if="error" class="error">{{ error }}</p>
+    <div class="panel panel--table">
     <table>
       <thead>
         <tr><th>When</th><th>Who</th><th>Role</th><th>Action</th><th>Entity</th><th>Target</th></tr>
@@ -42,6 +43,7 @@ onMounted(async () => {
         <tr v-if="rows.length === 0"><td colspan="6" class="muted">No activity recorded yet.</td></tr>
       </tbody>
     </table>
+    </div>
   </section>
 </template>
 
