@@ -7,34 +7,33 @@
 
 :root {
   /* Deep greens — shell + headings (constant across modes) */
-  --ink-900: #0D3A2F;  /* top bar + auth backdrop */
-  --ink-800: #13493B;  /* headings / display numerals */
-  --ink-700: #1A5B4B;
-  --ink-600: #257460;
+  --ink-900: #183D3D;  /* top bar + auth backdrop */
+  --ink-800: #183D3D;  /* headings / display numerals */
+  --ink-700: #2F5050;
+  --ink-600: #4B6868;
 
   /* Neutrals */
-  --paper: #F3F6F6;
+  --paper: #F4F7F6;
   --surface: #FFFFFF;
-  --line: #E8EDEC;
-  --line-strong: #D5DDDB;
-  --text: #111C18;
+  --line: #DAE4E1;
+  --line-strong: #C4D4CE;
+  --text: #040D12;
   /* Two levels of secondary text, both legible. --faint was #93a49b, which is
      2.6:1 on white and 2.4:1 on --paper — it is used for hints, captions and
      timestamps in 26 places, so that was the system's worst readability
      problem. Both now clear 4.5:1 on white and on --paper. */
-  --muted: #41544C;
-  --faint: #4F6459;
-  --thead-bg: #F9FBFA;
-  --row-hover: #F9FBFA;
+  --muted: #466464;
+  --faint: #597373;
+  --thead-bg: #F2F6F4;
+  --row-hover: #F5F8F7;
 
   /* Brand accent — Green Pea base, Japanese Laurel on hover */
-  --accent: #257460;       /* fills: buttons, badges, active nav, meters */
-  --accent-600: #1A5B4B;   /* hover: the same green, deepened — the old #0A6906
+  --accent: #53776A;       /* fills: buttons, badges, active nav, meters */
+  --accent-600: #426057;   /* hover: the same green, deepened — the old #0A6906
                               was a different hue, so buttons changed colour
                               rather than darkening on hover */
-  --accent-050: #D6F0E9;   /* focus ring / tint background */
-  --accent-text: #257460;  /* accent as text / links / borders on a surface */
-  --brand-mint: #8fd3b0;   /* highlight against the deep-green shell */
+  --accent-050: #E3EBE8;   /* focus ring / tint background */
+  --accent-text: #426057;  /* accent as text / links / borders on a surface */
 
   /* Status */
   --good: #12783D;   --good-050: #e7f3ec;
@@ -42,11 +41,11 @@
   --danger: #B23A31;
   --on-danger: #FFFFFF;  /* label on a --danger fill */ --danger-050: #f8e9e7;
 
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px rgba(9, 30, 22, 0.06), 0 1px 3px rgba(9, 30, 22, 0.05);
-  --shadow-md: 0 6px 20px rgba(9, 30, 22, 0.10);
-  --shadow-lg: 0 18px 40px -18px rgba(9, 30, 22, 0.30), 0 6px 16px -8px rgba(9, 30, 22, 0.14);
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow-sm: 0 1px 2px rgba(4, 13, 18, 0.05), 0 1px 3px rgba(4, 13, 18, 0.04);
+  --shadow-md: 0 4px 14px -4px rgba(4, 13, 18, 0.10), 0 2px 6px -2px rgba(4, 13, 18, 0.06);
+  --shadow-lg: 0 18px 40px -20px rgba(4, 13, 18, 0.26), 0 6px 16px -8px rgba(4, 13, 18, 0.12);
   --ring: 0 0 0 3px var(--accent-050);
 
   /* Motion — shared easings + durations so timing feels consistent everywhere */
@@ -71,6 +70,23 @@
      button. Must stay >= the switch's right offset + width + a little
      clearance; the switch shrinks on narrow screens and this shrinks with it. */
   --toggle-gutter: 108px;
+  --chrome-bg: #183D3D;
+  --chrome-text: #FFFFFF;
+  --chrome-muted: #93B1A6;
+  --chrome-faint: #93B1A6;
+  --chrome-line: rgba(147, 177, 166, 0.20);
+  --chrome-accent: #93ADA3;
+  --chrome-hover: rgba(147, 177, 166, 0.14);
+  --panel-bg: #FFFFFF;
+  --panel-text: #040D12;
+  --panel-muted: #466464;
+  --panel-line: #DAE4E1;
+  --panel-accent: #426057;
+  --surface-2: #EEF3F1;
+  --on-accent: #FFFFFF;
+  --chrome-logo: brightness(0) invert(1);
+  --radius-lg: 14px;
+
 }
 
 /* Smooth whole-page cross-fade between light and dark.
@@ -93,38 +109,54 @@
 /* Dark palette — shared by the auto (OS) and manual (data-theme) paths */
 :root[data-theme="dark"],
 :root.is-dark {
-  --paper: #0F1513;
-  --surface: #25312E;
-  --line: #364541;
-  --line-strong: #4B5D59;
-  --text: #E4EDE9;
-  --muted: #A2B5AD;
-  --faint: #93A9A0;
-  --thead-bg: #1A2321;
-  --row-hover: #2F3D39;
-  --ink-800: #F0F6F3;   /* headings become light on dark surfaces */
-  --ink-700: #D3E0DA;
-  --ink-600: #B6C8C0;
+  --paper: #040D12;
+  --surface: #0B1D21;
+  --line: #212E30;
+  --line-strong: #354544;
+  --text: #E1E9E6;
+  --muted: #93B1A6;
+  --faint: #718A82;
+  --thead-bg: #0D2225;
+  --row-hover: #09191C;
+  --ink-800: #F4F7F6;   /* headings become light on dark surfaces */
+  --ink-700: #D6E1DD;
+  --ink-600: #93B1A6;
   /* Dark mode previously inherited --accent from light, so buttons stayed
      #1D6142 against a near-black surface and barely separated from it. These
      are the same hues lifted for a dark ground, so the two themes read as one
      palette at two luminances rather than two different designs. */
-  --accent: #29836D;
-  --accent-600: #226D5A;
-  --accent-050: rgba(96, 190, 166, 0.16);
-  --accent-text: #8DCEBE;
+  --accent: #5C8374;
+  --accent-600: #76978A;
+  --accent-050: rgba(92, 131, 116, 0.18);
+  --accent-text: #8DA89E;
   /* Status colours were inherited from light too, and were too dark to read
      against dark surfaces. */
   --good: #5FD69C;
   --warn: #E8BA66;
-  --danger: #F59C92;
+  --danger: #F08C82;
   --on-danger: #2A0F0C;  /* the dark-mode danger is light; a white label on it is 2.09 */
   --good-050: rgba(76, 187, 131, 0.18);
   --warn-050: rgba(217, 164, 65, 0.18);
   --danger-050: rgba(228, 121, 108, 0.18);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
-  --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
+  --chrome-bg: #183D3D;
+  --chrome-text: #FFFFFF;
+  --chrome-muted: #93B1A6;
+  --chrome-faint: #93B1A6;
+  --chrome-line: rgba(147, 177, 166, 0.18);
+  --chrome-accent: #93ADA3;
+  --chrome-hover: rgba(147, 177, 166, 0.12);
+  --panel-bg: #0B1D21;
+  --panel-text: #E1E9E6;
+  --panel-muted: #93B1A6;
+  --panel-line: #212E30;
+  --panel-accent: #8DA89E;
+  --surface-2: #10292B;
+  --on-accent: #040D12;
+  --chrome-logo: brightness(0) invert(1);
+
 }
 
 @media (prefers-color-scheme: dark) {
@@ -132,37 +164,53 @@
      way. Editing only one of the two leaves everyone whose OS is dark, but
      who never touched the switch, on the previous palette. */
   :root:not([data-theme="light"]) {
-    --paper: #0F1513;
-    --surface: #25312E;
-    --line: #364541;
-    --line-strong: #4B5D59;
-    --text: #E4EDE9;
-    --muted: #A2B5AD;
-    --faint: #93A9A0;
-    --thead-bg: #1A2321;
-    --row-hover: #2F3D39;
-    --ink-800: #F0F6F3;   /* headings become light on dark surfaces */
-    --ink-700: #D3E0DA;
-    --ink-600: #B6C8C0;
+    --paper: #040D12;
+    --surface: #0B1D21;
+    --line: #212E30;
+    --line-strong: #354544;
+    --text: #E1E9E6;
+    --muted: #93B1A6;
+    --faint: #718A82;
+    --thead-bg: #0D2225;
+    --row-hover: #09191C;
+    --ink-800: #F4F7F6;   /* headings become light on dark surfaces */
+    --ink-700: #D6E1DD;
+    --ink-600: #93B1A6;
     /* Dark mode previously inherited --accent from light, so buttons stayed
        #1D6142 against a near-black surface and barely separated from it. These
        are the same hues lifted for a dark ground, so the two themes read as one
        palette at two luminances rather than two different designs. */
-    --accent: #29836D;
-    --accent-600: #226D5A;
-    --accent-050: rgba(96, 190, 166, 0.16);
-    --accent-text: #8DCEBE;
+    --accent: #5C8374;
+    --accent-600: #76978A;
+    --accent-050: rgba(92, 131, 116, 0.18);
+    --accent-text: #8DA89E;
     /* Status colours were inherited from light too, and were too dark to read
        against dark surfaces. */
     --good: #5FD69C;
     --warn: #E8BA66;
-    --danger: #F59C92;
+    --danger: #F08C82;
+    --on-danger: #2A0F0C;  /* the dark-mode danger is light; a white label on it is 2.09 */
     --good-050: rgba(76, 187, 131, 0.18);
     --warn-050: rgba(217, 164, 65, 0.18);
     --danger-050: rgba(228, 121, 108, 0.18);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.50);
-    --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.66), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
+    --chrome-bg: #183D3D;
+    --chrome-text: #FFFFFF;
+    --chrome-muted: #93B1A6;
+    --chrome-faint: #93B1A6;
+    --chrome-line: rgba(147, 177, 166, 0.18);
+    --chrome-accent: #93ADA3;
+    --chrome-hover: rgba(147, 177, 166, 0.12);
+    --panel-bg: #0B1D21;
+    --panel-text: #E1E9E6;
+    --panel-muted: #93B1A6;
+    --panel-line: #212E30;
+    --panel-accent: #8DA89E;
+    --surface-2: #10292B;
+    --on-accent: #040D12;
+    --chrome-logo: brightness(0) invert(1);
   }
 }
 
@@ -245,7 +293,7 @@ button:disabled {
 .app-main form button[type="submit"],
 .auth button {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
@@ -342,8 +390,10 @@ button:disabled {
 }
 .sidebar__mark:hover { box-shadow: 0 0 0 3px var(--accent-050); }
 .sidebar__mark:active { transform: scale(0.94); }
-.sidebar__mark-logo { width: 24px; height: 24px; display: block; }
-.sidebar__mark-expand { display: none; color: var(--accent); }
+/* The sidebar sits on the same dark chrome as the public header, so its mark
+   gets the same treatment — the original green logo had no contrast there. */
+.sidebar__mark-logo { width: 24px; height: 24px; display: block; filter: var(--chrome-logo); }
+.sidebar__mark-expand { display: none; color: var(--chrome-text); }
 .sidebar-collapsed .sidebar__mark:hover .sidebar__mark-logo { display: none; }
 .sidebar-collapsed .sidebar__mark:hover .sidebar__mark-expand { display: inline-flex; }
 
@@ -471,7 +521,7 @@ button:disabled {
 .usermenu { position: relative; margin-left: 0.3rem; }
 .userchip { display: flex; align-items: center; gap: 0.55rem; background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 0.28rem 0.5rem 0.28rem 0.35rem; cursor: pointer; transition: background 0.14s ease, border-color 0.14s ease; }
 .userchip:hover, .userchip.open { background: var(--paper); border-color: var(--line); }
-.userchip__avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; }
+.userchip__avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--on-accent); font-size: 0.72rem; font-weight: 700; }
 .userchip__avatar.lg { width: 40px; height: 40px; border-radius: 11px; font-size: 0.85rem; }
 .userchip__meta { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
 .userchip__name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
@@ -1076,5 +1126,215 @@ button:disabled {
   *, *::before, *::after {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* Header and footer sit in contrast with the body: a dark bar over a light page
+   in the light theme, a light bar over a dark page in the green one. Instead of
+   re-colouring the dozens of rules inside the bars, the body tokens are
+   re-pointed here — custom properties inherit, so every descendant picks up the
+   chrome side of the palette on its own. */
+/* Direct children only, and matched on the element as well as the class:
+   UnitCard uses `.foot` for its own footer row, so a descendant selector turned
+   every card's footer into a green bar inside a white card. */
+.topbar,
+.sidebar,
+.portal > header.nav,
+.portal > footer.foot {
+  --surface: var(--chrome-bg);
+  --paper: var(--chrome-bg);
+  --text: var(--chrome-text);
+  --ink-800: var(--chrome-text);
+  --ink-700: var(--chrome-text);
+  --ink-600: var(--chrome-muted);
+  --muted: var(--chrome-muted);
+  --faint: var(--chrome-faint);
+  --line: var(--chrome-line);
+  --line-strong: var(--chrome-line);
+  --accent-text: var(--chrome-accent);
+  --accent-050: var(--chrome-hover);
+  --row-hover: var(--chrome-hover);
+  --thead-bg: var(--chrome-hover);
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+}
+
+/* Menus and panels anchored inside the bars are body surfaces, not chrome: they
+   paint their own card and float over the page. Without this they inherit the
+   bar's palette and render, say, a red "Sign out" on dark green at 1.34:1. */
+.topbar .menu,
+.topbar .actions-panel,
+.sidebar .menu {
+  --surface: var(--panel-bg);
+  --paper: var(--panel-bg);
+  --text: var(--panel-text);
+  --ink-800: var(--panel-text);
+  --ink-700: var(--panel-text);
+  --muted: var(--panel-muted);
+  --faint: var(--panel-muted);
+  --line: var(--panel-line);
+  --line-strong: var(--panel-line);
+  --accent-text: var(--panel-accent);
+  --accent-050: var(--panel-line);
+  --row-hover: var(--panel-line);
+  color: var(--panel-text);
+}
+
+/* The active nav item sits on the bar, so its pill and label come from the
+   chrome side — `--accent-text` there resolved to the bar's own colour. */
+.sidebar .navlink.active,
+.topbar .navlink.active {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+.sidebar .navlink.active .navlink__icon,
+.topbar .navlink.active .navlink__icon {
+  color: var(--chrome-text);
+}
+
+/* ==========================================================================
+   Premium layer — elevation, action hierarchy, field and table states.
+   Everything here reads from the token set, so both modes are covered by one
+   set of rules; only the values differ.
+   ========================================================================== */
+
+/* Elevation ladder. Depth comes from a layered surface plus a hairline and a
+   soft shadow rather than a gradient, which keeps the dark mode calm. */
+.panel,
+.card,
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.modal { background: var(--surface-2); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+
+/* Action hierarchy — five distinct treatments, so importance is legible
+   without reading the label. */
+.app-main button.outline,
+button.outline {
+  background: transparent;
+  color: var(--accent-text);
+  border: 1px solid var(--accent-text);
+  box-shadow: none;
+}
+.app-main button.outline:hover,
+button.outline:hover { background: var(--accent-050); }
+
+.app-main button.ghost,
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--muted);
+}
+.app-main button.ghost:hover,
+button.ghost:hover { background: var(--row-hover); color: var(--text); }
+
+/* A visible, consistent focus ring on every interactive element. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+/* Fields: spacious, quiet at rest, and explicit in every state. */
+.app-main input:not([type="checkbox"]):not([type="radio"]),
+.app-main select,
+.app-main textarea {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color var(--dur-1) ease, box-shadow var(--dur-2) var(--ease-out),
+    background-color var(--dur-1) ease;
+}
+.app-main input:hover:not(:disabled):not(:focus),
+.app-main select:hover:not(:disabled):not(:focus),
+.app-main textarea:hover:not(:disabled):not(:focus) { border-color: var(--accent-text); }
+.app-main input:focus,
+.app-main select:focus,
+.app-main textarea:focus {
+  outline: none;
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 3px var(--accent-050);
+}
+.app-main input:disabled,
+.app-main select:disabled,
+.app-main textarea:disabled {
+  background: var(--surface-2);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.app-main input[aria-invalid="true"],
+.app-main .is-invalid input,
+.app-main input.is-invalid {
+  border-color: var(--danger);
+}
+.app-main input[aria-invalid="true"]:focus,
+.app-main input.is-invalid:focus { box-shadow: 0 0 0 3px var(--danger-050); }
+.app-main input.is-valid { border-color: var(--good); }
+.app-main input.is-valid:focus { box-shadow: 0 0 0 3px var(--good-050); }
+
+/* Tables: scanned, not read. Dividers instead of boxes, a quiet header, and a
+   row hover that tracks the pointer without shouting. */
+.app-main table { border-collapse: collapse; width: 100%; }
+.app-main thead th {
+  background: var(--thead-bg);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+.app-main tbody td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.app-main tbody tr { transition: background-color var(--dur-1) ease; }
+.app-main tbody tr:hover { background: var(--row-hover); }
+.app-main tbody tr:last-child td { border-bottom: none; }
+/* Figures line up when they share a column. */
+.app-main td.num,
+.app-main th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Navigation: the active item is marked by an accent rail plus a quiet fill,
+   which survives both modes without relying on colour alone. */
+.sidebar .navlink,
+.topbar .navlink { position: relative; border-radius: var(--radius-sm); }
+.sidebar .navlink.active::before,
+.topbar .navlink.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 2px 2px 0;
+  background: var(--chrome-accent);
+}
+
+/* Motion: quick and unobtrusive, and absent entirely when asked. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

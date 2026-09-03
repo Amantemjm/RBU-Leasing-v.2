@@ -256,7 +256,7 @@ function downloadUploaded() { props.client.downloadFilledPdf(sheet.value.id, `${
 .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; margin: 0; }
 .seg button { background: var(--surface); border: 0; padding: 0.45rem 0.95rem; font: inherit; font-size: 0.88rem; cursor: pointer; color: var(--ink-700); }
 .seg button + button { border-left: 1px solid var(--line-strong); }
-.seg button.on { background: var(--accent); color: #fff; }
+.seg button.on { background: var(--accent); color: var(--on-accent); }
 .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
 .pane { min-width: 0; }
 .form-pane { max-height: calc(100vh - 260px); overflow: auto; padding-right: 0.25rem; }
@@ -264,7 +264,7 @@ function downloadUploaded() { props.client.downloadFilledPdf(sheet.value.id, `${
 .pdf-stage { position: relative; height: calc(100vh - 250px); min-height: 520px; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; background: var(--paper); }
 .pdf-stage.tall { height: calc(100vh - 200px); }
 .file-input { font: inherit; font-size: 0.9rem; color: var(--muted); }
-.file-input::file-selector-button { background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.5rem 0.95rem; margin-right: 0.65rem; font: inherit; font-weight: 550; cursor: pointer; }
+.file-input::file-selector-button { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.5rem 0.95rem; margin-right: 0.65rem; font: inherit; font-weight: 550; cursor: pointer; }
 .file-input::file-selector-button:hover { background: var(--accent-600); }
 .file-input.sm::file-selector-button { background: var(--surface); color: var(--ink-700); border: 1px solid var(--line-strong); box-shadow: none; padding: 0.4rem 0.75rem; font-weight: 400; font-size: 0.82rem; }
 .edit-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
@@ -272,7 +272,7 @@ function downloadUploaded() { props.client.downloadFilledPdf(sheet.value.id, `${
 .actions.inline { margin: 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .saved { color: var(--good); font-size: 0.85rem; }
 .notice { background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; margin-bottom: 0.75rem; font-size: 0.88rem; color: var(--ink-700); }
-.primary { background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1.1rem; font: inherit; font-weight: 550; cursor: pointer; }
+.primary { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1.1rem; font: inherit; font-weight: 550; cursor: pointer; }
 .primary:hover { background: var(--accent-600); }
 .primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .ghost { background: var(--surface); color: var(--ink-700); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.45rem 0.85rem; font: inherit; font-size: 0.85rem; cursor: pointer; }

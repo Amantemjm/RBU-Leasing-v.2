@@ -73,6 +73,23 @@ const isDark = computed(() => theme.value === "dark");
   border-radius: 999px;
   /* A clean, smooth glide shared by the knob, track and icons. */
   --tsw-dur: 0.5s;
+  /* Palette. The switch lives on the dark teal bar in both modes, so its own
+     colours come from the chrome rather than from the page theme: the soft
+     accent marks day, the deep ground marks night. */
+  /* The soft accent straight from the palette (#93B1A6) leaves the white knob
+     at 2.31:1 against it — under the 3:1 WCAG 1.4.11 asks of a control's
+     moving part, which is why the day side looked washed while the night
+     side (19.6:1) read fine. Carried 20% toward the chrome teal: the knob
+     clears at 3.06 and the track still separates from the bar at 3.87. */
+  --tsw-off: #7A9A91;
+  --tsw-on: #040D12;
+  --tsw-knob: #ffffff;
+  --tsw-icon: var(--chrome-bg);
+  /* The night track is the deep ground, which is darker than the bar it sits
+     on — only 1.66:1 — so the ring is what makes the control's boundary
+     visible. At 0.7 alpha it clears 3:1 against both the bar and the track,
+     which is what WCAG 1.4.11 asks of a UI component boundary. */
+  --tsw-edge: rgba(147, 177, 166, 0.7);
   --tsw-spring: cubic-bezier(0.65, 0, 0.35, 1);
   --tsw-glide: cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -92,16 +109,17 @@ const isDark = computed(() => theme.value === "dark");
   width: 80px;
   height: 42px;
   border-radius: 999px;
-  background: #e8f3ed; /* soft brand mint */
-  border: 1px solid #c8ddd2;
-  box-shadow: inset 0 1px 2px rgba(12, 44, 33, 0.08);
+  background: var(--tsw-off);
+  border: 1px solid var(--tsw-edge);
+  box-shadow: inset 0 1px 2px rgba(4, 13, 18, 0.18);
   transition: background var(--tsw-dur) var(--tsw-glide), border-color var(--dur-2) var(--ease-out);
 }
 .themeswitch.is-dark .themeswitch__track {
-  /* Deep brand-green shell gradient (Green Pea → deep ink green). */
-  background: linear-gradient(160deg, #1d6142 0%, #0c2c21 100%);
-  border-color: #0c2c21;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* The night side is the palette's deepest ground, flat rather than a
+     gradient, to match the restraint of the rest of the system. */
+  background: var(--tsw-on);
+  border-color: var(--tsw-edge);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 /* White knob carrying the current celestial icon (brand-green stroke). */
@@ -114,10 +132,10 @@ const isDark = computed(() => theme.value === "dark");
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #fff;
-  border: 1px solid #cfe3d9;
-  box-shadow: 0 1px 5px rgba(12, 44, 33, 0.28);
-  color: var(--accent); /* icon stroke = brand green (constant across modes) */
+  background: var(--tsw-knob);
+  border: 1px solid var(--tsw-edge);
+  box-shadow: 0 1px 5px rgba(4, 13, 18, 0.32);
+  color: var(--tsw-icon); /* icon stroke reads strongly on the white knob */
   transform: translateX(38px); /* day → right */
   will-change: transform;
   transition: transform var(--tsw-dur) var(--tsw-spring),
@@ -125,8 +143,8 @@ const isDark = computed(() => theme.value === "dark");
 }
 .themeswitch.is-dark .themeswitch__knob {
   transform: translateX(0); /* night → left */
-  border-color: #eaf5ee;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  border-color: var(--tsw-edge);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
 }
 /* A small press feedback that respects the current side. */
 .themeswitch:active .themeswitch__knob { transform: translateX(38px) scale(0.93); }
@@ -142,8 +160,8 @@ const isDark = computed(() => theme.value === "dark");
 .themeswitch.is-dark .themeswitch__ico--sun { opacity: 0; transform: rotate(-35deg) scale(0.55); }
 .themeswitch.is-dark .themeswitch__ico--moon { opacity: 1; transform: rotate(0deg) scale(1); }
 
-.themeswitch:hover .themeswitch__track { border-color: var(--accent-text); }
-.themeswitch.is-dark:hover .themeswitch__track { border-color: var(--brand-mint); }
+.themeswitch:hover .themeswitch__track,
+.themeswitch.is-dark:hover .themeswitch__track { border-color: var(--chrome-accent); }
 .themeswitch:focus-visible { outline: none; box-shadow: var(--ring); }
 
 /* Narrow screens: same corner, smaller footprint, so crowded headers still fit

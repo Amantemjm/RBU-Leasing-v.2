@@ -187,7 +187,7 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
 
 .primary {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm);
+  background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm);
   border-radius: var(--radius-sm); padding: 0.75rem 1.3rem; font: inherit; font-weight: 600; cursor: pointer;
   transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }

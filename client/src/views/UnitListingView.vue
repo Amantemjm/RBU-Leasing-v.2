@@ -344,7 +344,7 @@ async function togglePublish() {
 .visible-fields { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; margin: 0.5rem 0 1rem; }
 .checkbox { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
 .form-actions { display: flex; justify-content: flex-end; }
-.primary { background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.55rem 1rem; font: inherit; font-weight: 550; cursor: pointer; }
+.primary { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.55rem 1rem; font: inherit; font-weight: 550; cursor: pointer; }
 .primary:hover:not(:disabled) { background: var(--accent-600); }
 .primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .ghost { background: var(--surface); color: var(--ink-700); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; font: inherit; cursor: pointer; }

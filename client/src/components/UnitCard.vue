@@ -89,8 +89,9 @@ const amenities = computed(() => (Array.isArray(d.value.amenities) ? d.value.ame
 
 <style scoped>
 .card {
-  --brand: #0b463c;
-  --brand-600: #00392f;
+  /* No local --brand pin: it outranked the shell's and stranded the card on the
+     old green, which measured 1.10:1 against the green theme's own surface.
+     The card inherits the theme's tokens like everything else. */
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -106,7 +107,7 @@ const amenities = computed(() => (Array.isArray(d.value.amenities) ? d.value.ame
 .card:hover .photo img { transform: scale(1.05); }
 .placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; color: var(--muted); font-size: 0.8rem; }
 .type-chip { position: absolute; top: 0.6rem; left: 0.6rem; background: rgba(11, 70, 60, 0.9); color: #fff; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.24rem 0.55rem; border-radius: 999px; }
-.arrow { position: absolute; top: 42%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.92); color: var(--brand); border: none; border-radius: 999px; width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: var(--shadow-md); opacity: 0; transition: opacity 0.18s ease, background 0.16s ease; }
+.arrow { position: absolute; top: 42%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.92); color: var(--brand-deep); border: none; border-radius: 999px; width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: var(--shadow-md); opacity: 0; transition: opacity 0.18s ease, background 0.16s ease; }
 .card:hover .arrow, .card:focus-within .arrow { opacity: 1; }
 .arrow:hover { background: #fff; }
 .arrow--prev { left: 0.5rem; }
@@ -120,13 +121,13 @@ const amenities = computed(() => (Array.isArray(d.value.amenities) ? d.value.ame
 .sub { margin: 0; color: var(--muted); font-size: 0.83rem; }
 .specs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.55rem 0 0; padding: 0; }
 .spec { font-size: 0.76rem; font-weight: 600; color: var(--ink-700); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 0.18rem 0.55rem; }
-.spec--amenity { color: var(--brand); background: #e7efec; border-color: transparent; font-weight: 550; }
+.spec--amenity { color: var(--accent-text); background: var(--accent-050); border-color: transparent; font-weight: 550; }
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: auto; padding-top: 0.9rem; }
 .price { margin: 0; font-family: var(--display, Georgia, serif); font-size: 1.25rem; font-weight: 600; color: var(--brand); line-height: 1.1; }
 .price .per { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
 .price--tba { font-size: 1rem; color: var(--muted); }
-.details { background: var(--brand); color: #fff; text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); white-space: nowrap; transition: background 0.16s ease; }
-.details:hover { background: var(--brand-600); }
+.details { background: var(--accent); color: var(--on-accent, #fff); text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); white-space: nowrap; transition: background 0.16s ease; }
+.details:hover { background: var(--accent-600); }
 
 @media (hover: none) { .arrow { opacity: 1; background: rgba(255, 255, 255, 0.85); } }
 @media (prefers-reduced-motion: reduce) {

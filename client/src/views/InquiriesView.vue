@@ -147,7 +147,7 @@ async function remove(row) {
 }
 .assign-select:focus { outline: none; border-color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-050); }
 .accept {
-  background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm);
+  background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm);
   border-radius: var(--radius-sm); padding: 0.35rem 0.85rem; font: inherit; font-size: 0.82rem; font-weight: 550; cursor: pointer;
 }
 .accept:hover { background: var(--accent-600); }

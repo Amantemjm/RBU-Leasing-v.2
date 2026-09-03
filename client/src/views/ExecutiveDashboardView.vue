@@ -466,7 +466,7 @@ function cellValue(r, c) {
 .dash__sub { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
 .asof { color: var(--faint); }
 .btn { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; font-weight: 600; padding: .6rem 1rem; border-radius: 10px; cursor: pointer; transition: transform .12s, background .15s, box-shadow .15s; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(9,30,22,.12); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 1px 2px rgba(9,30,22,.12); }
 .btn--primary:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .btn:disabled { opacity: .65; cursor: default; }
 .btn.loading svg { animation: spin 1s linear infinite; }
@@ -587,9 +587,9 @@ function cellValue(r, c) {
 .quick { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .3rem; }
 .quick__pill { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: .35rem .75rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; transition: .14s; }
 .quick__pill:hover { border-color: var(--line-strong); color: var(--text); }
-.quick__pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.quick__pill.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .quick__n { font-size: .72rem; font-weight: 700; background: var(--paper); color: var(--muted); border-radius: 999px; padding: 0 .35rem; }
-.quick__pill.on .quick__n { background: rgba(255,255,255,.25); color: #fff; }
+.quick__pill.on .quick__n { background: var(--on-accent); color: var(--accent); }
 .quick__clear { display: inline-flex; align-items: center; gap: .3rem; border: 1px dashed var(--line-strong); background: none; color: var(--muted); border-radius: 999px; padding: .35rem .7rem; font: inherit; font-size: .78rem; cursor: pointer; }
 
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; margin-top: .5rem; }

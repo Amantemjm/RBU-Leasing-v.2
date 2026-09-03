@@ -114,21 +114,23 @@ const startedAt = computed(() => fmt(props.stageData?.INQUIRY?.completedAt || pr
 /* ---- hero ---- */
 .hero {
   position: relative; overflow: hidden; border-radius: var(--radius); padding: 1.3rem 1.4rem;
-  color: #eaf3ee; background: radial-gradient(120% 140% at 100% 0%, #206b4a 0%, var(--ink-900) 60%, #0a3020 100%);
+  /* Same dark ground as the navigation, so the tracker reads as part of the
+     system rather than a leftover from an earlier palette. */
+  color: var(--chrome-text); background: radial-gradient(120% 140% at 100% 0%, #21524F 0%, #183D3D 55%, #040D12 100%);
   box-shadow: var(--shadow-md); margin-bottom: 1.25rem;
 }
 .hero.delivered { background: radial-gradient(120% 140% at 100% 0%, #1f8a5b 0%, #0c4a32 65%, #072a1d 100%); }
 .hero.stopped { background: radial-gradient(120% 140% at 100% 0%, #7a3a34 0%, #3a1a17 70%); }
 .hero__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .hero__left { display: flex; flex-direction: column; gap: 0.15rem; }
-.hero__eyebrow { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--brand-mint); font-weight: 700; }
+.hero__eyebrow { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--chrome-muted); font-weight: 700; }
 .hero__ref { font-family: ui-monospace, "Consolas", monospace; font-size: 1.15rem; font-weight: 600; color: #fff; letter-spacing: 0.01em; }
 .hero__state {
   display: inline-flex; align-items: center; gap: 0.45rem; flex-shrink: 0;
   background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 999px;
   padding: 0.32rem 0.8rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap;
 }
-.hero__pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-mint); box-shadow: 0 0 0 0 rgba(143,211,176,0.7); animation: pulse 1.8s infinite; }
+.hero__pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--chrome-muted); box-shadow: 0 0 0 0 rgba(147, 177, 166, 0.7); animation: pulse 1.8s infinite; }
 .hero__state.delivered .hero__pulse { background: #7dffc0; animation: none; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(143,211,176,0.6); } 70% { box-shadow: 0 0 0 8px rgba(143,211,176,0); } 100% { box-shadow: 0 0 0 0 rgba(143,211,176,0); } }
 .hero__state-line { margin-top: 0.9rem; font-size: 1.05rem; color: rgba(234,243,238,0.92); }
@@ -136,7 +138,7 @@ const startedAt = computed(() => fmt(props.stageData?.INQUIRY?.completedAt || pr
 
 .bar { display: flex; gap: 4px; margin: 1rem 0 0.6rem; }
 .bar__seg { flex: 1; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.16); transition: background 0.5s var(--ease-out, ease); }
-.bar__seg.on { background: var(--brand-mint); }
+.bar__seg.on { background: var(--chrome-muted); }
 .hero__meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(234,243,238,0.66); }
 
 /* ---- horizontal milestone strip ---- */
@@ -151,7 +153,7 @@ const startedAt = computed(() => fmt(props.stageData?.INQUIRY?.completedAt || pr
   background: var(--surface); border: 2px solid var(--line-strong); color: var(--muted);
   transition: transform 0.2s var(--ease-spring, ease), border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.ms.done .ms__node { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ms.done .ms__node { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .ms.current .ms__node { border-color: var(--accent); background: var(--accent-050); transform: scale(1.14); box-shadow: 0 0 0 5px var(--accent-050); }
 .ms.current .ms__node::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--accent); animation: ring 1.8s ease-out infinite; }
 @keyframes ring { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(1.5); opacity: 0; } }

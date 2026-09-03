@@ -97,15 +97,15 @@ defineProps({
      and must stay the deep green in both themes, or that lift turns the footer
      into a bright mint block with pale text on it. Never override it in a dark
      block. */
-  --brand-deep: #0D3A2F;
-  --brand: #0D3A2F;
+  --brand-deep: #183D3D;
+  --brand: #426057;
   /* The bar is a white slab in both themes, so everything on it is coloured for
      a light ground and must not follow the theme. `--surface`, `--line` and
      `--muted` all flip in dark mode, which would have turned the bar dark and
      the wordmark mint-on-white. */
-  --nav-bg: #FFFFFF;
-  --nav-line: #D6F0E9;
-  --nav-muted: #3F6055;
+  --nav-bg: #183D3D;
+  --nav-line: rgba(147, 177, 166, 0.20);
+  --nav-muted: #93B1A6;
 
   /* The public pages are a fixed white-and-green brand surface: white header,
      white body, green footer, in both themes. The theme switch still sets the
@@ -115,22 +115,22 @@ defineProps({
      descendant reads the light value even while dark is on. Any token added to
      the app's dark palette must be pinned here too, or it leaks in — there is a
      test that fails if one is missed. */
-  --paper: #EAF6F3;
+  --paper: #F4F7F6;
   --surface: #FFFFFF;
-  --line: #D6F0E9;
-  --line-strong: #B7E1D7;
-  --text: #082A21;
-  --muted: #3F6055;
-  --faint: #4F7264;
-  --thead-bg: #F4FBF9;
-  --row-hover: #F4FBF9;
-  --ink-800: #13493B;
-  --ink-700: #1A5B4B;
-  --ink-600: #257460;
-  --accent: #257460;
-  --accent-600: #1A5B4B;
-  --accent-050: #D6F0E9;
-  --accent-text: #257460;
+  --line: #DAE4E1;
+  --line-strong: #C4D4CE;
+  --text: #040D12;
+  --muted: #466464;
+  --faint: #597373;
+  --thead-bg: #F2F6F4;
+  --row-hover: #F5F8F7;
+  --ink-800: #183D3D;
+  --ink-700: #2F5050;
+  --ink-600: #4B6868;
+  --accent: #53776A;
+  --accent-600: #426057;
+  --accent-050: #E3EBE8;
+  --accent-text: #426057;
   --good: #12783D;
   --warn: #845412;
   --danger: #B23A31;
@@ -141,19 +141,35 @@ defineProps({
   --shadow-sm: 0 1px 2px rgba(9, 30, 22, 0.06), 0 1px 3px rgba(9, 30, 22, 0.05);
   --shadow-md: 0 6px 20px rgba(9, 30, 22, 0.10);
   --shadow-lg: 0 18px 40px -18px rgba(9, 30, 22, 0.30), 0 6px 16px -8px rgba(9, 30, 22, 0.14);
-  --brand-600: #1A5B4B;
-  --brand-tint: #D6F0E9;
+  --brand-600: #426057;
+  --brand-tint: #E3EBE8;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--paper);
   color: var(--text);
   font-family: var(--ui);
+  --chrome-bg: #183D3D;
+  --chrome-text: #FFFFFF;
+  --chrome-muted: #93B1A6;
+  --chrome-faint: #93B1A6;
+  --chrome-line: rgba(147, 177, 166, 0.20);
+  --chrome-accent: #93ADA3;
+  --chrome-hover: rgba(147, 177, 166, 0.14);
+  --chrome-logo: brightness(0) invert(1);
+  --panel-bg: #FFFFFF;
+  --panel-text: #040D12;
+  --panel-muted: #466464;
+  --panel-line: #DAE4E1;
+  --panel-accent: #426057;
+  --surface-2: #EEF3F1;
+  --on-accent: #FFFFFF;
+
 }
 
 .skip {
   position: absolute; left: 0.75rem; top: -3rem; z-index: 60;
-  background: var(--brand-deep); color: #fff; text-decoration: none; font-weight: 650;
+  background: var(--accent); color: var(--on-accent, #fff); text-decoration: none; font-weight: 650;
   font-size: 0.85rem; padding: 0.55rem 0.9rem; border-radius: var(--radius-sm);
   transition: top 0.18s ease;
 }
@@ -163,8 +179,8 @@ defineProps({
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--nav-bg);
-  border-bottom: 1px solid var(--nav-line);
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-line);
 }
 .nav__inner {
   width: 100%;
@@ -176,13 +192,16 @@ defineProps({
 }
 .brand { display: inline-flex; align-items: baseline; gap: 0.5rem; text-decoration: none; }
 .brand__text { display: inline-flex; align-items: baseline; gap: 0.45rem; }
-.brand__logo { width: 27px; height: 27px; align-self: center; }
-.brand__name { font-family: var(--display, Georgia, serif); font-size: 1.18rem; font-weight: 600; color: var(--brand-deep); }
-.brand__sub { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--nav-muted); font-weight: 700; white-space: nowrap; }
+/* Same treatment as the footer mark: the bar is dark in both modes, so the
+   logo is tinted to the chrome's own text colour rather than left as the
+   original green, which had no contrast against the teal. */
+.brand__logo { width: 27px; height: 27px; align-self: center; filter: var(--chrome-logo); }
+.brand__name { font-family: var(--display, Georgia, serif); font-size: 1.18rem; font-weight: 600; color: var(--chrome-text); }
+.brand__sub { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--chrome-muted); font-weight: 700; white-space: nowrap; }
 .nav__actions { display: flex; align-items: center; gap: 0.6rem; }
 .nav__actions :deep(.themeswitch) { margin-left: 0.15rem; flex-shrink: 0; }
-.nav__actions :deep(.nav__signin), .nav__signin { color: var(--brand-deep); text-decoration: none; font-weight: 600; font-size: 0.86rem; padding: 0.5rem 0.7rem; border-radius: var(--radius-sm); white-space: nowrap; }
-.nav__actions :deep(.nav__signin):hover, .nav__signin:hover { background: #e7efec; }
+.nav__actions :deep(.nav__signin), .nav__signin { color: var(--chrome-accent); text-decoration: none; font-weight: 600; font-size: 0.86rem; padding: 0.5rem 0.7rem; border-radius: var(--radius-sm); white-space: nowrap; }
+.nav__actions :deep(.nav__signin):hover, .nav__signin:hover { background: var(--chrome-hover); }
 
 /* The body takes the space between header and footer so short pages still push
    the footer to the bottom of the window. */
@@ -194,22 +213,22 @@ defineProps({
   padding: clamp(2rem, 5vw, 3.25rem) clamp(1rem, 4vw, 2rem) clamp(2.5rem, 6vw, 4rem);
 }
 
-.foot { background: var(--brand-deep); color: #d7e7e0; padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem) 1.5rem; }
+.foot { background: var(--chrome-bg); color: var(--chrome-muted); padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem) 1.5rem; }
 .foot__grid { max-width: 78rem; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1.2fr; gap: 2rem; }
-.foot__logo { width: 34px; height: 34px; filter: brightness(0) invert(1); opacity: 0.92; }
-.foot__name { margin: 0.6rem 0 0.5rem; font-family: var(--display, Georgia, serif); font-size: 1.15rem; color: #fff; }
+.foot__logo { width: 34px; height: 34px; filter: var(--chrome-logo); opacity: 0.92; }
+.foot__name { margin: 0.6rem 0 0.5rem; font-family: var(--display, Georgia, serif); font-size: 1.15rem; color: var(--chrome-text); }
 .foot__addr { margin: 0 0 0.4rem; font-size: 0.85rem; line-height: 1.5; }
-.foot__phone { margin: 0; font-size: 0.85rem; color: #a9cfc2; }
-.foot__col h4 { margin: 0 0 0.75rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: #8fbcae; font-weight: 700; }
-.foot__col a { display: block; color: #d7e7e0; text-decoration: none; font-size: 0.88rem; padding: 0.25rem 0; }
-.foot__col a:hover { color: #fff; }
+.foot__phone { margin: 0; font-size: 0.85rem; color: var(--chrome-faint); }
+.foot__col h4 { margin: 0 0 0.75rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--chrome-faint); font-weight: 700; }
+.foot__col a { display: block; color: var(--chrome-muted); text-decoration: none; font-size: 0.88rem; padding: 0.25rem 0; }
+.foot__col a:hover { color: var(--chrome-text); }
 .foot__social-note { margin: 0 0 0.9rem; font-size: 0.85rem; line-height: 1.5; }
 /* `.foot__col a` outranks a bare `.foot__cta`, so the button was taking the pale
    footer-link colour on its own white fill — 1.28:1, effectively invisible.
    Qualify the selector so the button wins on its own ground. */
-.foot__col a.foot__cta { display: inline-block; background: #fff; color: var(--brand-deep); text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); }
-.foot__col a.foot__cta:hover { background: #eaf3ee; color: var(--brand-deep); }
-.foot__copy { max-width: 78rem; margin: 2rem auto 0; padding-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.14); font-size: 0.78rem; color: #a9cfc2; }
+.foot__col a.foot__cta { display: inline-block; background: var(--chrome-text); color: var(--chrome-bg); text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); }
+.foot__col a.foot__cta:hover { background: var(--chrome-muted); color: var(--chrome-bg); }
+.foot__copy { max-width: 78rem; margin: 2rem auto 0; padding-top: 1.25rem; border-top: 1px solid var(--chrome-line); font-size: 0.78rem; color: var(--chrome-faint); }
 
 @media (max-width: 720px) {
   .foot__grid { grid-template-columns: 1fr; gap: 1.5rem; }
@@ -226,75 +245,112 @@ defineProps({
 }
 
 
-/* Toggling the switch turns the public pages green. Every value is a step on
-   the one hue-165 ramp, so these greens are the light theme's greens at a
-   different lightness rather than a second, hand-picked palette.
-   `--nav-bg`, `--nav-line`, `--nav-muted` and `--brand-deep` are deliberately
-   absent: those are the frame, and it does not move. Emitted twice from one
-   source, for the explicit choice and the OS preference; keep them identical. */
+/* The public pages carry the same two designed modes as the app: a deep
+   #040D12 ground in dark, a soft off-white in light, with #183D3D navigation in
+   both. Not an inversion — each mode has its own surface ladder and its own
+   accent fill, because #5C8374 carries dark text well and white text poorly.
+   Emitted twice from one source; keep the two identical. */
 :root[data-theme="dark"] .portal,
 :root.is-dark .portal {
-  --paper: #07271F;
-  --surface: #13493B;
-  --line: #1A5B4B;
-  --line-strong: #257460;
-  --thead-bg: #0D3A2F;
-  --row-hover: #1A5B4B;
-  --text: #E9F6F0;
-  --muted: #A6C8BA;
-  --faint: #9BC0B1;
-  --ink-800: #FFFFFF;
-  --ink-700: #D9EFE7;
-  --ink-600: #B7E1D7;
-  --brand: #8DCEBE;
-  --brand-600: #B7E1D7;
-  --brand-tint: rgba(141, 206, 190, 0.14);
-  --accent: #60BEA6;
-  --accent-600: #8DCEBE;
-  --accent-050: rgba(141, 206, 190, 0.18);
-  --accent-text: #8DCEBE;
+  --paper: #040D12;
+  --surface: #0B1D21;
+  --surface-2: #10292B;
+  --line: #212E30;
+  --line-strong: #354544;
+  --text: #E1E9E6;
+  --muted: #93B1A6;
+  --faint: #718A82;
+  --thead-bg: #0D2225;
+  --row-hover: #09191C;
+  --ink-800: #F4F7F6;
+  --ink-700: #D6E1DD;
+  --ink-600: #93B1A6;
+  --accent: #5C8374;
+  --accent-600: #76978A;
+  --accent-050: rgba(92, 131, 116, 0.18);
+  --accent-text: #8DA89E;
+  --on-accent: #040D12;
   --good: #5FD69C;
   --warn: #E8BA66;
-  --danger: #F59C92;
+  --danger: #F08C82;
   --on-danger: #2A0F0C;
-  --good-050: rgba(95, 214, 156, 0.18);
-  --warn-050: rgba(232, 186, 102, 0.18);
-  --danger-050: rgba(245, 156, 146, 0.18);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
-  --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
+  --chrome-bg: #183D3D;
+  --chrome-text: #FFFFFF;
+  --chrome-muted: #93B1A6;
+  --chrome-faint: #93B1A6;
+  --chrome-line: rgba(147, 177, 166, 0.18);
+  --chrome-accent: #93ADA3;
+  --chrome-hover: rgba(147, 177, 166, 0.12);
+  --chrome-logo: brightness(0) invert(1);
+  --panel-bg: #0B1D21;
+  --panel-text: #E1E9E6;
+  --panel-muted: #93B1A6;
+  --panel-line: #212E30;
+  --panel-accent: #8DA89E;
+  --brand-deep: #183D3D;
+  --brand: #8DA89E;
+  --brand-600: #76978A;
+  --brand-tint: rgba(92, 131, 116, 0.18);
+  --nav-bg: #183D3D;
+  --nav-line: rgba(147, 177, 166, 0.18);
+  --nav-muted: #93B1A6;
+  --good-050: rgba(95, 214, 156, 0.16);
+  --warn-050: rgba(232, 186, 102, 0.16);
+  --danger-050: rgba(240, 140, 130, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .portal {
-    --paper: #07271F;
-    --surface: #13493B;
-    --line: #1A5B4B;
-    --line-strong: #257460;
-    --thead-bg: #0D3A2F;
-    --row-hover: #1A5B4B;
-    --text: #E9F6F0;
-    --muted: #A6C8BA;
-    --faint: #9BC0B1;
-    --ink-800: #FFFFFF;
-    --ink-700: #D9EFE7;
-    --ink-600: #B7E1D7;
-    --brand: #8DCEBE;
-    --brand-600: #B7E1D7;
-    --brand-tint: rgba(141, 206, 190, 0.14);
-    --accent: #60BEA6;
-    --accent-600: #8DCEBE;
-    --accent-050: rgba(141, 206, 190, 0.18);
-    --accent-text: #8DCEBE;
+    --paper: #040D12;
+    --surface: #0B1D21;
+    --surface-2: #10292B;
+    --line: #212E30;
+    --line-strong: #354544;
+    --text: #E1E9E6;
+    --muted: #93B1A6;
+    --faint: #718A82;
+    --thead-bg: #0D2225;
+    --row-hover: #09191C;
+    --ink-800: #F4F7F6;
+    --ink-700: #D6E1DD;
+    --ink-600: #93B1A6;
+    --accent: #5C8374;
+    --accent-600: #76978A;
+    --accent-050: rgba(92, 131, 116, 0.18);
+    --accent-text: #8DA89E;
+    --on-accent: #040D12;
     --good: #5FD69C;
     --warn: #E8BA66;
-    --danger: #F59C92;
+    --danger: #F08C82;
     --on-danger: #2A0F0C;
-    --good-050: rgba(95, 214, 156, 0.18);
-    --warn-050: rgba(232, 186, 102, 0.18);
-    --danger-050: rgba(245, 156, 146, 0.18);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.24);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
-    --shadow-lg: 0 22px 48px -18px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
+    --chrome-bg: #183D3D;
+    --chrome-text: #FFFFFF;
+    --chrome-muted: #93B1A6;
+    --chrome-faint: #93B1A6;
+    --chrome-line: rgba(147, 177, 166, 0.18);
+    --chrome-accent: #93ADA3;
+    --chrome-hover: rgba(147, 177, 166, 0.12);
+    --chrome-logo: brightness(0) invert(1);
+    --panel-bg: #0B1D21;
+    --panel-text: #E1E9E6;
+    --panel-muted: #93B1A6;
+    --panel-line: #212E30;
+    --panel-accent: #8DA89E;
+    --brand-deep: #183D3D;
+    --brand: #8DA89E;
+    --brand-600: #76978A;
+    --brand-tint: rgba(92, 131, 116, 0.18);
+    --nav-bg: #183D3D;
+    --nav-line: rgba(147, 177, 166, 0.18);
+    --nav-muted: #93B1A6;
+    --good-050: rgba(95, 214, 156, 0.16);
+    --warn-050: rgba(232, 186, 102, 0.16);
+    --danger-050: rgba(240, 140, 130, 0.16);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
   }
 }
 </style>

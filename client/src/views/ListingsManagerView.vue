@@ -163,7 +163,7 @@ async function togglePublish(row) {
 .badges { position: absolute; top: 0.55rem; left: 0.55rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .photos { position: absolute; bottom: 0.55rem; right: 0.55rem; font-size: 0.68rem; font-weight: 600; color: #fff; background: rgba(11, 44, 33, 0.72); padding: 0.15rem 0.5rem; border-radius: 999px; }
 .pill { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.18rem 0.5rem; border-radius: 999px; }
-.pill--pub { color: #fff; background: var(--accent); }
+.pill--pub { color: var(--on-accent); background: var(--accent); }
 .pill--draft { color: var(--ink-700); background: rgba(255, 255, 255, 0.92); }
 .pill--appr { text-transform: capitalize; color: var(--ink-700); background: rgba(255, 255, 255, 0.92); }
 .pill--appr.approved { color: var(--good); }

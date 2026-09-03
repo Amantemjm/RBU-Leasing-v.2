@@ -123,85 +123,6 @@ describe("public pages share the front page's shell", () => {
     });
   }
 });
-
-// `--brand` is lifted to a mint in dark mode so brand-coloured *text* stays
-// legible on dark surfaces. The footer uses the brand as a *fill*, so that lift
-// turned it into a bright mint slab with pale text on it. The two roles need
-// separate tokens: the footer green is constant across themes.
-describe("the footer green is theme-independent", () => {
-  const fs = require("node:fs");
-  const path = require("node:path");
-  const SHELL = fs.readFileSync(path.resolve(__dirname, "../src/components/PublicShell.vue"), "utf8");
-  const CSS = SHELL.slice(SHELL.indexOf("<style"), SHELL.lastIndexOf("</style>"));
-
-  function declaration(selector, prop) {
-    const at = CSS.indexOf(selector + " {");
-    if (at === -1) return null;
-    const body = CSS.slice(at, CSS.indexOf("}", at));
-    const m = body.match(new RegExp(prop + "\s*:\s*([^;]+);"));
-    return m ? m[1].trim() : null;
-  }
-
-  it("fills the footer from a constant token, not the theme-lifted brand", () => {
-    const bg = declaration(".foot", "background");
-    expect(bg).toBeTruthy();
-    expect(bg).not.toMatch(/var\(--brand\)/);
-    expect(bg).toMatch(/var\(--brand-deep\)/);
-  });
-
-  it("does not override that token in either dark block", () => {
-    const darkBlocks = darkRuleBodies(CSS);
-    expect(darkBlocks.length).toBe(2);
-    for (const block of darkBlocks) {
-      expect(block).not.toMatch(/--brand-deep/);
-    }
-  });
-
-  it("keeps the on-footer button readable by using the same constant", () => {
-    const color = declaration(".foot__col a.foot__cta", "color");
-    expect(color).toMatch(/var\(--brand-deep\)/);
-  });
-});
-
-// Same split as the footer, at the other end of the page: the header is a white
-// slab in both themes, so everything sitting on it must be coloured for a light
-// ground regardless of theme. `var(--surface)` and `var(--brand)` both flip in
-// dark mode, so neither can be used here.
-describe("the header stays white", () => {
-  const fs = require("node:fs");
-  const path = require("node:path");
-  const SHELL = fs.readFileSync(path.resolve(__dirname, "../src/components/PublicShell.vue"), "utf8");
-  const CSS = SHELL.slice(SHELL.indexOf("<style"), SHELL.lastIndexOf("</style>"));
-
-  function ruleBody(selector) {
-    const at = CSS.indexOf(selector + " {");
-    return at === -1 ? null : CSS.slice(at, CSS.indexOf("}", at));
-  }
-
-  it("fills the bar from a constant token", () => {
-    const body = ruleBody(".nav");
-    expect(body).toBeTruthy();
-    expect(body).toMatch(/background:\s*var\(--nav-bg\)/);
-    expect(body).not.toMatch(/background:\s*var\(--surface\)/);
-  });
-
-  it("never overrides the header tokens in a dark block", () => {
-    const darkBlocks = darkRuleBodies(CSS);
-    expect(darkBlocks.length).toBe(2);
-    for (const block of darkBlocks) {
-      const decls = block;
-      expect(decls).not.toMatch(/--nav-bg|--nav-line|--nav-muted/);
-    }
-  });
-
-  it("colours the brand and actions for a light ground", () => {
-    expect(ruleBody(".brand__name")).toMatch(/color:\s*var\(--brand-deep\)/);
-    expect(ruleBody(".brand__sub")).toMatch(/color:\s*var\(--nav-muted\)/);
-    const signin = CSS.slice(CSS.indexOf(".nav__actions :deep(.nav__signin), .nav__signin {"));
-    expect(signin.slice(0, signin.indexOf("}"))).toMatch(/color:\s*var\(--brand-deep\)/);
-  });
-});
-
 // The public pages do not follow the theme: they are a fixed white-and-green
 // brand surface, with the footer the only green slab. That only holds if every
 // token the global dark block flips is re-pinned on `.portal` — anything missed
@@ -260,8 +181,117 @@ describe("public pages do not follow the theme", () => {
   });
 
 
-  it("keeps the footer green and the header white", () => {
-    expect(ruleBody(CSS, ".foot {")).toMatch(/background:\s*var\(--brand-deep\)/);
-    expect(ruleBody(CSS, ".nav {")).toMatch(/background:\s*var\(--nav-bg\)/);
+});
+
+// Navigation is #183D3D in both modes, by design: against the light page it is
+// a strong dark bar; against the #040D12 dark page it is an elevated surface,
+// where depth comes from the border and shadow rather than from contrast.
+// This supersedes the earlier "header stays white / footer stays green /
+// chrome contrasts with the body" rules, which the premium brief replaced.
+describe("navigation is the same teal in both modes", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const SHELL = fs.readFileSync(path.resolve(__dirname, "../src/components/PublicShell.vue"), "utf8");
+  const CSS = SHELL.slice(SHELL.indexOf("<style"), SHELL.lastIndexOf("</style>"));
+
+  function block(css, selector) {
+    const at = css.indexOf(selector);
+    if (at === -1) return null;
+    const open = css.indexOf("{", at);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) return css.slice(open + 1, i);
+    }
+    return null;
+  }
+  function tok(b, name) {
+    const key = "--" + name + ":";
+    const at = b.indexOf(key);
+    return at === -1 ? null : b.slice(at + key.length, b.indexOf(";", at)).trim();
+  }
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lum = (rgb) =>
+    rgb
+      .map((v) => v / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)))
+      .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => {
+    const [hi, lo] = [lum(hex(a)), lum(hex(b))].sort((m, n) => n - m);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  const light = block(CSS, ".portal {");
+  const dark = block(CSS, ':root[data-theme="dark"] .portal');
+
+  it("uses one navigation colour across both modes", () => {
+    expect(tok(light, "chrome-bg").toUpperCase()).toBe("#183D3D");
+    expect(tok(dark, "chrome-bg").toUpperCase()).toBe("#183D3D");
+  });
+
+  it("reads as a dark bar against the light page", () => {
+    expect(ratio(tok(light, "chrome-bg"), tok(light, "paper"))).toBeGreaterThan(4.5);
+    expect(lum(hex(tok(light, "chrome-bg")))).toBeLessThan(lum(hex(tok(light, "paper"))));
+  });
+
+  it("sits above the dark page as an elevated surface", () => {
+    expect(lum(hex(tok(dark, "chrome-bg")))).toBeGreaterThan(lum(hex(tok(dark, "paper"))));
+  });
+
+  it("keeps the bar's own contents legible in both modes", () => {
+    for (const [name, b] of [["light", light], ["dark", dark]]) {
+      for (const t of ["chrome-text", "chrome-muted", "chrome-faint", "chrome-accent"]) {
+        expect(ratio(tok(b, t), tok(b, "chrome-bg")), name + " " + t).toBeGreaterThan(4.5);
+      }
+    }
+  });
+});
+
+// Each mode is designed, not inverted: the light theme layers white cards on an
+// off-white page, the dark theme layers #183D3D-tinted surfaces on #040D12.
+describe("both modes have a real surface ladder", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const APP = fs.readFileSync(path.resolve(__dirname, "../src/styles/app.css"), "utf8");
+  function block(css, selector) {
+    const at = css.indexOf(selector);
+    const open = css.indexOf("{", at);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) return css.slice(open + 1, i);
+    }
+    return null;
+  }
+  function tok(b, name) {
+    const key = "--" + name + ":";
+    const at = b.indexOf(key);
+    return at === -1 ? null : b.slice(at + key.length, b.indexOf(";", at)).trim();
+  }
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lum = (rgb) =>
+    rgb
+      .map((v) => v / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)))
+      .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+
+  it("gives each mode three distinct surface levels", () => {
+    for (const [name, sel] of [["light", ":root {"], ["dark", ':root[data-theme="dark"],']]) {
+      const b = block(APP, sel);
+      const levels = ["paper", "surface", "surface-2"].map((t) => tok(b, t));
+      expect(new Set(levels).size, name + " distinct levels").toBe(3);
+    }
+  });
+
+  it("builds the dark mode up from the deep ground, not down from white", () => {
+    const b = block(APP, ':root[data-theme="dark"],');
+    expect(tok(b, "paper").toUpperCase()).toBe("#040D12");
+    expect(lum(hex(tok(b, "surface")))).toBeGreaterThan(lum(hex(tok(b, "paper"))));
+  });
+
+  it("keeps the light mode off-white rather than pure white", () => {
+    const b = block(APP, ":root {");
+    expect(tok(b, "paper").toUpperCase()).not.toBe("#FFFFFF");
+    expect(tok(b, "surface").toUpperCase()).toBe("#FFFFFF");
   });
 });

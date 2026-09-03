@@ -71,7 +71,7 @@ function select(as) { router.push({ path: "/inquiry", query: { as } }); }
   width: 46px; height: 46px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent-050); color: var(--accent); transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
-.role:hover .role__ic { background: var(--accent); color: #fff; transform: scale(1.06) rotate(-2deg); }
+.role:hover .role__ic { background: var(--accent); color: var(--on-accent); transform: scale(1.06) rotate(-2deg); }
 .role__head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
 .role__t { font-family: var(--display); font-size: 1.35rem; font-weight: 600; color: var(--ink-800); line-height: 1; }
 .role__meta { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }

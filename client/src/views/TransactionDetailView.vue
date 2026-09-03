@@ -215,7 +215,7 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
 .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent-text); box-shadow: var(--ring); }
 
 .actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.3rem; }
-.primary { background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; }
+.primary { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; }
 .primary:hover:not(:disabled) { background: var(--accent-600); }
 .ghost { background: var(--surface); color: var(--ink-700); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; }
 .ghost:hover:not(:disabled) { background: var(--paper); border-color: var(--muted); }
