@@ -30,7 +30,7 @@ const adminToken = issueToken({ id: "sim-admin", role: "ADMIN" });
 // ---------------------------------------------------------------- setup
 step(0, "Setup — owner, unit, officer & lessee accounts");
 const owner = await prisma.unitOwner.create({ data: { name: "OLZ Realty (sim)", email: "leasing@olz.sim", phone: "0917-000-0000" } });
-const unit = await prisma.unit.create({ data: { ownerId: owner.id, unitNumber: "15-08", building: "Capitol Commons · Tower 2", floor: "15", type: "RESIDENTIAL", baseRent: 85000, status: "VACANT" } });
+const unit = await prisma.unit.create({ data: { ownerId: owner.id, unitNumber: "15-08", building: "Capitol Commons · Tower 2", floor: "15", type: "2 Bedrooms", baseRent: 85000, status: "VACANT" } });
 log(`Lessor/owner: ${owner.name}  ·  Unit ${unit.unitNumber} (${unit.building}) @ ₱${unit.baseRent}/mo`);
 
 const officerCred = { email: `officer.${S}`, password: "leasing123" };

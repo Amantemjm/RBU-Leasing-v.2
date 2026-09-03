@@ -17,10 +17,11 @@ const form = reactive({
   type: "", baseRent: "",
 });
 
-// The unit types actually used in the leasing records. Offered as suggestions
-// rather than a fixed list: the same records also carry one-offs like lofts and
-// bi-level units, so the field stays free text.
-const UNIT_TYPES = ["Studio", "1 Bedroom", "2 Bedrooms", "3 Bedrooms", "Loft", "Penthouse"];
+// Ortigas Land's residential unit configurations (e.g. Empress / Maven at
+// Capitol Commons) — bedroom-based, plus bi-level and penthouse variants.
+// Offered as suggestions rather than a fixed list: the field stays free text so
+// a genuine one-off can still be recorded.
+const UNIT_TYPES = ["Studio", "1 Bedroom", "2 Bedrooms", "3 Bedrooms", "3 Bedrooms Bi-level", "Penthouse"];
 
 async function loadTowers(estateId) {
   towerOptions.value = estateId
