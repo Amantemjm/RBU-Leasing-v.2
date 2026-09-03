@@ -5,14 +5,23 @@ import { useAuthStore } from "../stores/auth.js";
 import { useActionCenter } from "../stores/actionCenter.js";
 import { roleLabel } from "../lib/formatters.js";
 import AppIcon from "./AppIcon.vue";
-import ThemeToggle from "./ThemeToggle.vue";
 import PageFormPanel from "./PageFormPanel.vue";
+import { useTheme } from "../lib/theme.js";
 import { slotForPath } from "../../../shared/pageForms.js";
 import logoUrl from "../assets/ortigas-logo.svg";
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+
+// Theme preference lives in the user menu now (Light / Dark / System) rather than
+// as a switch on the bar. "System" follows the OS.
+const { preference: themePref, setTheme } = useTheme();
+const THEME_OPTS = [
+  { value: "light", label: "Light", icon: "sun" },
+  { value: "dark", label: "Dark", icon: "moon" },
+  { value: "system", label: "System", icon: "monitor" },
+];
 
 // Light/dark is chosen in ThemeToggle, mounted at the app root so the control
 // is in the same place on every page (public routes included).
@@ -218,7 +227,6 @@ function logout() {
             </div>
             <div v-show="actionsOpen" class="menu-scrim" @click="actionsOpen = false"></div>
           </div>
-          <ThemeToggle inline />
           <div class="usermenu">
             <button type="button" class="userchip" :class="{ open: menuOpen }" @click="menuOpen = !menuOpen" aria-haspopup="menu" :aria-expanded="menuOpen">
               <span class="userchip__avatar">{{ initials }}</span>
@@ -236,6 +244,19 @@ function logout() {
                   <div class="menu__email">{{ auth.user?.email }}</div>
                   <span v-if="auth.role" class="menu__role">{{ roleLabel(auth.role) }}</span>
                 </div>
+              </div>
+              <div class="menu__theme" role="group" aria-label="Theme">
+                <span class="menu__theme-label">Theme</span>
+                <button
+                  v-for="opt in THEME_OPTS" :key="opt.value" type="button"
+                  class="menu__item themeopt" :class="{ on: themePref === opt.value }"
+                  role="menuitemradio" :aria-checked="themePref === opt.value"
+                  @click="setTheme(opt.value)"
+                >
+                  <AppIcon :name="opt.icon" :size="15" />
+                  <span class="themeopt__t">{{ opt.label }}</span>
+                  <AppIcon v-if="themePref === opt.value" name="check" :size="15" class="themeopt__check" />
+                </button>
               </div>
               <button type="button" class="menu__item logout" @click="logout">
                 <AppIcon name="logout" :size="15" /> Log out

@@ -31,24 +31,25 @@ describe("theme", () => {
     vi.unstubAllGlobals();
   });
 
-  it("is only ever light or dark", async () => {
-    const { CHOICES } = await freshTheme();
-    expect(CHOICES).toEqual(["light", "dark"]);
+  it("offers light, dark, and system", async () => {
+    const { PREFS } = await freshTheme();
+    expect(PREFS).toEqual(["light", "dark", "system"]);
   });
 
-  // No "system" mode any more, so first-run has to start somewhere sensible:
-  // whatever the OS already prefers.
-  it("starts from the OS preference when nothing is stored", async () => {
+  // First run defaults to "system": no data-theme is stamped (app.css's media
+  // query drives the look), but the resolved value still mirrors the OS.
+  it("defaults to system and mirrors the OS without stamping data-theme", async () => {
     stubOS(true);
     const dark = await freshTheme();
+    expect(dark.useTheme().preference.value).toBe("system");
     expect(dark.useTheme().theme.value).toBe("dark");
-    expect(attr()).toBe("dark");
+    expect(attr()).toBe(null);
 
     document.documentElement.removeAttribute("data-theme");
     stubOS(false);
     const light = await freshTheme();
     expect(light.useTheme().theme.value).toBe("light");
-    expect(attr()).toBe("light");
+    expect(attr()).toBe(null);
   });
 
   it("prefers a stored choice over the OS", async () => {
@@ -100,13 +101,26 @@ describe("theme", () => {
     expect(useTheme().theme.value).toBe("dark");
   });
 
-  it("refuses an invalid theme rather than stamping it", async () => {
+  it("supports an explicit system choice that follows the OS", async () => {
+    stubOS(true);
+    localStorage.setItem(KEY, "light");
+    const { useTheme } = await freshTheme();
+    const { setTheme, preference, theme } = useTheme();
+    expect(theme.value).toBe("light"); // started on explicit light
+    setTheme("system");
+    expect(preference.value).toBe("system");
+    expect(theme.value).toBe("dark"); // now follows the OS (dark)
+    expect(attr()).toBe(null); // no stamp — the media query drives it
+    expect(localStorage.getItem(KEY)).toBe("system");
+  });
+
+  it("refuses a junk theme rather than stamping it", async () => {
     stubOS(false);
     const { useTheme } = await freshTheme();
     const { setTheme, theme } = useTheme();
-    setTheme("system"); // the mode that no longer exists
+    setTheme("chartreuse");
     expect(theme.value).toBe("light");
-    expect(attr()).toBe("light");
+    expect(attr()).toBe(null); // unchanged — still the default (system)
   });
 
   it("survives localStorage throwing (private mode / disabled storage)", async () => {

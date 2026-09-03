@@ -541,6 +541,15 @@ button:disabled {
 .menu__item.logout { color: var(--danger); }
 .menu__item.logout:hover { background: var(--danger-050); }
 
+/* Theme picker inside the user menu — Light / Dark / System as menu rows, the
+   active one tinted with a trailing check. */
+.menu__theme { border-top: 1px solid var(--line); margin: 0.35rem 0; padding-top: 0.4rem; }
+.menu__theme-label { display: block; padding: 0.1rem 0.55rem 0.35rem; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--faint); }
+.themeopt .themeopt__t { flex: 1; }
+.themeopt .themeopt__check { color: var(--accent-text); }
+.themeopt.on { color: var(--accent-text); font-weight: 600; }
+.themeopt.on:hover { background: var(--accent-050); }
+
 
 .menu-scrim { position: fixed; inset: 0; z-index: 55; }
 

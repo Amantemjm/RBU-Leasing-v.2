@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory } from "vue-router";
 import AppLayout from "../src/components/AppLayout.vue";
 import { useAuthStore } from "../src/stores/auth.js";
 import { useActionCenter } from "../src/stores/actionCenter.js";
+import { useTheme } from "../src/lib/theme.js";
 
 const stub = { template: "<div/>" };
 function makeRouter() {
@@ -24,15 +25,27 @@ describe("AppLayout (sidebar shell)", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     localStorage.clear();
+    useTheme().setTheme("system"); // reset the shared module theme between tests
     document.documentElement.removeAttribute("data-theme");
   });
 
-  // The theme control now lives in ThemeToggle, mounted once at the app root so
-  // it appears on public pages too — see tests/ThemeToggle.test.js and App.test.js.
-  it("no longer carries a theme picker in the user menu", async () => {
+  // The theme control lives in the user menu — a Light / Dark / System picker
+  // (mirrors the reference system) in place of the old on-bar switch.
+  it("carries a Light/Dark/System theme picker in the user menu", async () => {
     const w = mountAs("LEASING_OFFICER");
     await w.find(".userchip").trigger("click");
-    expect(w.find(".themepick").exists()).toBe(false);
+    const opts = w.findAll(".menu__theme .themeopt");
+    expect(opts).toHaveLength(3);
+    const text = w.find(".menu__theme").text();
+    for (const label of ["Light", "Dark", "System"]) expect(text).toContain(label);
+  });
+
+  it("applies a theme when its menu option is picked", async () => {
+    const w = mountAs("LEASING_OFFICER");
+    await w.find(".userchip").trigger("click");
+    const dark = w.findAll(".menu__theme .themeopt").find((b) => b.text().includes("Dark"));
+    await dark.trigger("click");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
   });
 
   it("lists the staff functions in the sidebar", async () => {
