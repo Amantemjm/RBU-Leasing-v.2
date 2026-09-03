@@ -2,14 +2,27 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
+import { useAuthStore } from "../stores/auth.js";
 import AppIcon from "../components/AppIcon.vue";
 import AnimatedNumber from "../components/AnimatedNumber.vue";
 
+const auth = useAuthStore();
 const data = ref(null);
 const loading = ref(true);
 const error = ref("");
 const downloading = ref(false);
 const anim = ref(false);
+
+// Time-of-day greeting + the signed-in user's first name for the page header.
+const firstName = computed(() => {
+  const n = (auth.user?.name || "").trim();
+  return n ? n.split(/\s+/)[0] : "there";
+});
+const greeting = computed(() => {
+  const h = new Date().getHours();
+  const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return `${part}, ${firstName.value}`;
+});
 
 onMounted(async () => {
   try { data.value = await fetchExecutiveDashboard(); }
@@ -47,13 +60,65 @@ function unitStatus(u) {
 const rows = computed(() => (data.value?.all || []).map((u) => ({ ...u, _status: unitStatus(u) })));
 
 // ---- KPI cards ----
+// Chips carry a real, second figure — not a fabricated month-over-month delta
+// (the API has no prior-period data), so they show current-state facts, no arrows.
 const KPIS = computed(() => S.value ? [
-  { key: "all", icon: "building", label: "Total Registered Units", value: S.value.totalUnits, sub: "Units in portfolio", tone: "brand" },
-  { key: "Leased", icon: "check", label: "Currently Leased", value: S.value.leased, sub: `${S.value.occupancyRate}% occupancy`, tone: "good" },
-  { key: "Available", icon: "grid", label: "Registered but Not Leased", value: S.value.notLeased, sub: "Available for leasing", tone: "neutral" },
-  { key: "Near Expiry", icon: "file", label: "Near Expiry", value: S.value.nearExpiry, sub: "Within next 90 days", tone: "warn" },
-  { key: "occ", icon: "grid", label: "Lease / Occupancy Rate", value: S.value.occupancyRate + "%", sub: `${S.value.leased} of ${S.value.totalUnits} units leased`, tone: "brand" },
+  { key: "all", icon: "building", label: "Total Registered Units", value: S.value.totalUnits, sub: "Units in portfolio", tone: "brand",
+    chip: { tone: "up", label: `${S.value.occupancyRate}% leased` } },
+  { key: "Leased", icon: "check", label: "Currently Leased", value: S.value.leased, sub: `${S.value.occupancyRate}% occupancy`, tone: "good",
+    chip: { tone: "up", label: formatPHP(S.value.monthlyActiveRent) + "/mo" } },
+  { key: "Available", icon: "grid", label: "Registered but Not Leased", value: S.value.notLeased, sub: "Available for leasing", tone: "neutral",
+    chip: S.value.longVacant ? { tone: "warn", label: `${S.value.longVacant} long-vacant` } : { tone: "flat", label: "Ready to lease" } },
+  { key: "Near Expiry", icon: "file", label: "Near Expiry", value: S.value.nearExpiry, sub: "Within next 90 days", tone: "warn",
+    chip: S.value.buckets.within30 ? { tone: "down", label: `${S.value.buckets.within30} due ≤30d` } : { tone: "up", label: "None ≤30d" } },
+  { key: "occ", icon: "grid", label: "Lease / Occupancy Rate", value: S.value.occupancyRate + "%", sub: `${S.value.leased} of ${S.value.totalUnits} units leased`, tone: "brand",
+    chip: { tone: "up", label: `${S.value.leased} / ${S.value.totalUnits}` } },
 ] : []);
+
+// Portfolio breakdown donut — four mutually-exclusive, real segments that sum to
+// the total unit count (near-expiry is carved out of leased; long-vacant out of
+// available), so the ring is an honest split, not overlapping counts.
+const breakdown = computed(() => {
+  const s = S.value; if (!s) return null;
+  const nearE = s.nearExpiry;
+  const leasedStable = Math.max(0, s.leased - nearE);
+  const longVac = s.longVacant;
+  const available = Math.max(0, s.notLeased - longVac);
+  const total = s.totalUnits || 1;
+  const segs = [
+    { key: "Leased", n: leasedStable, color: "var(--seg-leased)" },
+    { key: "Near expiry", n: nearE, color: "var(--seg-near)" },
+    { key: "Available", n: available, color: "var(--seg-avail)" },
+    { key: "Long vacant", n: longVac, color: "var(--seg-vacant)" },
+  ].filter((x) => x.n > 0);
+  // Cumulative stops for the conic-gradient ring.
+  let acc = 0;
+  const stops = segs.map((x) => {
+    const from = (acc / total) * 100;
+    acc += x.n;
+    const to = (acc / total) * 100;
+    return { ...x, from, to, pct: Math.round((x.n / total) * 100) };
+  });
+  return { total: s.totalUnits, rate: s.occupancyRate, segs: stops };
+});
+const donutGradient = computed(() => {
+  const b = breakdown.value; if (!b) return "var(--paper)";
+  const parts = b.segs.map((s) => `${s.color} ${anim.value ? s.from : 0}% ${anim.value ? s.to : 0}%`);
+  // Remainder (should be ~0) painted in the track colour so the ring always closes.
+  return `conic-gradient(${parts.join(", ")}, var(--paper) 0)`;
+});
+
+// Upcoming renewals — the soonest-expiring leases, with a tenant monogram, as the
+// reference's avatar list. All fields are real (data.nearExpiry).
+function initials(name) {
+  const n = (name || "").trim();
+  if (!n || n === "—") return "—";
+  return n.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+const renewals = computed(() => (data.value?.nearExpiry || []).slice(0, 5).map((u) => ({
+  unit: u.unit, property: u.property, tenant: u.tenant, remaining: u.remaining,
+  days: u.daysToExpiry, tone: u.daysToExpiry <= 30 ? "crit" : u.daysToExpiry <= 60 ? "warn" : "good",
+})));
 
 // ---- Management insights ----
 const insights = computed(() => {
@@ -229,14 +294,20 @@ function cellValue(r, c) {
     <div v-if="spotlight" class="spot-scrim" @click="clearSpotlight"></div>
     <!-- Header -->
     <header class="dash__head">
-      <div>
-        <h1>Leasing Dashboard</h1>
-        <p class="dash__sub">Portfolio overview and leasing performance <span v-if="data" class="dot-sep">·</span> <span v-if="data" class="asof">As of {{ dateLabel }}</span></p>
+      <div class="dash__hello">
+        <h1>{{ data ? greeting : "Leasing Dashboard" }}</h1>
+        <p class="dash__sub">Here's your portfolio at a glance <span v-if="data" class="dot-sep">·</span> <span v-if="data" class="asof">As of {{ dateLabel }}</span></p>
       </div>
-      <button type="button" class="btn btn--primary" :class="{ loading: downloading }" :disabled="downloading || !data" @click="doDownload">
-        <AppIcon name="download" :size="16" />
-        <span>{{ downloading ? "Generating…" : "Download Excel" }}</span>
-      </button>
+      <div class="dash__tools">
+        <form class="dash__search" role="search" @submit.prevent="focusBlock('unitsTable')">
+          <AppIcon name="search" :size="16" />
+          <input v-model="search" type="search" placeholder="Search units, tenants, owners…" aria-label="Search units" />
+        </form>
+        <button type="button" class="btn btn--primary" :class="{ loading: downloading }" :disabled="downloading || !data" @click="doDownload">
+          <AppIcon name="download" :size="16" />
+          <span>{{ downloading ? "Generating…" : "Download Excel" }}</span>
+        </button>
+      </div>
     </header>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -253,7 +324,10 @@ function cellValue(r, c) {
         <button v-for="k in KPIS" :key="k.key" type="button" class="kpi" :class="'t-' + k.tone" @click="goTile(k.key)">
           <span class="kpi__icon"><AppIcon :name="k.icon" :size="18" /></span>
           <span class="kpi__label">{{ k.label }}</span>
-          <span class="kpi__value"><AnimatedNumber :value="k.value" /></span>
+          <span class="kpi__valrow">
+            <span class="kpi__value"><AnimatedNumber :value="k.value" /></span>
+            <span v-if="k.chip" class="trend-chip" :class="k.chip.tone">{{ k.chip.label }}</span>
+          </span>
           <span class="kpi__sub">{{ k.sub }}</span>
           <span class="kpi__go"><AppIcon name="arrow-right" :size="14" /></span>
         </button>
@@ -276,15 +350,15 @@ function cellValue(r, c) {
         </div>
 
         <div id="occupancy" class="card occ" :class="{ 'is-spotlit': spotlight === 'occupancy' }">
-          <div class="card__head"><h2>Occupancy</h2></div>
-          <div class="occ__main">
-            <div class="occ__ring" :style="{ background: `conic-gradient(var(--accent) ${anim ? occ.leasedPct : 0}%, var(--paper) 0)` }">
-              <div class="occ__hole"><span class="occ__pct"><AnimatedNumber :value="occ.rate + '%'" /></span><span class="occ__cap">Occupied</span></div>
+          <div class="card__head"><h2>Portfolio Breakdown</h2><span class="card__hint">{{ occ.rate }}% occupancy</span></div>
+          <div v-if="breakdown" class="occ__main">
+            <div class="occ__ring" :style="{ background: donutGradient }">
+              <div class="occ__hole"><span class="occ__pct"><AnimatedNumber :value="breakdown.total" /></span><span class="occ__cap">Units</span></div>
             </div>
             <div class="occ__legend">
-              <div class="occ__row"><span class="dot d-good"></span>Leased <b>{{ occ.leased }}</b></div>
-              <div class="occ__row"><span class="dot d-neutral"></span>Available <b>{{ occ.available }}</b></div>
-              <div class="occ__vac">{{ occ.available }} vacant units</div>
+              <div v-for="s in breakdown.segs" :key="s.key" class="occ__row">
+                <span class="dot" :style="{ background: s.color }"></span>{{ s.key }} <b>{{ s.n }}</b><em class="occ__pctlbl">{{ s.pct }}%</em>
+              </div>
             </div>
           </div>
         </div>
@@ -312,6 +386,21 @@ function cellValue(r, c) {
               <div class="prop__meta">{{ p.leased }} Leased · {{ p.notLeased }} Available</div>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Upcoming renewals — avatar list of the soonest-expiring leases -->
+      <div v-if="renewals.length" class="card">
+        <div class="card__head"><h2>Upcoming Renewals</h2><button type="button" class="link" @click="goFilter('Near Expiry')">View all <AppIcon name="arrow-right" :size="13" /></button></div>
+        <div class="renewals">
+          <button v-for="r in renewals" :key="r.unit + r.property" type="button" class="renewal" @click="goFilter('Near Expiry')">
+            <span class="avatar renewal__av">{{ initials(r.tenant) }}</span>
+            <span class="renewal__who">
+              <b>{{ r.tenant === '—' ? 'No tenant on record' : r.tenant }}</b>
+              <small>{{ r.property }} · Unit {{ r.unit }}</small>
+            </span>
+            <span class="badge" :class="'b-' + r.tone"><span class="badge__dot"></span>{{ r.remaining }}</span>
+          </button>
         </div>
       </div>
 
@@ -435,6 +524,8 @@ function cellValue(r, c) {
 .dash {
   font-family: var(--ui); display: flex; flex-direction: column; gap: 1.15rem;
   --good: #12783D; --good-bg: #E7F3EC; --warn: #845412; --warn-bg: #F6EFE0; --crit: #B23A31; --crit-bg: #F8E9E7; --neutral: #4F6459; --neutral-bg: var(--paper);
+  /* Soft, distinct donut segments (reference palette): sage, beige, mist, lavender. */
+  --seg-leased: var(--accent); --seg-near: #E0BE7E; --seg-avail: #A9C7BB; --seg-vacant: #B9BEE0;
 }
 /* Status colours track the browser theme too (parity with light) */
 /* This block used to be a bare `@media (prefers-color-scheme: dark)` with no
@@ -447,6 +538,7 @@ function cellValue(r, c) {
   --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
   --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
   --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
+  --seg-leased: var(--accent); --seg-near: #D9AE5F; --seg-avail: #7FA99A; --seg-vacant: #9AA0CF;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .dash {
@@ -454,6 +546,7 @@ function cellValue(r, c) {
     --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
     --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
     --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
+    --seg-leased: var(--accent); --seg-near: #D9AE5F; --seg-avail: #7FA99A; --seg-vacant: #9AA0CF;
   }
 }
 .muted { color: var(--muted); } .small { font-size: .85rem; }
@@ -461,10 +554,26 @@ function cellValue(r, c) {
 .dot-sep { color: var(--faint); margin: 0 .15rem; }
 
 /* Header */
-.dash__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
-.dash__head h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); margin: 0; }
-.dash__sub { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
+.dash__head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.dash__head h1 { font-family: var(--display); font-size: 1.9rem; font-weight: 600; letter-spacing: -.01em; color: var(--ink-800); margin: 0; line-height: 1.1; }
+.dash__sub { margin: .3rem 0 0; color: var(--muted); font-size: .9rem; }
 .asof { color: var(--faint); }
+.dash__tools { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.dash__search { display: flex; align-items: center; gap: .5rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .55rem .95rem; color: var(--muted); box-shadow: var(--shadow-sm); min-width: 260px; }
+.dash__search input { border: none; background: none; outline: none; font: inherit; font-size: .88rem; color: var(--text); flex: 1; min-width: 0; }
+.dash__search:focus-within { border-color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-050); }
+
+/* KPI value + chip sit on one baseline row (reference layout). */
+.kpi__valrow { display: flex; align-items: baseline; gap: .55rem; flex-wrap: wrap; margin-top: .1rem; }
+
+/* Upcoming renewals — avatar rows in a responsive two-column grid. */
+.renewals { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .3rem .9rem; }
+.renewal { display: flex; align-items: center; gap: .75rem; background: none; border: none; padding: .55rem .4rem; margin: 0 -.4rem; border-radius: 10px; cursor: pointer; font: inherit; text-align: left; transition: background var(--dur-1); }
+.renewal:hover { background: var(--row-hover); }
+.renewal__av { width: 38px; height: 38px; font-size: .8rem; }
+.renewal__who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.renewal__who b { font-size: .85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.renewal__who small { font-size: .76rem; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .btn { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; font-weight: 600; padding: .6rem 1rem; border-radius: 10px; cursor: pointer; transition: transform .12s, background .15s, box-shadow .15s; }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 1px 2px rgba(9,30,22,.12); }
 .btn--primary:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); box-shadow: var(--shadow-md); }
@@ -536,6 +645,7 @@ function cellValue(r, c) {
 .occ__legend { display: flex; flex-direction: column; gap: .55rem; font-size: .88rem; color: var(--text); }
 .occ__row { display: flex; align-items: center; gap: .5rem; }
 .occ__row b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.occ__pctlbl { font-style: normal; color: var(--faint); font-size: .75rem; margin-left: .45rem; min-width: 2.4rem; text-align: right; font-variant-numeric: tabular-nums; }
 .occ__vac { margin-top: .35rem; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: .55rem; }
 .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .d-good { background: var(--accent); } .d-neutral { background: var(--line-strong); }

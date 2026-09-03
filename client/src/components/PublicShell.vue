@@ -156,6 +156,11 @@ defineProps({
   --chrome-line: rgba(147, 177, 166, 0.20);
   --chrome-accent: #93ADA3;
   --chrome-hover: rgba(147, 177, 166, 0.14);
+  /* Public pages keep the green chrome in both themes, so the active-nav tokens
+     stay green-appropriate here (never the app's light default). */
+  --chrome-active-bg: var(--chrome-hover);
+  --chrome-active-text: var(--chrome-text);
+  --chrome-rail: var(--chrome-accent);
   --chrome-logo: brightness(0) invert(1);
   --panel-bg: #FFFFFF;
   --panel-text: #040D12;

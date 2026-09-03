@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 
 const PAYLOAD = {
   meta: { asOf: "2026-08-25" },
@@ -35,6 +36,9 @@ function stubScroll() {
 }
 
 async function mountDash() {
+  // The view reads the signed-in user from the auth store for its greeting, so
+  // an active Pinia must exist before mount.
+  setActivePinia(createPinia());
   const w = mount(ExecutiveDashboardView, { attachTo: document.body });
   await flushPromises();
   return w;
