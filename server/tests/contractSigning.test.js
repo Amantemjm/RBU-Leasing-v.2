@@ -370,3 +370,57 @@ describe("Awaiting Prospect", () => {
     expect(res.body.stageData.PHOTOSHOOT.status).toBe("Completed");
   });
 });
+
+describe("Unlinking the tenant", () => {
+  const pdf = Buffer.from("%PDF-1.4 test");
+  const upload = (token, txnId, docType) => {
+    const req = request(app).post(`/api/leasing-transactions/${txnId}/documents`)
+      .set("Authorization", `Bearer ${token}`)
+      .attach("file", pdf, { filename: "doc.pdf", contentType: "application/pdf" });
+    return docType ? req.field("docType", docType) : req;
+  };
+
+  // (a) Clearing the tenant after a completed shoot must not leave the board
+  // reading "live and being marketed" for a unit nobody is actually chasing.
+  it("returns to Awaiting Prospect when the tenant is cleared at a completed Photoshoot", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    const appt = await request(app)
+      .post(`/api/appointments/transaction/${txn.id}/PHOTOSHOOT`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ scheduledAt: new Date().toISOString() });
+    await request(app).patch(`/api/appointments/${appt.body.id}/complete`)
+      .set("Authorization", `Bearer ${token}`).send({});
+    const shot = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(shot.status).toBe("Completed");
+
+    const res = await request(app).patch(`/api/leasing-transactions/${txn.id}/link`)
+      .set("Authorization", `Bearer ${token}`).send({ tenantId: null });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("Awaiting Prospect");
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.tenantId).toBeNull();
+    expect(after.status).toBe("Awaiting Prospect");
+  });
+
+  // (b) Contract Signing exists to guarantee there is someone to sign with —
+  // clearing the tenant there would strand the transaction at exactly the
+  // state the advance gate was built to prevent.
+  it("refuses to clear the tenant once Contract Signing has been reached", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT"); // auto-advances to CONTRACT_SIGNING
+    const advanced = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(advanced.stage).toBe("CONTRACT_SIGNING");
+
+    const res = await request(app).patch(`/api/leasing-transactions/${txn.id}/link`)
+      .set("Authorization", `Bearer ${token}`).send({ tenantId: null });
+    expect(res.status).toBe(409);
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.tenantId).toBe(tenant.id);
+  });
+});

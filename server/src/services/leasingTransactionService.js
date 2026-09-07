@@ -255,6 +255,11 @@ export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) 
       const t = await prisma.tenant.findUnique({ where: { id: tenantId } });
       if (!t) throw new InvalidReferenceError("tenantId does not reference a tenant");
       notes.push(`lessee ${t.name}`);
+    } else if (stageIndex(txn.stage) >= stageIndex("CONTRACT_SIGNING")) {
+      // Contract Signing exists to guarantee there is someone to sign with —
+      // clearing the tenant here would strand the transaction at exactly the
+      // state the advance gate was built to prevent.
+      throw new ConflictError("Cannot unlink the lessee once Contract Signing has been reached");
     }
     data.tenantId = tenantId || null;
   }
@@ -273,6 +278,15 @@ export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) 
     data.stageData = {
       ...(txn.stageData || {}),
       PHOTOSHOOT: { ...(txn.stageData?.PHOTOSHOOT || {}), status: "Completed" },
+    };
+  }
+  // The prospect that made the shoot "Completed" just vanished — rest back at
+  // Awaiting Prospect so "live and being marketed" doesn't silently under-report.
+  else if (data.tenantId === null && txn.stage === "PHOTOSHOOT" && txn.status === "Completed") {
+    data.status = "Awaiting Prospect";
+    data.stageData = {
+      ...(txn.stageData || {}),
+      PHOTOSHOOT: { ...(txn.stageData?.PHOTOSHOOT || {}), status: "Awaiting Prospect" },
     };
   }
   await prisma.leasingTransaction.update({ where: { id }, data });
