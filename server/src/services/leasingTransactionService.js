@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
+import { NotFoundError, InvalidReferenceError, ConflictError, ForbiddenError } from "../lib/errors.js";
 import {
   LEASING_STAGES, STAGE_KEYS, stageByKey, stageIndex, nextStageKey, prevStageKey, isValidStatus, isFinalStage,
   APPROVAL_ROUTING, APPROVAL_STEP_STATUSES,
@@ -280,6 +280,10 @@ export async function deleteTransaction(id) {
 
 const STAFF_ROLES = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 
+// Staff who can write, not merely view — VIEWER is deliberately excluded, the
+// same split requireWrite enforces at the route layer elsewhere.
+const WRITE_ROLES = ["ADMIN", "LEASING_OFFICER"];
+
 // A staff member, or the linked lessee/lessor, may see a transaction's docs.
 export async function assertCanAccess(user, id) {
   const txn = await loadOrThrow(id);
@@ -300,6 +304,13 @@ export async function addDocument(actor, id, file, docType = null) {
   const txn = await assertCanAccess(actor, id);
   if (docType && !TRANSACTION_DOCUMENT_KEYS.includes(docType)) {
     throw new InvalidReferenceError("Unknown document type");
+  }
+  // Loose attachments stay open to the linked lessee/lessor (handled by
+  // assertCanAccess above). A typed document drives the stage machine — the
+  // physical paper changes hands through the leasing officer, so only staff
+  // who can write may record it.
+  if (docType && !WRITE_ROLES.includes(actor.role)) {
+    throw new ForbiddenError("Only leasing staff can upload this document type");
   }
   let uploadedByName = null;
   if (actor?.userId) {

@@ -260,4 +260,41 @@ describe("Documents driving the pipeline", () => {
       .set("Authorization", `Bearer ${tokens.tenant(other.id)}`);
     expect(res.status).toBe(404);
   });
+
+  // A portal party may see and attach loose files, but must not be able to
+  // single-handedly drive the stage machine by uploading a typed document —
+  // that is staff's job, since the physical paper changes hands through them.
+  it("refuses a linked lessee's typed upload and leaves the transaction untouched", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+    await request(app).patch(`/api/leasing-transactions/${txn.id}/advance`)
+      .set("Authorization", `Bearer ${token}`).send({});
+
+    const res = await upload(tokens.tenant(tenant.id), txn.id, "SIGNED_CONTRACT");
+    expect(res.status).toBe(403);
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.stage).toBe("CONTRACT_SIGNING");
+    expect(after.status).toBe("Pending");
+    const doc = await prisma.transactionDocument.findFirst({
+      where: { transactionId: txn.id, docType: "SIGNED_CONTRACT" },
+    });
+    expect(doc).toBeNull();
+  });
+
+  it("still lets that same linked lessee upload a loose attachment", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+
+    const res = await upload(tokens.tenant(tenant.id), txn.id);
+    expect(res.status).toBe(201);
+
+    const rows = await prisma.transactionDocument.findMany({
+      where: { transactionId: txn.id, docType: null },
+    });
+    expect(rows).toHaveLength(1);
+  });
 });
