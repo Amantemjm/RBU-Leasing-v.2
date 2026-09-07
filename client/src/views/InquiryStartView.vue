@@ -65,7 +65,7 @@ function select(as) { router.push({ path: "/inquiry", query: { as } }); }
   content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--accent);
   transform: scaleX(0); transform-origin: left; transition: transform 0.22s ease;
 }
-.role:hover, .role:focus-visible { transform: translateY(-4px); box-shadow: 0 16px 34px -18px rgba(12,56,38,0.4); border-color: var(--accent); outline: none; }
+.role:hover, .role:focus-visible { transform: translateY(-4px); box-shadow: 0 16px 34px -18px rgba(0, 0, 0, 0.18); border-color: var(--accent); outline: none; }
 .role:hover::before, .role:focus-visible::before { transform: scaleX(1); }
 .role__ic {
   width: 46px; height: 46px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;

@@ -171,7 +171,7 @@ function download(row) {
 .status-tag.approved { color: #fff; background: var(--good); border-color: var(--good); }
 .status-tag.returned { color: var(--danger); border-color: var(--danger); }
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(15, 22, 33, 0.55);
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
   display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 50;
 }
 .modal {

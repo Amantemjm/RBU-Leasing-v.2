@@ -151,9 +151,9 @@ const details = computed(() =>
    coloured for a light ground rather than following the theme. */
 .nav__inquire {
   color: var(--brand-deep); font-weight: 650; font-size: 0.86rem; text-decoration: none;
-  padding: 0.5rem 0.85rem; border: 1px solid #cdd9d3; border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius-sm);
 }
-.nav__inquire:hover { background: #e7efec; }
+.nav__inquire:hover { background: var(--accent-050); }
 
 .wrap { max-width: 68rem; margin: 0 auto; padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 3.5rem; }
 .back-link { display: inline-block; margin-bottom: 1.1rem; color: var(--brand); text-decoration: none; font-size: 0.88rem; font-weight: 600; }
@@ -174,7 +174,7 @@ const details = computed(() =>
 .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; }
 .type-chip {
   position: absolute; top: 0.75rem; left: 0.75rem;
-  background: rgba(12, 44, 33, 0.82); color: #fff; font-size: 0.7rem; font-weight: 700;
+  background: var(--accent); color: var(--on-accent); font-size: 0.7rem; font-weight: 700;
   letter-spacing: 0.04em; text-transform: uppercase; padding: 0.26rem 0.6rem; border-radius: 999px; backdrop-filter: blur(4px);
 }
 .arrow {

@@ -191,7 +191,7 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
   border-radius: var(--radius-sm); padding: 0.75rem 1.3rem; font: inherit; font-weight: 600; cursor: pointer;
   transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
-.primary:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(12,56,38,0.5); }
+.primary:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.22); }
 .primary:active:not(:disabled) { transform: none; }
 .primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .submit { align-self: flex-start; min-width: 170px; }

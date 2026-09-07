@@ -126,7 +126,7 @@ async function submitCreate() {
 .ref { font-family: ui-monospace, "Consolas", monospace; font-size: 0.8rem; background: var(--accent-050); color: var(--accent-text); padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); }
 .stage { font-weight: 600; }
 .empty { text-align: center; padding: 2rem 0; }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(9,30,22,0.45); display: grid; place-items: center; z-index: 50; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: grid; place-items: center; z-index: 50; }
 .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 1.5rem; width: min(420px, 92vw); }
 .modal h2 { margin: 0 0 1rem; }
 .modal .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.9rem; }

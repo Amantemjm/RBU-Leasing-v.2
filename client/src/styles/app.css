@@ -1140,20 +1140,25 @@ button:disabled {
 .topbar,
 .sidebar,
 .portal > header.nav {
-  --surface: #FFFFFF;
-  --paper: #FFFFFF;
-  --text: #000000;
-  --ink-800: #000000;
-  --ink-700: #1A1A1A;
-  --ink-600: #4A4A4A;
-  --muted: #4A4A4A;
-  --faint: #666666;
-  --line: #E2E2E2;
-  --line-strong: #C9C9C9;
-  --accent-text: #1D5532;
-  --accent-050: #E8F0EB;
-  --row-hover: #F4F6F4;
-  --thead-bg: #F6F7F6;
+  /* These are aliases, not colours: the bar re-points the body tokens at its
+     own chrome set so everything inside it reads the bar's palette. They must
+     stay var() references — pinning them to literals here left the sidebar
+     white with black text while the rest of the app went dark, because
+     --chrome-bg flipped and these did not. */
+  --surface: var(--chrome-bg);
+  --paper: var(--chrome-bg);
+  --text: var(--chrome-text);
+  --ink-800: var(--chrome-text);
+  --ink-700: var(--chrome-text);
+  --ink-600: var(--chrome-muted);
+  --muted: var(--chrome-muted);
+  --faint: var(--chrome-faint);
+  --line: var(--chrome-line);
+  --line-strong: var(--chrome-line);
+  --accent-text: var(--chrome-accent);
+  --accent-050: var(--chrome-hover);
+  --row-hover: var(--chrome-hover);
+  --thead-bg: var(--chrome-hover);
   background: var(--chrome-bg);
   color: var(--chrome-text);
 }
@@ -1192,18 +1197,20 @@ button:disabled {
 .topbar .menu,
 .topbar .actions-panel,
 .sidebar .menu {
-  --surface: #FFFFFF;
-  --paper: #FFFFFF;
-  --text: #000000;
-  --ink-800: #000000;
-  --ink-700: #1A1A1A;
-  --muted: #4A4A4A;
-  --faint: #666666;
-  --line: #E2E2E2;
-  --line-strong: #C9C9C9;
-  --accent-text: #1D5532;
-  --accent-050: #E8F0EB;
-  --row-hover: #F4F6F4;
+  /* Aliases onto the panel set, for the same reason as the bar rule above:
+     pinned literals here would keep every menu light on a dark page. */
+  --surface: var(--panel-bg);
+  --paper: var(--panel-bg);
+  --text: var(--panel-text);
+  --ink-800: var(--panel-text);
+  --ink-700: var(--panel-text);
+  --muted: var(--panel-muted);
+  --faint: var(--panel-muted);
+  --line: var(--panel-line);
+  --line-strong: var(--panel-line);
+  --accent-text: var(--panel-accent);
+  --accent-050: var(--panel-line);
+  --row-hover: var(--panel-line);
   color: var(--panel-text);
 }
 

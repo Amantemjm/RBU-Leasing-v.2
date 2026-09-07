@@ -441,27 +441,20 @@ function cellValue(r, c) {
 
 .dash {
   font-family: var(--ui); display: flex; flex-direction: column; gap: 1.15rem;
-  --good: #12783D; --good-bg: #E7F3EC; --warn: #845412; --warn-bg: #F6EFE0; --crit: #B23A31; --crit-bg: #F8E9E7; --neutral: #4F6459; --neutral-bg: var(--paper);
-}
-/* Status colours track the browser theme too (parity with light) */
-/* This block used to be a bare `@media (prefers-color-scheme: dark)` with no
-   data-theme counterpart, so the OS always won: picking light on a dark OS left
-   the dashboard's status colours at their dark values on a light surface, which
-   measured 2.21:1. Both paths are now declared, from one source. */
-:root[data-theme="dark"] .dash,
-:root.is-dark .dash {
-  --good: #5FD69C; --good-bg: rgba(95, 214, 156, 0.18);
-  --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
-  --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
-  --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .dash {
-    --good: #5FD69C; --good-bg: rgba(95, 214, 156, 0.18);
-    --warn: #E8BA66; --warn-bg: rgba(232, 186, 102, 0.18);
-    --crit: #F59C92; --crit-bg: rgba(245, 156, 146, 0.18);
-    --neutral: #A2B5AD; --neutral-bg: rgba(255, 255, 255, 0.05);
-  }
+  /* The status palette is the app's, not a second copy of it. `--good` and
+     `--warn` are inherited from :root untouched; these four only rename the
+     rest so the existing rules below keep reading `--crit` and `--neutral`.
+
+     This used to be three blocks — a light set plus a dark set duplicated for
+     the data-theme and prefers-color-scheme paths — which is three places to
+     keep in step with the app palette, and they had already drifted from it.
+     Aliasing means the dashboard follows the theme with nothing to maintain. */
+  --good-bg: var(--good-050);
+  --warn-bg: var(--warn-050);
+  --crit: var(--danger);
+  --crit-bg: var(--danger-050);
+  --neutral: var(--muted);
+  --neutral-bg: var(--surface-2);
 }
 .muted { color: var(--muted); } .small { font-size: .85rem; }
 .error { color: var(--danger); background: var(--danger-050); border-radius: var(--radius-sm); padding: .6rem .8rem; }
@@ -473,7 +466,7 @@ function cellValue(r, c) {
 .dash__sub { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
 .asof { color: var(--faint); }
 .btn { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; font-weight: 600; padding: .6rem 1rem; border-radius: 10px; cursor: pointer; transition: transform .12s, background .15s, box-shadow .15s; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 1px 2px rgba(9,30,22,.12); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 .btn--primary:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .btn:disabled { opacity: .65; cursor: default; }
 .btn.loading svg { animation: spin 1s linear infinite; }
