@@ -17,11 +17,15 @@ const props = defineProps({
 
 const STAGE_ICON = {
   INQUIRY: "📝", SEND_REQUIREMENTS: "📎", APPROVAL: "✅",
-  UNIT_INSPECTION: "🔍", KEY_TURNOVER: "🔑", PHOTOSHOOT: "📸",
+  UNIT_INSPECTION: "🔍", KEY_TURNOVER: "🔑", PHOTOSHOOT: "📸", CONTRACT_SIGNING: "✍️",
 };
 const TOTAL = LEASING_STAGES.length;
 const currentIdx = computed(() => Math.max(0, stageIndex(props.currentStage)));
-const isDelivered = computed(() => props.currentStage === "PHOTOSHOOT" && (props.finalStatus || props.status) === "Completed");
+// "Delivered" means the transaction is on the last stage and that stage's
+// `done` status has been reached — derived so a newly appended terminal
+// stage (e.g. Contract Signing) doesn't need this hardcoded.
+const finalStage = LEASING_STAGES[LEASING_STAGES.length - 1];
+const isDelivered = computed(() => props.currentStage === finalStage.key && (props.finalStatus || props.status) === finalStage.done);
 
 // Courier-style headline + sub-line.
 const state = computed(() => {

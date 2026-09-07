@@ -64,6 +64,18 @@ function applyTxn(t) { txn.value = t; form.status = t.status; form.remarks = t.s
 async function reloadTxn() { try { txn.value = await leasingTransactions.get(id); } catch { /* keep current */ } }
 
 function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+
+// The two things Contract Signing needs. Mirrors the server's guard in
+// leasingTransactionService.advance — if one changes, change both.
+const blockers = computed(() => {
+  if (txn.value?.stage !== "PHOTOSHOOT") return [];
+  const out = [];
+  if (!txn.value.tenantId) out.push("Link a prospect tenant");
+  if (!(txn.value.documents || []).some((d) => d.docType === "LETTER_OF_INTENT")) {
+    out.push("Upload the Letter of Intent");
+  }
+  return out;
+});
 </script>
 
 <template>
@@ -104,6 +116,9 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
               <label>Remarks <span class="muted">(optional)</span></label>
               <textarea v-model="form.remarks" rows="2" placeholder="Add a note for this stage…"></textarea>
             </div>
+            <ul v-if="blockers.length" class="blockers">
+              <li v-for="b in blockers" :key="b">{{ b }}</li>
+            </ul>
             <div class="actions">
               <button type="button" class="ghost" :disabled="busy" @click="saveStatus">{{ busy === 'status' ? 'Saving…' : 'Save status' }}</button>
               <button type="button" class="ghost warn" :disabled="busy || !prevCfg" @click="sendBack">← Send back<span v-if="prevCfg"> to {{ prevCfg.short }}</span></button>
@@ -214,6 +229,8 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
 .field textarea { resize: vertical; }
 .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent-text); box-shadow: var(--ring); }
 
+.blockers { list-style: none; margin: 0 0 0.6rem; padding: 0.55rem 0.7rem; display: grid; gap: 0.25rem; border: 1px solid var(--warning, var(--line-strong)); border-radius: var(--radius-sm); background: var(--surface); font-size: 0.83rem; color: var(--muted); }
+.blockers li::before { content: "→ "; color: var(--faint); }
 .actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.3rem; }
 .primary { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; }
 .primary:hover:not(:disabled) { background: var(--accent-600); }
