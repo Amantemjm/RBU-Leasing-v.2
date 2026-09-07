@@ -185,7 +185,7 @@ const blockers = computed(() => {
 
           <div class="panel">
             <div class="panel__label">Supporting documents</div>
-            <TransactionDocuments :transaction-id="txn.id" :documents="txn.documents || []" can-upload can-manage @changed="reloadTxn" />
+            <TransactionDocuments :transaction-id="txn.id" :documents="txn.documents || []" can-upload can-upload-typed can-manage @changed="reloadTxn" />
           </div>
 
           <div class="panel">

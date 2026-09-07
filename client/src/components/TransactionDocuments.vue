@@ -9,6 +9,10 @@ const props = defineProps({
   transactionId: { type: String, required: true },
   documents: { type: Array, default: () => [] },
   canUpload: { type: Boolean, default: false },
+  // Gates only the per-slot (typed) upload controls — typed uploads are
+  // staff-only server-side. The loose-attachment input below stays on
+  // canUpload; portal parties may still add loose attachments.
+  canUploadTyped: { type: Boolean, default: false },
   canManage: { type: Boolean, default: false },
 });
 const emit = defineEmits(["changed"]);
@@ -63,7 +67,7 @@ function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined, { mon
           <div class="doc__meta">{{ fmtSize(s.doc.size) }} · {{ s.doc.uploadedByName || "—" }} · {{ fmtDate(s.doc.createdAt) }}</div>
         </div>
         <p v-else class="slot__empty">Not uploaded yet.</p>
-        <label v-if="canUpload" class="slot__upload">
+        <label v-if="canUploadTyped" class="slot__upload">
           <span>{{ s.doc ? "Replace" : "Upload" }}</span>
           <input type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" :disabled="uploading" @change="(e) => onFile(e, s.key)" />
         </label>

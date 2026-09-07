@@ -19,9 +19,9 @@ const DOCS = [
   { id: "d2", filename: "extra.pdf", size: 1024, docType: null, uploadedByName: "Officer O", createdAt: "2026-09-02T00:00:00Z" },
 ];
 
-const mountDocs = (documents = DOCS) =>
+const mountDocs = (documents = DOCS, extraProps = {}) =>
   mount(TransactionDocuments, {
-    props: { transactionId: "t1", documents, canUpload: true, canManage: true },
+    props: { transactionId: "t1", documents, canUpload: true, canUploadTyped: true, canManage: true, ...extraProps },
   });
 
 const slot = (w, label) => w.findAll(".slot").find((s) => s.text().includes(label));
@@ -76,5 +76,15 @@ describe("TransactionDocuments", () => {
     await input.trigger("change");
     await flushPromises();
     expect(w.find(".error").text()).toContain("Unknown document type");
+  });
+
+  // Typed uploads are staff-only server-side (403 for a portal user). A portal
+  // party may still add loose attachments, so canUpload alone must not expose
+  // the per-slot controls — only canUploadTyped does.
+  it("hides the per-slot upload control when canUploadTyped is false, but keeps the loose input", () => {
+    const w = mountDocs(DOCS, { canUploadTyped: false });
+    expect(slot(w, "Signed Lease Contract").find("input[type='file']").exists()).toBe(false);
+    expect(slot(w, "Letter of Intent").find("input[type='file']").exists()).toBe(false);
+    expect(w.find(".upload input[type='file']").exists()).toBe(true);
   });
 });
