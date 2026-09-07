@@ -50,9 +50,10 @@ export const leasingTransactions = {
   mine: () => api.get("/leasing-transactions/mine").then((r) => r.data),
   getMine: (id) => api.get(`/leasing-transactions/mine/${id}`).then((r) => r.data),
   // supporting documents
-  uploadDocument: (id, file) => {
+  uploadDocument: (id, file, docType = null) => {
     const form = new FormData();
     form.append("file", file);
+    if (docType) form.append("docType", docType);
     return api.post(`/leasing-transactions/${id}/documents`, form).then((r) => r.data);
   },
   deleteDocument: (id, docId) => api.delete(`/leasing-transactions/${id}/documents/${docId}`).then((r) => r.data),
