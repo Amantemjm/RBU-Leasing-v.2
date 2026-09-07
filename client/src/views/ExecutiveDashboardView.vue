@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { useRouter } from "vue-router";
 import { fetchExecutiveDashboard, downloadExecutiveExcel } from "../lib/executiveDashboard.js";
 import { formatPHP, formatDate } from "../lib/formatters.js";
 import AppIcon from "../components/AppIcon.vue";
@@ -126,6 +127,9 @@ const COLUMNS = reactive([
   { key: "property", label: "Property", visible: true },
   { key: "_status", label: "Status", visible: true, badge: true },
   { key: "tenant", label: "Tenant", visible: true },
+  // Who owns the relationship for this unit. Comes from the unit's owner
+  // (owner -> assignedOfficer), which the dashboard service already returns.
+  { key: "officer", label: "Assigned Officer", visible: true },
   { key: "end", label: "Lease Expiry", visible: true, date: true },
   { key: "monthlyRent", label: "Monthly Rent", visible: true, peso: true, num: true },
 ]);
@@ -188,17 +192,20 @@ function goFilter(k, opts = {}) {
   focusBlock("unitsTable");
 }
 
-// Tiles that have a block of their own go there instead of to the table.
-// The rest are unit counts, and the table is the only place those are itemised.
-const TILE_BLOCK = { occ: "occupancy", "Near Expiry": "leasesExpiring" };
+// A tile is a question about a number, and the honest answer is the rows behind
+// it. Rather than dimming the dashboard and pointing at a block, each tile opens
+// that metric's own page, where the figure is repeated and itemised.
+const router = useRouter();
+const TILE_ROUTE = {
+  all: "all",
+  Leased: "leased",
+  Available: "available",
+  "Near Expiry": "near-expiry",
+  occ: "occupancy",
+};
 
 function goTile(key) {
-  const block = TILE_BLOCK[key] || "unitsTable";
-  if (spotlight.value === block) return clearSpotlight(); // same tile = release
-  // Occupancy is informational — it must not clobber a filter already in place.
-  if (key === "occ") return focusBlock(TILE_BLOCK.occ);
-  if (TILE_BLOCK[key]) { quick.value = key; monthFilter.value = ""; return focusBlock(TILE_BLOCK[key]); }
-  return goFilter(key);
+  router.push(`/app/metrics/${TILE_ROUTE[key] || "all"}`);
 }
 function statusClass(s) {
   return s === "Leased" ? "b-good" : s === "Near Expiry" ? "b-warn" : s === "Attention Required" ? "b-crit" : "b-neutral";

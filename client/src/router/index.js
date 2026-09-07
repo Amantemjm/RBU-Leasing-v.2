@@ -8,6 +8,7 @@ import UnitDetailPublicView from "../views/UnitDetailPublicView.vue";
 import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
+import DashboardMetricView from "../views/DashboardMetricView.vue";
 import InquiriesView from "../views/InquiriesView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
@@ -62,6 +63,8 @@ const routes = [
     children: [
       // Staff
       { path: "", component: ExecutiveDashboardView, meta: { roles: STAFF } },
+      // The page behind a dashboard tile: the same figure, itemised.
+      { path: "metrics/:key", component: DashboardMetricView, meta: { roles: STAFF } },
       { path: "inquiries", component: InquiriesView, meta: { roles: STAFF } },
       { path: "transactions", component: TransactionsView, meta: { roles: STAFF } },
       { path: "transactions/:id", component: TransactionDetailView, meta: { roles: STAFF } },

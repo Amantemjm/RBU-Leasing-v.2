@@ -13,11 +13,19 @@ const PAYLOAD = {
     { property: "Circulo Verde", total: 4, leased: 2, notLeased: 2 },
   ],
   all: [
-    { unit: "101", property: "Capitol Commons", tenant: "Acme", owner: "O1", leased: true, monthlyRent: 25000, end: "2026-10-01", daysToExpiry: 37 },
-    { unit: "102", property: "Capitol Commons", tenant: null, owner: "O1", leased: false, monthlyRent: null, end: null, daysToExpiry: null },
-    { unit: "201", property: "Circulo Verde", tenant: "Beta", owner: "O2", leased: true, monthlyRent: 30000, end: "2027-06-01", daysToExpiry: 400 },
+    { unit: "101", property: "Capitol Commons", tenant: "Acme", owner: "O1", officer: "Jaime Delacruz", leased: true, monthlyRent: 25000, end: "2026-10-01", daysToExpiry: 37 },
+    { unit: "102", property: "Capitol Commons", tenant: null, owner: "O1", officer: "Jaime Delacruz", leased: false, monthlyRent: null, end: null, daysToExpiry: null },
+    { unit: "201", property: "Circulo Verde", tenant: "Beta", owner: "O2", officer: "Rita Santos", leased: true, monthlyRent: 30000, end: "2027-06-01", daysToExpiry: 400 },
   ],
 };
+
+// Tiles navigate now, so the router is stubbed and the pushes recorded.
+const pushed = [];
+vi.mock("vue-router", () => ({
+  useRouter: () => ({ push: (to) => pushed.push(to) }),
+  useRoute: () => ({ params: {}, query: {} }),
+  RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" },
+}));
 
 vi.mock("../src/lib/executiveDashboard.js", () => ({
   fetchExecutiveDashboard: vi.fn(() => Promise.resolve(PAYLOAD)),
@@ -49,6 +57,7 @@ describe("ExecutiveDashboardView — tile targets", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     scrolled = stubScroll();
+    pushed.length = 0;
   });
 
   it("gives the blocks stable ids to target", async () => {
@@ -58,124 +67,95 @@ describe("ExecutiveDashboardView — tile targets", () => {
     expect(w.find("#unitsTable").exists()).toBe(true);
   });
 
-  // The whole point of the change: Occupancy must stop jumping to the table.
-  it("highlights the Occupancy block when the occupancy tile is clicked", async () => {
+  // A tile is a question about a number; its answer is a page of its own, not a
+  // highlighted block the reader still has to interpret.
+  it("opens the metric's own page when a tile is clicked", async () => {
     const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
+    await tile(w, "Total Registered Units").trigger("click");
     await flushPromises();
-    expect(scrolled).toEqual(["occupancy"]);
-    expect(w.find("#occupancy").classes()).toContain("is-spotlit");
-    expect(w.find("#unitsTable").classes()).not.toContain("is-spotlit");
+    expect(pushed).toEqual(["/app/metrics/all"]);
   });
 
-  it("leaves the table filter alone when highlighting Occupancy", async () => {
-    const w = await mountDash();
-    await tile(w, "Currently Leased").trigger("click");
-    await flushPromises();
-    const afterLeased = w.find("#unitsTable").text();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    // Occupancy is informational — it must not reset the filter you just set.
-    expect(w.find("#unitsTable").text()).toBe(afterLeased);
+  it("sends each tile to its own metric", async () => {
+    const cases = [
+      ["Currently Leased", "/app/metrics/leased"],
+      ["Registered but Not Leased", "/app/metrics/available"],
+      ["Near Expiry", "/app/metrics/near-expiry"],
+      ["Lease / Occupancy Rate", "/app/metrics/occupancy"],
+    ];
+    for (const [label, path] of cases) {
+      pushed.length = 0;
+      const w = await mountDash();
+      await tile(w, label).trigger("click");
+      await flushPromises();
+      expect(pushed, label).toEqual([path]);
+    }
   });
 
-  it("highlights Leases Expiring when the Near Expiry tile is clicked", async () => {
+  it("no longer spotlights or scrolls when a tile is clicked", async () => {
     const w = await mountDash();
-    await tile(w, "Near Expiry").trigger("click");
-    await flushPromises();
-    expect(scrolled).toEqual(["leasesExpiring"]);
-    expect(w.find("#leasesExpiring").classes()).toContain("is-spotlit");
-  });
-
-  it.each([
-    ["Total Registered Units"],
-    ["Currently Leased"],
-    ["Registered but Not Leased"],
-  ])("keeps %s on the Registered Units table", async (label) => {
-    const w = await mountDash();
-    await tile(w, label).trigger("click");
-    await flushPromises();
-    expect(scrolled).toEqual(["unitsTable"]);
-    expect(w.find("#unitsTable").classes()).toContain("is-spotlit");
-  });
-
-  it("still filters the table for the unit-count tiles", async () => {
-    const w = await mountDash();
-    await tile(w, "Registered but Not Leased").trigger("click");
-    await flushPromises();
-    const hint = w.find("#unitsTable").find(".card__hint").text();
-    expect(hint).toBe("1 of 3 units"); // only the one unleased unit
-  });
-
-  it("dims the rest of the dashboard behind a scrim", async () => {
-    const w = await mountDash();
-    expect(w.find(".spot-scrim").exists()).toBe(false);
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    expect(w.find(".spot-scrim").exists()).toBe(true);
-  });
-
-  // It must not vanish while you are still reading it.
-  it("stays lit until dismissed", async () => {
-    const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    vi.advanceTimersByTime(10000);
-    await flushPromises();
-    expect(w.find("#occupancy").classes()).toContain("is-spotlit");
-  });
-
-  it("releases when the scrim is clicked", async () => {
-    const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    await w.find(".spot-scrim").trigger("click");
-    expect(w.find("#occupancy").classes()).not.toContain("is-spotlit");
-    expect(w.find(".spot-scrim").exists()).toBe(false);
-  });
-
-  it("releases on Escape", async () => {
-    const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    await flushPromises();
-    expect(w.find("#occupancy").classes()).not.toContain("is-spotlit");
-  });
-
-  it("toggles off when the same tile is clicked again", async () => {
-    const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
     await tile(w, "Lease / Occupancy Rate").trigger("click");
     await flushPromises();
     expect(w.find("#occupancy").classes()).not.toContain("is-spotlit");
+    expect(w.find(".spot-scrim").exists()).toBe(false);
+    expect(scrolled).toEqual([]);
   });
 
-  it("stops listening for Escape once unmounted", async () => {
+  it("leaves the table filter alone when a tile navigates away", async () => {
     const w = await mountDash();
     await tile(w, "Lease / Occupancy Rate").trigger("click");
     await flushPromises();
-    w.unmount();
-    expect(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))).not.toThrow();
+    const on = w.findAll(".quick__pill").find((b) => b.classes().includes("on"));
+    expect(on.text()).toContain("All");
   });
 
-  it("moves the spotlight rather than lighting up two blocks at once", async () => {
-    const w = await mountDash();
-    await tile(w, "Lease / Occupancy Rate").trigger("click");
-    await flushPromises();
-    await tile(w, "Near Expiry").trigger("click");
-    await flushPromises();
-    expect(w.find("#occupancy").classes()).not.toContain("is-spotlit");
-    expect(w.find("#leasesExpiring").classes()).toContain("is-spotlit");
-  });
-
-  // The in-card drill-downs are explicit "show me the rows" actions.
+  // The in-card drill-downs stay where they were: they are explicit "show me
+  // these rows here" actions, and the spotlight is what makes that legible.
   it("keeps the in-card drill-down links pointed at the table", async () => {
     const w = await mountDash();
     const link = w.find("#leasesExpiring").findAll("button").find((b) => b.text().includes("View expiring leases"));
     await link.trigger("click");
     await flushPromises();
     expect(scrolled).toEqual(["unitsTable"]);
+    expect(w.find("#unitsTable").classes()).toContain("is-spotlit");
+  });
+
+  it("still releases that spotlight on Escape", async () => {
+    const w = await mountDash();
+    const link = w.find("#leasesExpiring").findAll("button").find((b) => b.text().includes("View expiring leases"));
+    await link.trigger("click");
+    await flushPromises();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flushPromises();
+    expect(w.find("#unitsTable").classes()).not.toContain("is-spotlit");
+  });
+});
+
+// Registered Units carries the officer looking after each unit, so staff can see
+// who owns the relationship without opening the owner record. The service
+// already returns it (unit -> owner -> assignedOfficer); this is the column.
+describe("ExecutiveDashboardView assigned officer column", () => {
+  it("shows an Assigned Officer column in Registered Units", async () => {
+    const w = await mountDash();
+    const heads = w.findAll("thead th").map((h) => h.text());
+    expect(heads).toContain("Assigned Officer");
+  });
+
+  it("renders each unit's officer", async () => {
+    const w = await mountDash();
+    const heads = w.findAll("thead th").map((h) => h.text());
+    const col = heads.indexOf("Assigned Officer");
+    expect(col).toBeGreaterThan(-1);
+    const firstRow = w.findAll("tbody tr")[0].findAll("td");
+    expect(firstRow[col].text()).toBe("Jaime Delacruz");
+  });
+
+  it("falls back to a dash when no officer is assigned", async () => {
+    const w = await mountDash();
+    const heads = w.findAll("thead th").map((h) => h.text());
+    const col = heads.indexOf("Assigned Officer");
+    const rows = w.findAll("tbody tr");
+    const beta = rows.find((r) => r.text().includes("Beta"));
+    expect(beta.findAll("td")[col].text()).toBe("Rita Santos");
   });
 });
