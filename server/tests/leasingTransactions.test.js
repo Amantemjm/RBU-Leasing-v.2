@@ -81,7 +81,7 @@ describe("Leasing transactions (process tracker)", () => {
     expect(detail.body.events[0].actorId).toBe(user.id);
   });
 
-  it("sets finalStatus when the Photoshoot stage is completed", async () => {
+  it("sets finalStatus when the Contract Signing stage is completed", async () => {
     const inquiry = await newInquiry();
     const { token } = await makeOfficer();
     await request(app).patch(`/api/inquiries/${inquiry.id}/accept`).set("Authorization", `Bearer ${token}`);
@@ -90,12 +90,13 @@ describe("Leasing transactions (process tracker)", () => {
     await adv(); // SEND_REQUIREMENTS -> APPROVAL
     await adv(); // APPROVAL -> UNIT_INSPECTION
     await adv(); // UNIT_INSPECTION -> KEY_TURNOVER
-    const last = await adv(); // KEY_TURNOVER -> PHOTOSHOOT
-    expect(last.body.stage).toBe("PHOTOSHOOT");
+    await adv(); // KEY_TURNOVER -> PHOTOSHOOT
+    const last = await adv(); // PHOTOSHOOT -> CONTRACT_SIGNING
+    expect(last.body.stage).toBe("CONTRACT_SIGNING");
     const done = await request(app).patch(`/api/leasing-transactions/${txnId}/status`)
-      .set("Authorization", `Bearer ${token}`).send({ status: "Completed" });
-    expect(done.body.status).toBe("Completed");
-    expect(done.body.finalStatus).toBe("Completed");
+      .set("Authorization", `Bearer ${token}`).send({ status: "Signed" });
+    expect(done.body.status).toBe("Signed");
+    expect(done.body.finalStatus).toBe("Signed");
   });
 
   it("sets a status within the current stage and rejects an invalid one", async () => {

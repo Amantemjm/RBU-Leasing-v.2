@@ -39,9 +39,15 @@ export const LEASING_STAGES = [
   },
   {
     key: "PHOTOSHOOT", label: "Photoshoot", short: "Photoshoot",
-    statuses: ["Pending", "Scheduled", "In Progress", "Completed", "Rescheduled"],
+    statuses: ["Pending", "Scheduled", "In Progress", "Completed", "Awaiting Prospect", "Rescheduled"],
     initial: "Pending", done: "Completed",
     lesseeAction: "The unit photoshoot is scheduled.",
+  },
+  {
+    key: "CONTRACT_SIGNING", label: "Contract Signing", short: "Signing",
+    statuses: ["Pending", "For Signature", "Signed", "Declined"],
+    initial: "Pending", done: "Signed",
+    lesseeAction: "Sign the lease contract.",
   },
 ];
 
@@ -59,8 +65,10 @@ export function stageIndex(key) {
 export function stageByKey(key) {
   return LEASING_STAGES.find((s) => s.key === key);
 }
+// The terminal stage is whichever is last — hardcoding a key here silently
+// stops `finalStatus` ever being written the moment a stage is appended.
 export function isFinalStage(key) {
-  return key === "PHOTOSHOOT";
+  return key === STAGE_KEYS[STAGE_KEYS.length - 1];
 }
 export function nextStageKey(key) {
   const i = stageIndex(key);

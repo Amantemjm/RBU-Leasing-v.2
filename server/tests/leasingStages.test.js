@@ -7,17 +7,29 @@ import {
 } from "../../shared/leasingStages.js";
 
 describe("Leasing stage engine (lessor flow)", () => {
-  it("has the six lessor stages in order", () => {
+  it("has the seven lessor stages in order", () => {
     expect(STAGE_KEYS).toEqual([
       "INQUIRY", "SEND_REQUIREMENTS", "APPROVAL",
-      "UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT",
+      "UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT", "CONTRACT_SIGNING",
     ]);
   });
 
-  it("marks Photoshoot as the terminal stage", () => {
-    expect(isFinalStage("PHOTOSHOOT")).toBe(true);
-    expect(isFinalStage("APPROVAL")).toBe(false);
-    expect(nextStageKey("PHOTOSHOOT")).toBe(null);
+  it("marks Contract Signing as the terminal stage, not Photoshoot", () => {
+    expect(isFinalStage("CONTRACT_SIGNING")).toBe(true);
+    expect(isFinalStage("PHOTOSHOOT")).toBe(false);
+    expect(nextStageKey("PHOTOSHOOT")).toBe("CONTRACT_SIGNING");
+    expect(nextStageKey("CONTRACT_SIGNING")).toBe(null);
+  });
+
+  it("rests Photoshoot at Awaiting Prospect when no tenant has appeared", () => {
+    expect(stageByKey("PHOTOSHOOT").statuses).toContain("Awaiting Prospect");
+    expect(stageByKey("PHOTOSHOOT").done).toBe("Completed"); // waiting is not done
+  });
+
+  it("does not make Contract Signing schedulable", () => {
+    expect(SCHEDULABLE_STAGE_KEYS).toEqual(["UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT"]);
+    expect(isSchedulableStage("CONTRACT_SIGNING")).toBe(false);
+    expect(stageByKey("CONTRACT_SIGNING").done).toBe("Signed");
   });
 
   it("exposes the done status used to advance each stage", () => {
