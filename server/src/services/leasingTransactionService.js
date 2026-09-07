@@ -4,6 +4,7 @@ import {
   LEASING_STAGES, STAGE_KEYS, stageByKey, stageIndex, nextStageKey, prevStageKey, isValidStatus, isFinalStage,
   APPROVAL_ROUTING, APPROVAL_STEP_STATUSES,
 } from "../../../shared/leasingStages.js";
+import { TRANSACTION_DOCUMENT_KEYS, labelForDocType } from "../../../shared/transactionDocuments.js";
 
 const includeFull = {
   unit: { select: { id: true, unitNumber: true, building: true } },
@@ -290,27 +291,55 @@ export async function assertCanAccess(user, id) {
 
 // --- supporting documents --------------------------------------------------
 
-export async function addDocument(actor, id, file) {
+const DOC_SELECT = {
+  id: true, filename: true, mimeType: true, size: true, stage: true,
+  docType: true, uploadedByName: true, createdAt: true,
+};
+
+export async function addDocument(actor, id, file, docType = null) {
   const txn = await assertCanAccess(actor, id);
+  if (docType && !TRANSACTION_DOCUMENT_KEYS.includes(docType)) {
+    throw new InvalidReferenceError("Unknown document type");
+  }
   let uploadedByName = null;
   if (actor?.userId) {
     const u = await prisma.user.findUnique({ where: { id: actor.userId }, select: { name: true, email: true } });
     uploadedByName = u?.name || u?.email || null;
   }
-  const doc = await prisma.transactionDocument.create({
-    data: {
-      transactionId: id,
-      filename: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      data: file.buffer,
-      stage: txn.stage,
-      uploadedById: actor?.userId || null,
-      uploadedByName,
-    },
-    select: { id: true, filename: true, mimeType: true, size: true, stage: true, uploadedByName: true, createdAt: true },
-  });
-  await logEvent(id, actor, `Uploaded document "${file.originalname}"`, txn.stage);
+  const fields = {
+    filename: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size,
+    data: file.buffer,
+    stage: txn.stage,
+    uploadedById: actor?.userId || null,
+    uploadedByName,
+  };
+
+  // A named slot holds one document — re-uploading replaces it, the same way the
+  // lessor and lessee requirement checklists behave. Loose attachments stack.
+  const doc = docType
+    ? await prisma.transactionDocument.upsert({
+        where: { transactionId_docType: { transactionId: id, docType } },
+        update: { ...fields, createdAt: new Date() },
+        create: { transactionId: id, docType, ...fields },
+        select: DOC_SELECT,
+      })
+    : await prisma.transactionDocument.create({
+        data: { transactionId: id, ...fields },
+        select: DOC_SELECT,
+      });
+
+  await logEvent(id, actor, `Uploaded ${docType ? labelForDocType(docType) : `document "${file.originalname}"`}`, txn.stage);
+
+  // The upload is the action. Delegating to advance/setStatus rather than
+  // writing the stage here keeps stageData, finalStatus and the event log in
+  // exactly one shape.
+  if (docType === "LETTER_OF_INTENT" && txn.stage === "PHOTOSHOOT" && txn.tenantId) {
+    await advance(actor, id);
+  } else if (docType === "SIGNED_CONTRACT" && txn.stage === "CONTRACT_SIGNING") {
+    await setStatus(actor, id, { status: "Signed" });
+  }
   return doc;
 }
 

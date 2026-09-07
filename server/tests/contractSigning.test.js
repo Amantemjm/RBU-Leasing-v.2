@@ -151,3 +151,113 @@ describe("Entering Contract Signing", () => {
     expect(res.body.stage).toBe("PHOTOSHOOT");
   });
 });
+
+describe("Documents driving the pipeline", () => {
+  const pdf = Buffer.from("%PDF-1.4 test");
+  const upload = (token, txnId, docType) => {
+    const req = request(app).post(`/api/leasing-transactions/${txnId}/documents`)
+      .set("Authorization", `Bearer ${token}`)
+      .attach("file", pdf, { filename: "doc.pdf", contentType: "application/pdf" });
+    return docType ? req.field("docType", docType) : req;
+  };
+
+  it("advances to Contract Signing the moment the LOI lands", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+
+    const res = await upload(token, txn.id, "LETTER_OF_INTENT");
+    expect(res.status).toBe(201);
+    expect(res.body.docType).toBe("LETTER_OF_INTENT");
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.stage).toBe("CONTRACT_SIGNING");
+  });
+
+  // The shoot may not even have happened yet — this upload must not imply it has.
+  it("stores the LOI without moving anything when no tenant is linked", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
+
+    const res = await upload(token, txn.id, "LETTER_OF_INTENT");
+    expect(res.status).toBe(201);
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.stage).toBe("PHOTOSHOOT");
+    expect(after.status).toBe("Pending"); // untouched
+  });
+
+  it("closes the transaction when the signed contract is uploaded", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+
+    const res = await upload(token, txn.id, "SIGNED_CONTRACT");
+    expect(res.status).toBe(201);
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.stage).toBe("CONTRACT_SIGNING");
+    expect(after.status).toBe("Signed");
+    expect(after.finalStatus).toBe("Signed");
+  });
+
+  it("replaces a typed document rather than stacking it", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+
+    const rows = await prisma.transactionDocument.findMany({
+      where: { transactionId: txn.id, docType: "LETTER_OF_INTENT" },
+    });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("still stacks loose attachments", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
+    await upload(token, txn.id);
+    await upload(token, txn.id);
+
+    const rows = await prisma.transactionDocument.findMany({
+      where: { transactionId: txn.id, docType: null },
+    });
+    expect(rows).toHaveLength(2);
+  });
+
+  it("rejects a document type that is not on the registry", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
+    const res = await upload(token, txn.id, "NOT_A_TYPE");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Unknown document type");
+  });
+
+  it("lets the linked lessee download the signed contract", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+    const up = await upload(token, txn.id, "SIGNED_CONTRACT");
+
+    const res = await request(app)
+      .get(`/api/leasing-transactions/${txn.id}/documents/${up.body.id}/download`)
+      .set("Authorization", `Bearer ${tokens.tenant(tenant.id)}`);
+    expect(res.status).toBe(200);
+  });
+
+  it("does not let an unlinked lessee download it", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const other = await factory.tenant({ name: "Ben" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+    const up = await upload(token, txn.id, "SIGNED_CONTRACT");
+
+    const res = await request(app)
+      .get(`/api/leasing-transactions/${txn.id}/documents/${up.body.id}/download`)
+      .set("Authorization", `Bearer ${tokens.tenant(other.id)}`);
+    expect(res.status).toBe(404);
+  });
+});
