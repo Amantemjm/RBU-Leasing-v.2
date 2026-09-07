@@ -1,10 +1,11 @@
 <script setup>
 // Requirements module. Staff get one screen with Lessor / Lessee tabs; a tenant
-// sees only their own documents (no tabs).
+// sees their own checklist, with any free-form uploads beneath it.
 import { ref } from "vue";
 import { useAuthStore } from "../stores/auth.js";
 import LessorRequirementsView from "./LessorRequirementsView.vue";
 import LesseeRequirementsPanel from "./LesseeRequirementsPanel.vue";
+import MyLesseeRequirementsView from "./MyLesseeRequirementsView.vue";
 
 const auth = useAuthStore();
 const tab = ref("lessor"); // lessor | lessee
@@ -15,7 +16,13 @@ const tab = ref("lessor"); // lessor | lessee
     <header><h1>Requirements</h1></header>
 
     <template v-if="auth.isTenant">
-      <LesseeRequirementsPanel />
+      <!-- The checklist is the thing to act on; anything uploaded before it
+           existed is still worth showing, so it sits underneath. -->
+      <MyLesseeRequirementsView />
+      <div class="other">
+        <h2>Other documents</h2>
+        <LesseeRequirementsPanel />
+      </div>
     </template>
 
     <template v-else>
@@ -51,4 +58,6 @@ const tab = ref("lessor"); // lessor | lessee
 }
 .tab:hover { color: var(--ink-800); }
 .tab.on { background: var(--surface); color: var(--accent-text); box-shadow: var(--shadow-sm); }
+.other { margin-top: 1.6rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.other h2 { font-size: 0.95rem; margin: 0 0 0.6rem; color: var(--ink-700); }
 </style>

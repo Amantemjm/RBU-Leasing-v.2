@@ -9,6 +9,7 @@ import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
 import DashboardMetricView from "../views/DashboardMetricView.vue";
+import BrowseUnitsView from "../views/BrowseUnitsView.vue";
 import InquiriesView from "../views/InquiriesView.vue";
 import OwnersView from "../views/OwnersView.vue";
 import OwnerFormView from "../views/OwnerFormView.vue";
@@ -95,6 +96,9 @@ const routes = [
       { path: "leasing-progress", component: MyLeasingProgressView, meta: { roles: ["UNIT_OWNER", "TENANT"] } },
       // Tenant (Lessee)
       { path: "my-lease", component: TenantLeaseView, meta: { roles: ["TENANT"] } },
+      // Published listings, inside the portal — a lessee can look without
+      // signing out to reach the public gallery.
+      { path: "browse-units", component: BrowseUnitsView, meta: { roles: ["TENANT"] } },
       { path: "info-sheet-tenant", component: TenantInfoSheetView, meta: { roles: ["TENANT"] } },
       // Shared
       { path: "requirements", component: RequirementsView, meta: { roles: ["TENANT", "ADMIN", "LEASING_OFFICER"] } },

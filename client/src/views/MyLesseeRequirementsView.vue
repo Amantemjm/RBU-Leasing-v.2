@@ -1,47 +1,62 @@
 <script setup>
+// The lessee's document checklist — the mirror of the lessor's. A fixed list of
+// types, one upload each, and the status staff set when they review it.
 import { ref, onMounted } from "vue";
-import { lessorRequirements } from "../lib/resource.js";
+import { lesseeRequirements } from "../lib/resource.js";
 
 const rows = ref([]);
 const busyKey = ref("");
 const error = ref("");
+// Only these leave something for the lessee to do — an approved document needs
+// nothing, and one already submitted is waiting on staff, not on them.
 const NEEDS_ACTION = ['Rejected', 'Expired', 'For Resubmission'];
 const ACTIONABLE = ["Required", "Rejected", "For Resubmission", "Expired"];
 
-async function load() { rows.value = await lessorRequirements.mine(); }
+async function load() { rows.value = await lesseeRequirements.mine(); }
 onMounted(load);
 
 async function onFile(e, key) {
   const file = e.target.files?.[0];
   if (!file) return;
   busyKey.value = key; error.value = "";
-  try { await lessorRequirements.uploadMine(key, file); await load(); }
+  try { await lesseeRequirements.uploadMine(key, file); await load(); }
   catch (err) { error.value = err.response?.data?.error || "Upload failed"; }
   finally { busyKey.value = ""; e.target.value = ""; }
 }
+
 async function download(row) {
-  const blob = await lessorRequirements.download(row.id);
-  const url = URL.createObjectURL(blob); const a = document.createElement("a");
-  a.href = url; a.download = row.filename || "document"; a.click(); URL.revokeObjectURL(url);
+  const blob = await lesseeRequirements.download(row.id);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = row.filename || "document"; a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 
 <template>
   <section>
-    <header><h1>My Requirements</h1><p class="muted">Upload the documents O-Lease needs. Track each one's status here.</p></header>
+    <header>
+      <h1>My Requirements</h1>
+      <p class="muted">Upload the documents O-Lease needs. Each one shows where it stands.</p>
+    </header>
     <p v-if="error" class="error">{{ error }}</p>
     <ul class="list">
       <li v-for="r in rows" :key="r.requirementKey" class="item">
         <div class="item__main">
           <span class="item__label">{{ r.label }}</span>
-          <span class="badge" :class="r.status.toLowerCase().replace(/ /g,'-')">{{ r.status }}</span>
+          <span class="badge" :class="r.status.toLowerCase().replace(/ /g, '-')">{{ r.status }}</span>
         </div>
         <div v-if="r.remarks" class="remark" :class="{ 'remark--bad': NEEDS_ACTION.includes(r.status) }">{{ r.remarks }}</div>
         <div class="item__actions">
           <button v-if="r.id && r.filename" type="button" class="link" @click="download(r)">Download</button>
           <label v-if="ACTIONABLE.includes(r.status)" class="upload">
             <span>{{ r.id && r.filename ? "Replace" : "Upload" }}</span>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" :disabled="busyKey === r.requirementKey" @change="onFile($event, r.requirementKey)" />
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.docx"
+              :disabled="busyKey === r.requirementKey"
+              @change="onFile($event, r.requirementKey)"
+            />
           </label>
         </div>
       </li>

@@ -76,6 +76,7 @@ const OWNER_GROUPS = [{ label: null, items: [
 ] }];
 const TENANT_GROUPS = [{ label: null, items: [
   { to: "/app/my-lease", label: "My Lease", icon: "file" },
+  { to: "/app/browse-units", label: "Available Units", icon: "building" },
   { to: "/app/leasing-progress", label: "Leasing Progress", icon: "activity" },
   { to: "/app/info-sheet-tenant", label: "Acceptance Form", icon: "clipboard" },
   { to: "/app/requirements", label: "Requirements", icon: "folder" },

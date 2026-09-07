@@ -129,6 +129,25 @@ export const lessorRequirements = {
   },
 };
 
+// The lessee's document checklist — the mirror of lessorRequirements above.
+export const lesseeRequirements = {
+  mine: () => api.get("/lessee-requirements/mine").then((r) => r.data),
+  forTenant: (id) => api.get(`/lessee-requirements/${id}`).then((r) => r.data),
+  uploadMine: (key, file) => {
+    const form = new FormData(); form.append("file", file);
+    return api.post(`/lessee-requirements/mine/${key}`, form).then((r) => r.data);
+  },
+  uploadFor: (tenantId, key, file) => {
+    const form = new FormData(); form.append("file", file);
+    return api.post(`/lessee-requirements/${tenantId}/${key}`, form).then((r) => r.data);
+  },
+  review: (id, body) => api.patch(`/lessee-requirements/${id}/review`, body).then((r) => r.data),
+  download: async (id) => {
+    const res = await api.get(`/lessee-requirements/${id}/download`, { responseType: "blob" });
+    return res.data;
+  },
+};
+
 export const unitListings = {
   listAll: () => api.get("/unit-listings").then((r) => r.data),
   get: (unitId) => api.get(`/unit-listings/${unitId}`).then((r) => r.data),

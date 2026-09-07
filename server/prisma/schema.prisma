@@ -239,6 +239,7 @@ model Tenant {
   requirements Requirement[]
   lesseeInfoSheets LesseeInfoSheet[]
   leasingTransactions LeasingTransaction[]
+  lesseeRequirements LesseeRequirement[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -484,4 +485,30 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// The lessee's side of the document checklist — the mirror of
+// LessorRequirement. One row per tenant per document type; the row is created
+// on first upload and the checklist is completed from the shared config, so an
+// untouched type simply reads as Required.
+model LesseeRequirement {
+  id             String    @id @default(cuid())
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId       String
+  requirementKey String
+  status         String    @default("Required")
+  filename       String?
+  mimeType       String?
+  size           Int?
+  data           Bytes?
+  remarks        String?
+  expiresAt      DateTime?
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([tenantId, requirementKey])
 }
