@@ -298,3 +298,59 @@ describe("Documents driving the pipeline", () => {
     expect(rows).toHaveLength(1);
   });
 });
+
+describe("Awaiting Prospect", () => {
+  async function shotWithNoTenant(user, token) {
+    const txn = await atPhotoshoot(user);
+    const appt = await request(app)
+      .post(`/api/appointments/transaction/${txn.id}/PHOTOSHOOT`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ scheduledAt: new Date().toISOString(), location: "Ibiza Tower" });
+    await request(app).patch(`/api/appointments/${appt.body.id}/complete`)
+      .set("Authorization", `Bearer ${token}`).send({});
+    return txn;
+  }
+
+  it("rests at Awaiting Prospect when the shoot finishes with nobody in view", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.status).toBe("Awaiting Prospect");
+  });
+
+  // The shoot did complete — only the stage's resting status differs.
+  it("still records the appointment itself as Completed", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
+    const appt = await prisma.appointment.findFirst({ where: { transactionId: txn.id } });
+    expect(appt.status).toBe("Completed");
+    expect(appt.outcome).toBe("Completed");
+  });
+
+  it("rests at Completed when a tenant is already linked", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    const appt = await request(app)
+      .post(`/api/appointments/transaction/${txn.id}/PHOTOSHOOT`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ scheduledAt: new Date().toISOString() });
+    await request(app).patch(`/api/appointments/${appt.body.id}/complete`)
+      .set("Authorization", `Bearer ${token}`).send({});
+
+    const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
+    expect(after.status).toBe("Completed");
+  });
+
+  it("returns to Completed when a prospect finally appears", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
+    const tenant = await factory.tenant({ name: "Ana" });
+
+    const res = await request(app).patch(`/api/leasing-transactions/${txn.id}/link`)
+      .set("Authorization", `Bearer ${token}`).send({ tenantId: tenant.id });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("Completed");
+    expect(res.body.stageData.PHOTOSHOOT.status).toBe("Completed");
+  });
+});

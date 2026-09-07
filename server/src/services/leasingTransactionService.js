@@ -239,7 +239,7 @@ export async function returnStage(actor, id, { status, remarks } = {}) {
 
 // Link related records (unit / lessee / lessor) to the transaction.
 export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) {
-  await loadOrThrow(id);
+  const txn = await loadOrThrow(id);
   const data = {};
   const notes = [];
   if (unitId !== undefined) {
@@ -265,6 +265,15 @@ export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) 
       notes.push(`lessor ${o.name}`);
     }
     data.unitOwnerId = unitOwnerId || null;
+  }
+  // A prospect has appeared, so the shoot is simply done again and the
+  // transaction is ready for its Letter of Intent.
+  if (data.tenantId && txn.stage === "PHOTOSHOOT" && txn.status === "Awaiting Prospect") {
+    data.status = "Completed";
+    data.stageData = {
+      ...(txn.stageData || {}),
+      PHOTOSHOOT: { ...(txn.stageData?.PHOTOSHOOT || {}), status: "Completed" },
+    };
   }
   await prisma.leasingTransaction.update({ where: { id }, data });
   if (notes.length) await logEvent(id, actor, `Linked ${notes.join(", ")}`);
