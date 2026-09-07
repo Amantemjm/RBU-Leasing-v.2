@@ -15,3 +15,7 @@ server/data/
 
 # operational provisioning scripts (real credentials/PII — keep out of the repo)
 server/scripts/create-*.js
+
+# Database dumps — contain the passwordPlain column for every user.
+# This repository is public; these must never be committed.
+backups/
