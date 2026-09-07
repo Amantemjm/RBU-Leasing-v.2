@@ -188,7 +188,11 @@ describe("public pages do not follow the theme", () => {
 // where depth comes from the border and shadow rather than from contrast.
 // This supersedes the earlier "header stays white / footer stays green /
 // chrome contrasts with the body" rules, which the premium brief replaced.
-describe("navigation is the same teal in both modes", () => {
+// The brand theme: one primary colour (#1D5532) on white, with black type.
+// These assert the *intent* — a white bar, legible contents, the brand as the
+// single accent — rather than pinning every literal, so a future tweak to the
+// neutrals does not fail the suite for no reason.
+describe("navigation is a white bar carrying the brand", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const SHELL = fs.readFileSync(path.resolve(__dirname, "../src/components/PublicShell.vue"), "utf8");
@@ -224,14 +228,14 @@ describe("navigation is the same teal in both modes", () => {
   const light = block(CSS, ".portal {");
   const dark = block(CSS, ':root[data-theme="dark"] .portal');
 
-  it("uses one navigation colour across both modes", () => {
-    expect(tok(light, "chrome-bg").toUpperCase()).toBe("#183D3D");
-    expect(tok(dark, "chrome-bg").toUpperCase()).toBe("#183D3D");
+  it("is white with black type in light mode", () => {
+    expect(tok(light, "chrome-bg").toUpperCase()).toBe("#FFFFFF");
+    expect(tok(light, "chrome-text").toUpperCase()).toBe("#000000");
   });
 
-  it("reads as a dark bar against the light page", () => {
-    expect(ratio(tok(light, "chrome-bg"), tok(light, "paper"))).toBeGreaterThan(4.5);
-    expect(lum(hex(tok(light, "chrome-bg")))).toBeLessThan(lum(hex(tok(light, "paper"))));
+  it("carries the brand colour as its accent", () => {
+    expect(tok(light, "chrome-accent").toUpperCase()).toBe("#1D5532");
+    expect(tok(light, "brand").toUpperCase()).toBe("#1D5532");
   });
 
   it("sits above the dark page as an elevated surface", () => {
@@ -247,9 +251,11 @@ describe("navigation is the same teal in both modes", () => {
   });
 });
 
-// Each mode is designed, not inverted: the light theme layers white cards on an
-// off-white page, the dark theme layers #183D3D-tinted surfaces on #040D12.
-describe("both modes have a real surface ladder", () => {
+// Light mode is white-on-white by design — the brief calls for a predominantly
+// white interface, with a third level available only where a card genuinely
+// needs to separate. Dark mode is a neutral system-appropriate ground, not a
+// bespoke palette, so it is checked for neutrality rather than a literal.
+describe("the surface ladder matches the brand brief", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const APP = fs.readFileSync(path.resolve(__dirname, "../src/styles/app.css"), "utf8");
@@ -274,24 +280,41 @@ describe("both modes have a real surface ladder", () => {
       .map((v) => v / 255)
       .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)))
       .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => {
+    const [hi, lo] = [lum(hex(a)), lum(hex(b))].sort((m, n) => n - m);
+    return (hi + 0.05) / (lo + 0.05);
+  };
 
-  it("gives each mode three distinct surface levels", () => {
-    for (const [name, sel] of [["light", ":root {"], ["dark", ':root[data-theme="dark"],']]) {
-      const b = block(APP, sel);
-      const levels = ["paper", "surface", "surface-2"].map((t) => tok(b, t));
-      expect(new Set(levels).size, name + " distinct levels").toBe(3);
-    }
+  const lightBlock = block(APP, ":root {");
+  const darkBlock = block(APP, ':root[data-theme="dark"],');
+
+  it("keeps light mode white with black text", () => {
+    expect(tok(lightBlock, "paper").toUpperCase()).toBe("#FFFFFF");
+    expect(tok(lightBlock, "surface").toUpperCase()).toBe("#FFFFFF");
+    expect(tok(lightBlock, "text").toUpperCase()).toBe("#000000");
   });
 
-  it("builds the dark mode up from the deep ground, not down from white", () => {
-    const b = block(APP, ':root[data-theme="dark"],');
-    expect(tok(b, "paper").toUpperCase()).toBe("#040D12");
-    expect(lum(hex(tok(b, "surface")))).toBeGreaterThan(lum(hex(tok(b, "paper"))));
+  it("uses #1D5532 as the single primary, readable on white both ways", () => {
+    expect(tok(lightBlock, "accent").toUpperCase()).toBe("#1D5532");
+    expect(ratio(tok(lightBlock, "accent"), "#FFFFFF")).toBeGreaterThan(4.5);
+    expect(ratio(tok(lightBlock, "on-accent"), tok(lightBlock, "accent"))).toBeGreaterThan(4.5);
   });
 
-  it("keeps the light mode off-white rather than pure white", () => {
-    const b = block(APP, ":root {");
-    expect(tok(b, "paper").toUpperCase()).not.toBe("#FFFFFF");
-    expect(tok(b, "surface").toUpperCase()).toBe("#FFFFFF");
+  it("offers a third level for cards that must separate", () => {
+    expect(tok(lightBlock, "surface-2")).not.toBe(tok(lightBlock, "surface"));
+  });
+
+  it("builds dark mode on a neutral ground, not a bespoke palette", () => {
+    const ground = hex(tok(darkBlock, "paper"));
+    expect(lum(ground)).toBeLessThan(0.05);                       // genuinely dark
+    expect(Math.max(...ground) - Math.min(...ground)).toBeLessThan(12); // neutral, not tinted
+    expect(lum(hex(tok(darkBlock, "surface")))).toBeGreaterThan(lum(ground));
+  });
+
+  it("lifts the brand in dark mode so it stays legible", () => {
+    // #1D5532 is 2.2:1 on a dark ground and unusable there, so dark mode
+    // carries the same hue raised until it clears AA.
+    expect(ratio(tok(darkBlock, "accent-text"), tok(darkBlock, "paper"))).toBeGreaterThan(4.5);
+    expect(ratio(tok(darkBlock, "on-accent"), tok(darkBlock, "accent"))).toBeGreaterThan(4.5);
   });
 });

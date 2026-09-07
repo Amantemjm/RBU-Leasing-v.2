@@ -7,33 +7,33 @@
 
 :root {
   /* Deep greens — shell + headings (constant across modes) */
-  --ink-900: #183D3D;  /* top bar + auth backdrop */
-  --ink-800: #183D3D;  /* headings / display numerals */
-  --ink-700: #2F5050;
-  --ink-600: #4B6868;
+  --ink-900: #1D5532;  /* top bar + auth backdrop */
+  --ink-800: #000000;  /* headings / display numerals */
+  --ink-700: #1A1A1A;
+  --ink-600: #4A4A4A;
 
   /* Neutrals */
-  --paper: #F4F7F6;
+  --paper: #FFFFFF;
   --surface: #FFFFFF;
-  --line: #DAE4E1;
-  --line-strong: #C4D4CE;
-  --text: #040D12;
+  --line: #E2E2E2;
+  --line-strong: #C9C9C9;
+  --text: #000000;
   /* Two levels of secondary text, both legible. --faint was #93a49b, which is
      2.6:1 on white and 2.4:1 on --paper — it is used for hints, captions and
      timestamps in 26 places, so that was the system's worst readability
      problem. Both now clear 4.5:1 on white and on --paper. */
-  --muted: #466464;
-  --faint: #597373;
-  --thead-bg: #F2F6F4;
-  --row-hover: #F5F8F7;
+  --muted: #4A4A4A;
+  --faint: #666666;
+  --thead-bg: #F6F7F6;
+  --row-hover: #F4F6F4;
 
   /* Brand accent — Green Pea base, Japanese Laurel on hover */
-  --accent: #53776A;       /* fills: buttons, badges, active nav, meters */
-  --accent-600: #426057;   /* hover: the same green, deepened — the old #0A6906
+  --accent: #1D5532;       /* fills: buttons, badges, active nav, meters */
+  --accent-600: #164026;   /* hover: the same green, deepened — the old #0A6906
                               was a different hue, so buttons changed colour
                               rather than darkening on hover */
-  --accent-050: #E3EBE8;   /* focus ring / tint background */
-  --accent-text: #426057;  /* accent as text / links / borders on a surface */
+  --accent-050: #E8F0EB;   /* focus ring / tint background */
+  --accent-text: #1D5532;  /* accent as text / links / borders on a surface */
 
   /* Status */
   --good: #12783D;   --good-050: #e7f3ec;
@@ -70,21 +70,21 @@
      button. Must stay >= the switch's right offset + width + a little
      clearance; the switch shrinks on narrow screens and this shrinks with it. */
   --toggle-gutter: 108px;
-  --chrome-bg: #183D3D;
-  --chrome-text: #FFFFFF;
-  --chrome-muted: #93B1A6;
-  --chrome-faint: #93B1A6;
-  --chrome-line: rgba(147, 177, 166, 0.20);
-  --chrome-accent: #93ADA3;
-  --chrome-hover: rgba(147, 177, 166, 0.14);
+  --chrome-bg: #FFFFFF;
+  --chrome-text: #000000;
+  --chrome-muted: #4A4A4A;
+  --chrome-faint: #666666;
+  --chrome-line: #E2E2E2;
+  --chrome-accent: #1D5532;
+  --chrome-hover: #F1F5F2;
   --panel-bg: #FFFFFF;
-  --panel-text: #040D12;
-  --panel-muted: #466464;
-  --panel-line: #DAE4E1;
-  --panel-accent: #426057;
-  --surface-2: #EEF3F1;
+  --panel-text: #000000;
+  --panel-muted: #4A4A4A;
+  --panel-line: #E2E2E2;
+  --panel-accent: #1D5532;
+  --surface-2: #F6F7F6;
   --on-accent: #FFFFFF;
-  --chrome-logo: brightness(0) invert(1);
+  --chrome-logo: brightness(0);
   --radius-lg: 14px;
 
 }
@@ -109,26 +109,26 @@
 /* Dark palette — shared by the auto (OS) and manual (data-theme) paths */
 :root[data-theme="dark"],
 :root.is-dark {
-  --paper: #040D12;
-  --surface: #0B1D21;
-  --line: #212E30;
-  --line-strong: #354544;
-  --text: #E1E9E6;
-  --muted: #93B1A6;
-  --faint: #718A82;
-  --thead-bg: #0D2225;
-  --row-hover: #09191C;
-  --ink-800: #F4F7F6;   /* headings become light on dark surfaces */
-  --ink-700: #D6E1DD;
-  --ink-600: #93B1A6;
+  --paper: #121212;
+  --surface: #1E1E1E;
+  --line: #2F2F2F;
+  --line-strong: #454545;
+  --text: #EDEDED;
+  --muted: #A8A8A8;
+  --faint: #8A8A8A;
+  --thead-bg: #242424;
+  --row-hover: #1A1A1A;
+  --ink-800: #EDEDED;   /* headings become light on dark surfaces */
+  --ink-700: #DADADA;
+  --ink-600: #A8A8A8;
   /* Dark mode previously inherited --accent from light, so buttons stayed
      #1D6142 against a near-black surface and barely separated from it. These
      are the same hues lifted for a dark ground, so the two themes read as one
      palette at two luminances rather than two different designs. */
-  --accent: #5C8374;
-  --accent-600: #76978A;
-  --accent-050: rgba(92, 131, 116, 0.18);
-  --accent-text: #8DA89E;
+  --accent: #4FA96B;
+  --accent-600: #6FBF87;
+  --accent-050: rgba(79, 169, 107, 0.16);
+  --accent-text: #6FBF87;
   /* Status colours were inherited from light too, and were too dark to read
      against dark surfaces. */
   --good: #5FD69C;
@@ -141,20 +141,20 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
   --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
-  --chrome-bg: #183D3D;
-  --chrome-text: #FFFFFF;
-  --chrome-muted: #93B1A6;
-  --chrome-faint: #93B1A6;
-  --chrome-line: rgba(147, 177, 166, 0.18);
-  --chrome-accent: #93ADA3;
-  --chrome-hover: rgba(147, 177, 166, 0.12);
-  --panel-bg: #0B1D21;
-  --panel-text: #E1E9E6;
-  --panel-muted: #93B1A6;
-  --panel-line: #212E30;
-  --panel-accent: #8DA89E;
-  --surface-2: #10292B;
-  --on-accent: #040D12;
+  --chrome-bg: #1E1E1E;
+  --chrome-text: #EDEDED;
+  --chrome-muted: #A8A8A8;
+  --chrome-faint: #8A8A8A;
+  --chrome-line: #2F2F2F;
+  --chrome-accent: #6FBF87;
+  --chrome-hover: rgba(255, 255, 255, 0.06);
+  --panel-bg: #1E1E1E;
+  --panel-text: #EDEDED;
+  --panel-muted: #A8A8A8;
+  --panel-line: #2F2F2F;
+  --panel-accent: #6FBF87;
+  --surface-2: #262626;
+  --on-accent: #000000;
   --chrome-logo: brightness(0) invert(1);
 
 }
@@ -164,26 +164,26 @@
      way. Editing only one of the two leaves everyone whose OS is dark, but
      who never touched the switch, on the previous palette. */
   :root:not([data-theme="light"]) {
-    --paper: #040D12;
-    --surface: #0B1D21;
-    --line: #212E30;
-    --line-strong: #354544;
-    --text: #E1E9E6;
-    --muted: #93B1A6;
-    --faint: #718A82;
-    --thead-bg: #0D2225;
-    --row-hover: #09191C;
-    --ink-800: #F4F7F6;   /* headings become light on dark surfaces */
-    --ink-700: #D6E1DD;
-    --ink-600: #93B1A6;
+    --paper: #121212;
+    --surface: #1E1E1E;
+    --line: #2F2F2F;
+    --line-strong: #454545;
+    --text: #EDEDED;
+    --muted: #A8A8A8;
+    --faint: #8A8A8A;
+    --thead-bg: #242424;
+    --row-hover: #1A1A1A;
+    --ink-800: #EDEDED;   /* headings become light on dark surfaces */
+    --ink-700: #DADADA;
+    --ink-600: #A8A8A8;
     /* Dark mode previously inherited --accent from light, so buttons stayed
        #1D6142 against a near-black surface and barely separated from it. These
        are the same hues lifted for a dark ground, so the two themes read as one
        palette at two luminances rather than two different designs. */
-    --accent: #5C8374;
-    --accent-600: #76978A;
-    --accent-050: rgba(92, 131, 116, 0.18);
-    --accent-text: #8DA89E;
+    --accent: #4FA96B;
+    --accent-600: #6FBF87;
+    --accent-050: rgba(79, 169, 107, 0.16);
+    --accent-text: #6FBF87;
     /* Status colours were inherited from light too, and were too dark to read
        against dark surfaces. */
     --good: #5FD69C;
@@ -196,20 +196,20 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44), 0 1px 3px rgba(0, 0, 0, 0.32);
     --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.60), 0 2px 8px -3px rgba(0, 0, 0, 0.45);
     --shadow-lg: 0 22px 48px -22px rgba(0, 0, 0, 0.76), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
-    --chrome-bg: #183D3D;
-    --chrome-text: #FFFFFF;
-    --chrome-muted: #93B1A6;
-    --chrome-faint: #93B1A6;
-    --chrome-line: rgba(147, 177, 166, 0.18);
-    --chrome-accent: #93ADA3;
-    --chrome-hover: rgba(147, 177, 166, 0.12);
-    --panel-bg: #0B1D21;
-    --panel-text: #E1E9E6;
-    --panel-muted: #93B1A6;
-    --panel-line: #212E30;
-    --panel-accent: #8DA89E;
-    --surface-2: #10292B;
-    --on-accent: #040D12;
+    --chrome-bg: #1E1E1E;
+    --chrome-text: #EDEDED;
+    --chrome-muted: #A8A8A8;
+    --chrome-faint: #8A8A8A;
+    --chrome-line: #2F2F2F;
+    --chrome-accent: #6FBF87;
+    --chrome-hover: rgba(255, 255, 255, 0.06);
+    --panel-bg: #1E1E1E;
+    --panel-text: #EDEDED;
+    --panel-muted: #A8A8A8;
+    --panel-line: #2F2F2F;
+    --panel-accent: #6FBF87;
+    --surface-2: #262626;
+    --on-accent: #000000;
     --chrome-logo: brightness(0) invert(1);
   }
 }
@@ -1139,22 +1139,49 @@ button:disabled {
    every card's footer into a green bar inside a white card. */
 .topbar,
 .sidebar,
-.portal > header.nav,
+.portal > header.nav {
+  --surface: #FFFFFF;
+  --paper: #FFFFFF;
+  --text: #000000;
+  --ink-800: #000000;
+  --ink-700: #1A1A1A;
+  --ink-600: #4A4A4A;
+  --muted: #4A4A4A;
+  --faint: #666666;
+  --line: #E2E2E2;
+  --line-strong: #C9C9C9;
+  --accent-text: #1D5532;
+  --accent-050: #E8F0EB;
+  --row-hover: #F4F6F4;
+  --thead-bg: #F6F7F6;
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+}
+
+/* The footer is the one place the brand is used as a large background — a
+   branded section, which is the stated exception to "predominantly white,
+   black and #1D5532". It stays green in both themes because it anchors the
+   brand; #1D5532 is dark enough to sit correctly on a dark page too.
+
+   Every token the footer's own rules read is re-pointed locally, so those
+   rules need no change: they still say var(--chrome-text) and now resolve to
+   white-on-green instead of black-on-white. */
 .portal > footer.foot {
-  --surface: var(--chrome-bg);
-  --paper: var(--chrome-bg);
-  --text: var(--chrome-text);
-  --ink-800: var(--chrome-text);
-  --ink-700: var(--chrome-text);
-  --ink-600: var(--chrome-muted);
-  --muted: var(--chrome-muted);
-  --faint: var(--chrome-faint);
-  --line: var(--chrome-line);
-  --line-strong: var(--chrome-line);
-  --accent-text: var(--chrome-accent);
-  --accent-050: var(--chrome-hover);
-  --row-hover: var(--chrome-hover);
-  --thead-bg: var(--chrome-hover);
+  --chrome-bg: #1D5532;
+  --chrome-text: #FFFFFF;                      /* 8.5:1 on the slab */
+  --chrome-muted: rgba(255, 255, 255, 0.82);   /* 6.3:1 */
+  --chrome-faint: rgba(255, 255, 255, 0.66);   /* 4.6:1 */
+  --chrome-line: rgba(255, 255, 255, 0.18);
+  --chrome-accent: #FFFFFF;
+  --chrome-hover: rgba(255, 255, 255, 0.10);
+  --chrome-logo: brightness(0) invert(1);
+  --surface: #1D5532;
+  --paper: #1D5532;
+  --text: #FFFFFF;
+  --muted: rgba(255, 255, 255, 0.82);
+  --faint: rgba(255, 255, 255, 0.66);
+  --line: rgba(255, 255, 255, 0.18);
+  --accent-text: #FFFFFF;
   background: var(--chrome-bg);
   color: var(--chrome-text);
 }
@@ -1165,18 +1192,18 @@ button:disabled {
 .topbar .menu,
 .topbar .actions-panel,
 .sidebar .menu {
-  --surface: var(--panel-bg);
-  --paper: var(--panel-bg);
-  --text: var(--panel-text);
-  --ink-800: var(--panel-text);
-  --ink-700: var(--panel-text);
-  --muted: var(--panel-muted);
-  --faint: var(--panel-muted);
-  --line: var(--panel-line);
-  --line-strong: var(--panel-line);
-  --accent-text: var(--panel-accent);
-  --accent-050: var(--panel-line);
-  --row-hover: var(--panel-line);
+  --surface: #FFFFFF;
+  --paper: #FFFFFF;
+  --text: #000000;
+  --ink-800: #000000;
+  --ink-700: #1A1A1A;
+  --muted: #4A4A4A;
+  --faint: #666666;
+  --line: #E2E2E2;
+  --line-strong: #C9C9C9;
+  --accent-text: #1D5532;
+  --accent-050: #E8F0EB;
+  --row-hover: #F4F6F4;
   color: var(--panel-text);
 }
 

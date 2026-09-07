@@ -106,7 +106,7 @@ const amenities = computed(() => (Array.isArray(d.value.amenities) ? d.value.ame
 .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 .card:hover .photo img { transform: scale(1.05); }
 .placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; color: var(--muted); font-size: 0.8rem; }
-.type-chip { position: absolute; top: 0.6rem; left: 0.6rem; background: rgba(11, 70, 60, 0.9); color: #fff; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.24rem 0.55rem; border-radius: 999px; }
+.type-chip { position: absolute; top: 0.6rem; left: 0.6rem; background: var(--accent); color: var(--on-accent); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.24rem 0.55rem; border-radius: 999px; }
 .arrow { position: absolute; top: 42%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.92); color: var(--brand-deep); border: none; border-radius: 999px; width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: var(--shadow-md); opacity: 0; transition: opacity 0.18s ease, background 0.16s ease; }
 .card:hover .arrow, .card:focus-within .arrow { opacity: 1; }
 .arrow:hover { background: #fff; }

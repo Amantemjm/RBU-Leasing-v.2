@@ -120,10 +120,16 @@ const startedAt = computed(() => fmt(props.stageData?.INQUIRY?.completedAt || pr
   position: relative; overflow: hidden; border-radius: var(--radius); padding: 1.3rem 1.4rem;
   /* Same dark ground as the navigation, so the tracker reads as part of the
      system rather than a leftover from an earlier palette. */
-  color: var(--chrome-text); background: radial-gradient(120% 140% at 100% 0%, #21524F 0%, #183D3D 55%, #040D12 100%);
+  /* A flat brand slab. This was a three-stop radial gradient in the old
+     palette; the theme brief rules gradients out, and a solid fill is what
+     makes the white type on it a predictable contrast rather than one that
+     varies across the block. */
+  color: var(--on-accent); background: var(--accent);
   box-shadow: var(--shadow-md); margin-bottom: 1.25rem;
 }
-.hero.delivered { background: radial-gradient(120% 140% at 100% 0%, #1f8a5b 0%, #0c4a32 65%, #072a1d 100%); }
+/* Completed reads as success rather than brand — the one place a second green
+   is meaningful, and it comes from the status token, not a new colour. */
+.hero.delivered { background: var(--good); color: #FFFFFF; }
 .hero.stopped { background: radial-gradient(120% 140% at 100% 0%, #7a3a34 0%, #3a1a17 70%); }
 .hero__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .hero__left { display: flex; flex-direction: column; gap: 0.15rem; }

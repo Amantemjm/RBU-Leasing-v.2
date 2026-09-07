@@ -76,20 +76,21 @@ const isDark = computed(() => theme.value === "dark");
   /* Palette. The switch lives on the dark teal bar in both modes, so its own
      colours come from the chrome rather than from the page theme: the soft
      accent marks day, the deep ground marks night. */
-  /* The soft accent straight from the palette (#93B1A6) leaves the white knob
-     at 2.31:1 against it — under the 3:1 WCAG 1.4.11 asks of a control's
-     moving part, which is why the day side looked washed while the night
-     side (19.6:1) read fine. Carried 20% toward the chrome teal: the knob
-     clears at 3.06 and the track still separates from the bar at 3.87. */
-  --tsw-off: #7A9A91;
-  --tsw-on: #040D12;
+  /* The bar is white now, so both tracks are measured against white rather
+     than against a dark teal. Day is a neutral grey — 3.5:1 against the bar it
+     sits on and 3.5:1 under the white knob, both clearing the 3:1 WCAG 1.4.11
+     asks of a control's moving part. Night is the brand itself at 8.5:1, which
+     also makes "dark is on" read as a selected state. */
+  --tsw-off: #8A8A8A;
+  --tsw-on: #1D5532;
   --tsw-knob: #ffffff;
-  --tsw-icon: var(--chrome-bg);
-  /* The night track is the deep ground, which is darker than the bar it sits
-     on — only 1.66:1 — so the ring is what makes the control's boundary
-     visible. At 0.7 alpha it clears 3:1 against both the bar and the track,
-     which is what WCAG 1.4.11 asks of a UI component boundary. */
-  --tsw-edge: rgba(147, 177, 166, 0.7);
+  /* The icon sits on the white knob, so it cannot follow --chrome-bg any more
+     — that is now white, and the icon disappeared into the knob. */
+  --tsw-icon: #1D5532;
+  /* Both tracks now separate from the white bar on their own (3.5:1 and
+     8.5:1), so the ring is only definition rather than the thing carrying the
+     control's boundary. */
+  --tsw-edge: rgba(0, 0, 0, 0.20);
   --tsw-spring: cubic-bezier(0.65, 0, 0.35, 1);
   --tsw-glide: cubic-bezier(0.4, 0, 0.2, 1);
 }
