@@ -297,6 +297,22 @@ describe("Documents driving the pipeline", () => {
     });
     expect(rows).toHaveLength(1);
   });
+
+  // Regression: includeFull (used by every read path) must carry docType too,
+  // not just DOC_SELECT (the upload response) — otherwise every named slot in
+  // the UI reads document.docType as undefined forever.
+  it("carries docType through the GET boundary, not just the upload response", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await upload(token, txn.id, "LETTER_OF_INTENT");
+
+    const res = await request(app).get(`/api/leasing-transactions/${txn.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    const loi = res.body.documents.find((d) => d.filename === "doc.pdf");
+    expect(loi.docType).toBe("LETTER_OF_INTENT");
+  });
 });
 
 describe("Awaiting Prospect", () => {

@@ -14,7 +14,7 @@ const includeFull = {
   inquiry: { select: { id: true, fullName: true, email: true, inquirerType: true, category: true, inquiryType: true } },
   // metadata only — never ship the binary `data` in list/detail payloads
   documents: {
-    select: { id: true, filename: true, mimeType: true, size: true, stage: true, uploadedByName: true, createdAt: true },
+    select: { id: true, filename: true, mimeType: true, size: true, stage: true, docType: true, uploadedByName: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   },
   approvalSteps: { orderBy: { order: "asc" } },
