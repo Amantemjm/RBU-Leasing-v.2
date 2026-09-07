@@ -229,7 +229,7 @@ const blockers = computed(() => {
 .field textarea { resize: vertical; }
 .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent-text); box-shadow: var(--ring); }
 
-.blockers { list-style: none; margin: 0 0 0.6rem; padding: 0.55rem 0.7rem; display: grid; gap: 0.25rem; border: 1px solid var(--warning, var(--line-strong)); border-radius: var(--radius-sm); background: var(--surface); font-size: 0.83rem; color: var(--muted); }
+.blockers { list-style: none; margin: 0 0 0.6rem; padding: 0.55rem 0.7rem; display: grid; gap: 0.25rem; border: 1px solid var(--warn, var(--line-strong)); border-radius: var(--radius-sm); background: var(--surface); font-size: 0.83rem; color: var(--muted); }
 .blockers li::before { content: "→ "; color: var(--faint); }
 .actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.3rem; }
 .primary { background: var(--accent); color: var(--on-accent); border: 1px solid transparent; box-shadow: var(--shadow-sm); border-radius: var(--radius-sm); padding: 0.6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; }

@@ -3,7 +3,7 @@
 // server (validation + state machine) and the client (tracker UI) so the two
 // never drift.
 
-// Ordered list of the 6 process stages. `short` is the tracker label; `initial`
+// Ordered list of the 7 process stages. `short` is the tracker label; `initial`
 // is the status a stage takes when the transaction first enters it; `done` marks
 // the status that means the stage is complete and ready to advance.
 export const LEASING_STAGES = [
