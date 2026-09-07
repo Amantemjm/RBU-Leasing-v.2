@@ -180,6 +180,22 @@ export async function advance(actor, id, { status, remarks } = {}) {
   const next = nextStageKey(txn.stage);
   if (!next) throw new ConflictError("The transaction is already at the final stage");
 
+  // Contract Signing is only reachable once there is someone to sign with and a
+  // Letter of Intent on file. Both documents change hands outside the system,
+  // so this is the only point at which the system can insist they exist.
+  if (txn.stage === "PHOTOSHOOT") {
+    if (!txn.tenantId) {
+      throw new ConflictError("Link a prospect tenant before Contract Signing");
+    }
+    const loi = await prisma.transactionDocument.findFirst({
+      where: { transactionId: id, docType: "LETTER_OF_INTENT" },
+      select: { id: true },
+    });
+    if (!loi) {
+      throw new ConflictError("Upload the Letter of Intent before Contract Signing");
+    }
+  }
+
   const now = stampNow();
   const stageData = { ...(txn.stageData || {}) };
   stageData[txn.stage] = { ...(stageData[txn.stage] || {}), status: txn.status, completedAt: now };

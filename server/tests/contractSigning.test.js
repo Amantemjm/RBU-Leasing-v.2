@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import request from "supertest";
 import { prisma } from "../src/lib/prisma.js";
 import { issueToken } from "../src/services/authService.js";
 import { createTransaction } from "../src/services/leasingTransactionService.js";
+import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
+
+const app = createApp();
 
 beforeEach(async () => { await resetCrudTables(); });
 
@@ -77,5 +81,73 @@ describe("Typed transaction documents", () => {
     const second = await write("executed.pdf");
     expect(second.filename).toBe("executed.pdf");
     expect(await prisma.transactionDocument.count({ where: { transactionId: txn.id } })).toBe(1);
+  });
+});
+
+describe("Entering Contract Signing", () => {
+  const advance = (token, id) =>
+    request(app).patch(`/api/leasing-transactions/${id}/advance`)
+      .set("Authorization", `Bearer ${token}`).send({});
+
+  const putLoi = (txnId) => prisma.transactionDocument.create({
+    data: {
+      transactionId: txnId, filename: "loi.pdf", mimeType: "application/pdf",
+      size: 3, data: Buffer.from("abc"), docType: "LETTER_OF_INTENT",
+    },
+  });
+
+  it("refuses to advance when no prospect tenant is linked", async () => {
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
+    const res = await advance(token, txn.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("Link a prospect tenant before Contract Signing");
+  });
+
+  it("refuses to advance when the Letter of Intent is missing", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    const res = await advance(token, txn.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("Upload the Letter of Intent before Contract Signing");
+  });
+
+  it("advances once both the tenant and the Letter of Intent are in place", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await putLoi(txn.id);
+
+    const res = await advance(token, txn.id);
+    expect(res.status).toBe(200);
+    expect(res.body.stage).toBe("CONTRACT_SIGNING");
+    expect(res.body.status).toBe("Pending");
+    expect(res.body.finalStatus).toBe("Pending"); // terminal stage writes finalStatus
+    expect(res.body.stageData.PHOTOSHOOT.completedAt).toBeTruthy();
+  });
+
+  it("refuses to advance past Contract Signing", async () => {
+    const { user, token } = await makeOfficer();
+    const tenant = await factory.tenant({ name: "Ana" });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
+    await putLoi(txn.id);
+    await advance(token, txn.id);
+
+    const res = await advance(token, txn.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("The transaction is already at the final stage");
+  });
+
+  // The gate is on leaving Photoshoot only — earlier stages are untouched.
+  it("does not gate any other stage transition", async () => {
+    const { user, token } = await makeOfficer();
+    const parked = await createTransaction(
+      { userId: user.id, role: "LEASING_OFFICER" },
+      { lesseeName: "Ana Reyes", startStage: "KEY_TURNOVER" },
+    );
+    const res = await advance(token, parked.id);
+    expect(res.status).toBe(200);
+    expect(res.body.stage).toBe("PHOTOSHOOT");
   });
 });

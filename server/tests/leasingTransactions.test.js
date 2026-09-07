@@ -91,6 +91,17 @@ describe("Leasing transactions (process tracker)", () => {
     await adv(); // APPROVAL -> UNIT_INSPECTION
     await adv(); // UNIT_INSPECTION -> KEY_TURNOVER
     await adv(); // KEY_TURNOVER -> PHOTOSHOOT
+
+    // Contract Signing requires a linked prospect tenant and an LOI on file.
+    const tenant = await factory.tenant({ name: "Maria Santos" });
+    await prisma.leasingTransaction.update({ where: { id: txnId }, data: { tenantId: tenant.id } });
+    await prisma.transactionDocument.create({
+      data: {
+        transactionId: txnId, filename: "loi.pdf", mimeType: "application/pdf",
+        size: 3, data: Buffer.from("abc"), docType: "LETTER_OF_INTENT",
+      },
+    });
+
     const last = await adv(); // PHOTOSHOOT -> CONTRACT_SIGNING
     expect(last.body.stage).toBe("CONTRACT_SIGNING");
     const done = await request(app).patch(`/api/leasing-transactions/${txnId}/status`)
