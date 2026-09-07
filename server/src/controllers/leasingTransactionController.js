@@ -49,7 +49,8 @@ export async function remove(req, res, next) {
 export async function uploadDocument(req, res, next) {
   try {
     if (!req.file) throw new InvalidReferenceError("A file is required");
-    res.status(201).json(await service.addDocument(req.user, req.params.id, req.file));
+    const docType = req.body?.docType || null;
+    res.status(201).json(await service.addDocument(req.user, req.params.id, req.file, docType));
   } catch (e) { next(e); }
 }
 export async function downloadDocument(req, res, next) {

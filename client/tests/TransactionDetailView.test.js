@@ -46,6 +46,12 @@ async function mountView() {
   return w;
 }
 
+// mountView() always serves baseTxn; these cases need to vary it.
+async function mountWith(over) {
+  leasingTransactions.get.mockResolvedValue({ ...baseTxn, ...over });
+  return mountView();
+}
+
 describe("TransactionDetailView", () => {
   beforeEach(() => { leasingTransactions.get.mockClear(); leasingTransactions.advance.mockClear(); });
 
@@ -53,7 +59,7 @@ describe("TransactionDetailView", () => {
     const w = await mountView();
     expect(w.text()).toContain("RBU-2026-000001");
     expect(w.find(".stage-name").text()).toBe("Send Requirements");
-    expect(w.findAll(".ms")).toHaveLength(6); // delivery-tracker milestones
+    expect(w.findAll(".ms")).toHaveLength(7); // delivery-tracker milestones
     expect(w.text()).toContain("Inquiry accepted");
   });
 
@@ -65,5 +71,32 @@ describe("TransactionDetailView", () => {
     await flushPromises();
     expect(leasingTransactions.advance).toHaveBeenCalledWith("t1", { remarks: "" });
     expect(w.find(".stage-name").text()).toBe("Approval");
+  });
+
+  // Reaching Contract Signing needs a prospect and an LOI. Say which is missing
+  // rather than letting the officer click Advance into a 409.
+  it("names what is blocking the advance out of Photoshoot", async () => {
+    const w = await mountWith({ stage: "PHOTOSHOOT", status: "Awaiting Prospect", tenantId: null, documents: [] });
+    expect(w.find(".blockers").text()).toContain("Link a prospect tenant");
+    expect(w.find(".blockers").text()).toContain("Upload the Letter of Intent");
+  });
+
+  it("drops a blocker once it is satisfied", async () => {
+    const w = await mountWith({ stage: "PHOTOSHOOT", status: "Completed", tenantId: "t1", documents: [] });
+    expect(w.find(".blockers").text()).not.toContain("Link a prospect tenant");
+    expect(w.find(".blockers").text()).toContain("Upload the Letter of Intent");
+  });
+
+  it("shows no blockers once both are in place", async () => {
+    const w = await mountWith({
+      stage: "PHOTOSHOOT", status: "Completed", tenantId: "t1",
+      documents: [{ id: "d1", filename: "loi.pdf", size: 10, docType: "LETTER_OF_INTENT" }],
+    });
+    expect(w.find(".blockers").exists()).toBe(false);
+  });
+
+  it("shows no blockers at any other stage", async () => {
+    const w = await mountWith({ stage: "APPROVAL", status: "Submitted", tenantId: null, documents: [] });
+    expect(w.find(".blockers").exists()).toBe(false);
   });
 });

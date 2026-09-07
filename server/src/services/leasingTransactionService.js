@@ -1,9 +1,10 @@
 import { prisma } from "../lib/prisma.js";
-import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
+import { NotFoundError, InvalidReferenceError, ConflictError, ForbiddenError } from "../lib/errors.js";
 import {
   LEASING_STAGES, STAGE_KEYS, stageByKey, stageIndex, nextStageKey, prevStageKey, isValidStatus, isFinalStage,
   APPROVAL_ROUTING, APPROVAL_STEP_STATUSES,
 } from "../../../shared/leasingStages.js";
+import { TRANSACTION_DOCUMENT_KEYS, labelForDocType } from "../../../shared/transactionDocuments.js";
 
 const includeFull = {
   unit: { select: { id: true, unitNumber: true, building: true } },
@@ -13,7 +14,7 @@ const includeFull = {
   inquiry: { select: { id: true, fullName: true, email: true, inquirerType: true, category: true, inquiryType: true } },
   // metadata only — never ship the binary `data` in list/detail payloads
   documents: {
-    select: { id: true, filename: true, mimeType: true, size: true, stage: true, uploadedByName: true, createdAt: true },
+    select: { id: true, filename: true, mimeType: true, size: true, stage: true, docType: true, uploadedByName: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   },
   approvalSteps: { orderBy: { order: "asc" } },
@@ -180,6 +181,22 @@ export async function advance(actor, id, { status, remarks } = {}) {
   const next = nextStageKey(txn.stage);
   if (!next) throw new ConflictError("The transaction is already at the final stage");
 
+  // Contract Signing is only reachable once there is someone to sign with and a
+  // Letter of Intent on file. Both documents change hands outside the system,
+  // so this is the only point at which the system can insist they exist.
+  if (txn.stage === "PHOTOSHOOT") {
+    if (!txn.tenantId) {
+      throw new ConflictError("Link a prospect tenant before Contract Signing");
+    }
+    const loi = await prisma.transactionDocument.findFirst({
+      where: { transactionId: id, docType: "LETTER_OF_INTENT" },
+      select: { id: true },
+    });
+    if (!loi) {
+      throw new ConflictError("Upload the Letter of Intent before Contract Signing");
+    }
+  }
+
   const now = stampNow();
   const stageData = { ...(txn.stageData || {}) };
   stageData[txn.stage] = { ...(stageData[txn.stage] || {}), status: txn.status, completedAt: now };
@@ -222,7 +239,7 @@ export async function returnStage(actor, id, { status, remarks } = {}) {
 
 // Link related records (unit / lessee / lessor) to the transaction.
 export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) {
-  await loadOrThrow(id);
+  const txn = await loadOrThrow(id);
   const data = {};
   const notes = [];
   if (unitId !== undefined) {
@@ -238,6 +255,11 @@ export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) 
       const t = await prisma.tenant.findUnique({ where: { id: tenantId } });
       if (!t) throw new InvalidReferenceError("tenantId does not reference a tenant");
       notes.push(`lessee ${t.name}`);
+    } else if (stageIndex(txn.stage) >= stageIndex("CONTRACT_SIGNING")) {
+      // Contract Signing exists to guarantee there is someone to sign with —
+      // clearing the tenant here would strand the transaction at exactly the
+      // state the advance gate was built to prevent.
+      throw new ConflictError("Cannot unlink the lessee once Contract Signing has been reached");
     }
     data.tenantId = tenantId || null;
   }
@@ -248,6 +270,24 @@ export async function linkRecords(actor, id, { unitId, tenantId, unitOwnerId }) 
       notes.push(`lessor ${o.name}`);
     }
     data.unitOwnerId = unitOwnerId || null;
+  }
+  // A prospect has appeared, so the shoot is simply done again and the
+  // transaction is ready for its Letter of Intent.
+  if (data.tenantId && txn.stage === "PHOTOSHOOT" && txn.status === "Awaiting Prospect") {
+    data.status = "Completed";
+    data.stageData = {
+      ...(txn.stageData || {}),
+      PHOTOSHOOT: { ...(txn.stageData?.PHOTOSHOOT || {}), status: "Completed" },
+    };
+  }
+  // The prospect that made the shoot "Completed" just vanished — rest back at
+  // Awaiting Prospect so "live and being marketed" doesn't silently under-report.
+  else if (data.tenantId === null && txn.stage === "PHOTOSHOOT" && txn.status === "Completed") {
+    data.status = "Awaiting Prospect";
+    data.stageData = {
+      ...(txn.stageData || {}),
+      PHOTOSHOOT: { ...(txn.stageData?.PHOTOSHOOT || {}), status: "Awaiting Prospect" },
+    };
   }
   await prisma.leasingTransaction.update({ where: { id }, data });
   if (notes.length) await logEvent(id, actor, `Linked ${notes.join(", ")}`);
@@ -263,6 +303,10 @@ export async function deleteTransaction(id) {
 
 const STAFF_ROLES = ["ADMIN", "LEASING_OFFICER", "VIEWER"];
 
+// Staff who can write, not merely view — VIEWER is deliberately excluded, the
+// same split requireWrite enforces at the route layer elsewhere.
+const WRITE_ROLES = ["ADMIN", "LEASING_OFFICER"];
+
 // A staff member, or the linked lessee/lessor, may see a transaction's docs.
 export async function assertCanAccess(user, id) {
   const txn = await loadOrThrow(id);
@@ -274,27 +318,62 @@ export async function assertCanAccess(user, id) {
 
 // --- supporting documents --------------------------------------------------
 
-export async function addDocument(actor, id, file) {
+const DOC_SELECT = {
+  id: true, filename: true, mimeType: true, size: true, stage: true,
+  docType: true, uploadedByName: true, createdAt: true,
+};
+
+export async function addDocument(actor, id, file, docType = null) {
   const txn = await assertCanAccess(actor, id);
+  if (docType && !TRANSACTION_DOCUMENT_KEYS.includes(docType)) {
+    throw new InvalidReferenceError("Unknown document type");
+  }
+  // Loose attachments stay open to the linked lessee/lessor (handled by
+  // assertCanAccess above). A typed document drives the stage machine — the
+  // physical paper changes hands through the leasing officer, so only staff
+  // who can write may record it.
+  if (docType && !WRITE_ROLES.includes(actor.role)) {
+    throw new ForbiddenError("Only leasing staff can upload this document type");
+  }
   let uploadedByName = null;
   if (actor?.userId) {
     const u = await prisma.user.findUnique({ where: { id: actor.userId }, select: { name: true, email: true } });
     uploadedByName = u?.name || u?.email || null;
   }
-  const doc = await prisma.transactionDocument.create({
-    data: {
-      transactionId: id,
-      filename: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      data: file.buffer,
-      stage: txn.stage,
-      uploadedById: actor?.userId || null,
-      uploadedByName,
-    },
-    select: { id: true, filename: true, mimeType: true, size: true, stage: true, uploadedByName: true, createdAt: true },
-  });
-  await logEvent(id, actor, `Uploaded document "${file.originalname}"`, txn.stage);
+  const fields = {
+    filename: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size,
+    data: file.buffer,
+    stage: txn.stage,
+    uploadedById: actor?.userId || null,
+    uploadedByName,
+  };
+
+  // A named slot holds one document — re-uploading replaces it, the same way the
+  // lessor and lessee requirement checklists behave. Loose attachments stack.
+  const doc = docType
+    ? await prisma.transactionDocument.upsert({
+        where: { transactionId_docType: { transactionId: id, docType } },
+        update: { ...fields, createdAt: new Date() },
+        create: { transactionId: id, docType, ...fields },
+        select: DOC_SELECT,
+      })
+    : await prisma.transactionDocument.create({
+        data: { transactionId: id, ...fields },
+        select: DOC_SELECT,
+      });
+
+  await logEvent(id, actor, `Uploaded ${docType ? labelForDocType(docType) : `document "${file.originalname}"`}`, txn.stage);
+
+  // The upload is the action. Delegating to advance/setStatus rather than
+  // writing the stage here keeps stageData, finalStatus and the event log in
+  // exactly one shape.
+  if (docType === "LETTER_OF_INTENT" && txn.stage === "PHOTOSHOOT" && txn.tenantId) {
+    await advance(actor, id);
+  } else if (docType === "SIGNED_CONTRACT" && txn.stage === "CONTRACT_SIGNING") {
+    await setStatus(actor, id, { status: "Signed" });
+  }
   return doc;
 }
 

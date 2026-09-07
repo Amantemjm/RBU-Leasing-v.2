@@ -19,9 +19,10 @@ async function api(method, path, { token, body, form } = {}) {
   if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}: ${text.slice(0, 200)}`);
   return data;
 }
-async function uploadDoc(txnId, token, name, bytes) {
+async function uploadDoc(txnId, token, name, bytes, docType) {
   const fd = new FormData();
   fd.append("file", new Blob([Buffer.from(bytes)], { type: "application/pdf" }), name);
+  if (docType) fd.append("docType", docType);
   return api("POST", `/leasing-transactions/${txnId}/documents`, { token, form: fd });
 }
 
@@ -80,7 +81,7 @@ async function walk(label, statuses, { advance = true } = {}) {
     t = await api("PATCH", `/leasing-transactions/${T}/status`, { token: officer, body: { status: st } });
   }
   if (advance) t = await api("PATCH", `/leasing-transactions/${T}/advance`, { token: officer, body: {} });
-  log(`${label}: ${statuses.join(" → ")}${advance ? `  → advanced to ${t.stage}` : "  (final stage)"}`);
+  log(`${label}: ${statuses.join(" → ")}${advance ? `  → advanced to ${t.stage}` : "  (advances via the Letter of Intent, not the /advance endpoint)"}`);
 }
 
 // ---------------------------------------------------------------- SEND_REQUIREMENTS
@@ -109,9 +110,18 @@ await walk("Unit Inspection", ["Scheduled", "In Progress", "Passed"]);
 step(7, "Key Turnover");
 await walk("Key Turnover", ["Scheduled", "Completed"]);
 
-// ---------------------------------------------------------------- PHOTOSHOOT (final)
-step(8, "Photoshoot (final stage)");
+// ---------------------------------------------------------------- PHOTOSHOOT
+step(8, "Photoshoot");
 await walk("Photoshoot", ["Scheduled", "In Progress", "Completed"], { advance: false });
+
+// ---------------------------------------------------------------- CONTRACT_SIGNING (final)
+step(9, "Contract Signing (final stage) — the Letter of Intent advances the stage, the Signed Contract closes it");
+await uploadDoc(T, officer, "Letter-of-Intent.pdf", "%PDF-1.4 letter of intent", "LETTER_OF_INTENT");
+t = await api("GET", `/leasing-transactions/${T}`, { token: officer });
+log(`Officer uploaded Letter-of-Intent.pdf → advanced to ${t.stage}`);
+await uploadDoc(T, officer, "Signed-Contract.pdf", "%PDF-1.4 signed contract", "SIGNED_CONTRACT");
+t = await api("GET", `/leasing-transactions/${T}`, { token: officer });
+log(`Officer uploaded Signed-Contract.pdf → ${t.stage} status is now "${t.status}"`);
 
 // ---------------------------------------------------------------- summary
 const finalTxn = await api("GET", `/leasing-transactions/${T}`, { token: officer });

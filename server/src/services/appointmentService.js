@@ -96,7 +96,13 @@ export async function complete(user, id, body) {
   if (!allowed.includes(outcome)) throw new InvalidReferenceError(`"${outcome}" is not a valid result for this stage`);
   const txn = await txnOf(appt);
   const updated = await prisma.appointment.update({ where: { id }, data: { status: "Completed", outcome } });
-  await syncStageStatus(txn, appt.stage, outcome);
+  // The shoot itself completed — but with nobody in view the stage rests at
+  // Awaiting Prospect, so the board tells "live and being marketed" apart from
+  // "just shot".
+  const stageStatus = appt.stage === "PHOTOSHOOT" && outcome === "Completed" && !txn.tenantId
+    ? "Awaiting Prospect"
+    : outcome;
+  await syncStageStatus(txn, appt.stage, stageStatus);
   await logEvent(txn.id, user, `${stageByKey(appt.stage).label} completed — ${outcome}`, appt.stage);
   return updated;
 }

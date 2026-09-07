@@ -36,3 +36,7 @@ export class AccountRejectedError extends AppError {
     super(message, 403, "ACCOUNT_REJECTED");
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden") { super(message, 403, "FORBIDDEN"); }
+}

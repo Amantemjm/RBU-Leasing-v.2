@@ -405,10 +405,12 @@ model TransactionDocument {
   size          Int
   data          Bytes
   stage         String?  // stage the document was uploaded under
+  docType       String?  // LETTER_OF_INTENT | SIGNED_CONTRACT; null = loose supporting document
   uploadedById  String?
   uploadedByName String?
   createdAt     DateTime @default(now())
 
+  @@unique([transactionId, docType])
   @@index([transactionId])
 }
 
