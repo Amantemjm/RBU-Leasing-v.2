@@ -18,6 +18,7 @@
 - **The API has no watch mode** (`node src/index.js`). Restart it manually after any server change, or the next request hits the old code.
 - **Line endings are mixed CRLF/LF** in this repo. Use the Edit tool for surgical changes; scripted regex edits have landed in the wrong block here before.
 - **Never hardcode a stage list.** Derive from `STAGE_KEYS` / `LEASING_STAGES`. The bug this plan fixes in Task 1 is exactly that mistake.
+- **A transaction cannot be parked mid-pipeline over HTTP.** `STARTABLE_STAGES` in `server/src/validation/leasingTransaction.js` allows only `INQUIRY` and `SEND_REQUIREMENTS`. Tests that need a transaction at `PHOTOSHOOT` or `KEY_TURNOVER` call `createTransaction` from the service directly. Do not loosen that validation — it is a deliberate pre-existing rule.
 - Run server tests from `server/` and client tests from `client/`, both via `npm test`.
 
 ---
@@ -287,7 +288,7 @@ async function makeOfficer(email = "signing-officer@x.com") {
 }
 
 // A transaction parked at Photoshoot — the state this whole feature acts on.
-async function atPhotoshoot(token, { tenantId = null } = {}) {
+async function atPhotoshoot(user, { tenantId = null } = {}) {
   const res = await request(app).post("/api/leasing-transactions")
     .set("Authorization", `Bearer ${token}`)
     .send({ lesseeName: "Ana Reyes", startStage: "PHOTOSHOOT", tenantId });
@@ -297,8 +298,8 @@ async function atPhotoshoot(token, { tenantId = null } = {}) {
 
 describe("Typed transaction documents", () => {
   it("stores a document under a named type", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     const doc = await prisma.transactionDocument.create({
       data: {
         transactionId: txn.id, filename: "loi.pdf", mimeType: "application/pdf",
@@ -309,8 +310,8 @@ describe("Typed transaction documents", () => {
   });
 
   it("allows many loose attachments but only one of each named type", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     const base = {
       transactionId: txn.id, mimeType: "application/pdf", size: 3, data: Buffer.from("abc"),
     };
@@ -328,8 +329,8 @@ describe("Typed transaction documents", () => {
   });
 
   it("replaces a typed document through the compound key", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     const write = (filename) => prisma.transactionDocument.upsert({
       where: { transactionId_docType: { transactionId: txn.id, docType: "SIGNED_CONTRACT" } },
       update: { filename, size: 4, data: Buffer.from("abcd") },
@@ -479,26 +480,26 @@ describe("Entering Contract Signing", () => {
   });
 
   it("refuses to advance when no prospect tenant is linked", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     const res = await advance(token, txn.id);
     expect(res.status).toBe(409);
     expect(res.body.error).toBe("Link a prospect tenant before Contract Signing");
   });
 
   it("refuses to advance when the Letter of Intent is missing", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     const res = await advance(token, txn.id);
     expect(res.status).toBe(409);
     expect(res.body.error).toBe("Upload the Letter of Intent before Contract Signing");
   });
 
   it("advances once both the tenant and the Letter of Intent are in place", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     await putLoi(txn.id);
 
     const res = await advance(token, txn.id);
@@ -510,9 +511,9 @@ describe("Entering Contract Signing", () => {
   });
 
   it("refuses to advance past Contract Signing", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     await putLoi(txn.id);
     await advance(token, txn.id);
 
@@ -523,11 +524,12 @@ describe("Entering Contract Signing", () => {
 
   // The gate is on leaving Photoshoot only — earlier stages are untouched.
   it("does not gate any other stage transition", async () => {
-    const { token } = await makeOfficer();
-    const res0 = await request(app).post("/api/leasing-transactions")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ lesseeName: "Ana Reyes", startStage: "KEY_TURNOVER" });
-    const res = await advance(token, res0.body.id);
+    const { user, token } = await makeOfficer();
+    const parked = await createTransaction(
+      { userId: user.id, role: "LEASING_OFFICER" },
+      { lesseeName: "Ana Reyes", startStage: "KEY_TURNOVER" },
+    );
+    const res = await advance(token, parked.id);
     expect(res.status).toBe(200);
     expect(res.body.stage).toBe("PHOTOSHOOT");
   });
@@ -621,9 +623,9 @@ describe("Documents driving the pipeline", () => {
   };
 
   it("advances to Contract Signing the moment the LOI lands", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
 
     const res = await upload(token, txn.id, "LETTER_OF_INTENT");
     expect(res.status).toBe(201);
@@ -635,8 +637,8 @@ describe("Documents driving the pipeline", () => {
 
   // The shoot may not even have happened yet — this upload must not imply it has.
   it("stores the LOI without moving anything when no tenant is linked", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
 
     const res = await upload(token, txn.id, "LETTER_OF_INTENT");
     expect(res.status).toBe(201);
@@ -647,9 +649,9 @@ describe("Documents driving the pipeline", () => {
   });
 
   it("closes the transaction when the signed contract is uploaded", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     await upload(token, txn.id, "LETTER_OF_INTENT");
 
     const res = await upload(token, txn.id, "SIGNED_CONTRACT");
@@ -662,8 +664,8 @@ describe("Documents driving the pipeline", () => {
   });
 
   it("replaces a typed document rather than stacking it", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     await upload(token, txn.id, "LETTER_OF_INTENT");
     await upload(token, txn.id, "LETTER_OF_INTENT");
 
@@ -674,8 +676,8 @@ describe("Documents driving the pipeline", () => {
   });
 
   it("still stacks loose attachments", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     await upload(token, txn.id);
     await upload(token, txn.id);
 
@@ -686,17 +688,17 @@ describe("Documents driving the pipeline", () => {
   });
 
   it("rejects a document type that is not on the registry", async () => {
-    const { token } = await makeOfficer();
-    const txn = await atPhotoshoot(token);
+    const { user, token } = await makeOfficer();
+    const txn = await atPhotoshoot(user);
     const res = await upload(token, txn.id, "NOT_A_TYPE");
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Unknown document type");
   });
 
   it("lets the linked lessee download the signed contract", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     await upload(token, txn.id, "LETTER_OF_INTENT");
     const up = await upload(token, txn.id, "SIGNED_CONTRACT");
 
@@ -707,10 +709,10 @@ describe("Documents driving the pipeline", () => {
   });
 
   it("does not let an unlinked lessee download it", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
     const other = await factory.tenant({ name: "Ben" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     await upload(token, txn.id, "LETTER_OF_INTENT");
     const up = await upload(token, txn.id, "SIGNED_CONTRACT");
 
@@ -851,8 +853,8 @@ Append to `server/tests/contractSigning.test.js`:
 
 ```js
 describe("Awaiting Prospect", () => {
-  async function shotWithNoTenant(token) {
-    const txn = await atPhotoshoot(token);
+  async function shotWithNoTenant(user, token) {
+    const txn = await atPhotoshoot(user);
     const appt = await request(app)
       .post(`/api/appointments/transaction/${txn.id}/PHOTOSHOOT`)
       .set("Authorization", `Bearer ${token}`)
@@ -863,25 +865,25 @@ describe("Awaiting Prospect", () => {
   }
 
   it("rests at Awaiting Prospect when the shoot finishes with nobody in view", async () => {
-    const { token } = await makeOfficer();
-    const txn = await shotWithNoTenant(token);
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
     const after = await prisma.leasingTransaction.findUnique({ where: { id: txn.id } });
     expect(after.status).toBe("Awaiting Prospect");
   });
 
   // The shoot did complete — only the stage's resting status differs.
   it("still records the appointment itself as Completed", async () => {
-    const { token } = await makeOfficer();
-    const txn = await shotWithNoTenant(token);
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
     const appt = await prisma.appointment.findFirst({ where: { transactionId: txn.id } });
     expect(appt.status).toBe("Completed");
     expect(appt.outcome).toBe("Completed");
   });
 
   it("rests at Completed when a tenant is already linked", async () => {
-    const { token } = await makeOfficer();
+    const { user, token } = await makeOfficer();
     const tenant = await factory.tenant({ name: "Ana" });
-    const txn = await atPhotoshoot(token, { tenantId: tenant.id });
+    const txn = await atPhotoshoot(user, { tenantId: tenant.id });
     const appt = await request(app)
       .post(`/api/appointments/transaction/${txn.id}/PHOTOSHOOT`)
       .set("Authorization", `Bearer ${token}`)
@@ -894,8 +896,8 @@ describe("Awaiting Prospect", () => {
   });
 
   it("returns to Completed when a prospect finally appears", async () => {
-    const { token } = await makeOfficer();
-    const txn = await shotWithNoTenant(token);
+    const { user, token } = await makeOfficer();
+    const txn = await shotWithNoTenant(user, token);
     const tenant = await factory.tenant({ name: "Ana" });
 
     const res = await request(app).patch(`/api/leasing-transactions/${txn.id}/link`)
@@ -1428,7 +1430,11 @@ Neither fails at startup. Both fail at first use with a 500.
 
 ## Notes for the implementer
 
-**Starting a transaction directly at `CONTRACT_SIGNING` is still possible** and is left that way on purpose. `createTransaction` accepts any `startStage` in `STAGE_KEYS` and marks earlier stages `Skipped` — staff can already start at `PHOTOSHOOT` and skip everything before it. Adding a seventh key extends that existing discretion rather than opening a new hole. Do not add a guard for it in this plan.
+**Correction, found during Task 3.** This plan originally claimed staff could start a transaction at any stage. They cannot: `server/src/validation/leasingTransaction.js` pins `STARTABLE_STAGES = ["INQUIRY", "SEND_REQUIREMENTS"]`, so the HTTP endpoint rejects `startStage: "PHOTOSHOOT"` with a 400 before Prisma is reached. Only the service's `createTransaction` accepts any key in `STAGE_KEYS`.
+
+Consequences, already applied above:
+- Tests park a transaction mid-pipeline by calling `createTransaction` from `server/src/services/leasingTransactionService.js` directly. That is test setup, not a production change — do **not** loosen `STARTABLE_STAGES` to make the HTTP route work. The restriction is a deliberate pre-existing rule and adding `CONTRACT_SIGNING` to the stage list does not weaken it.
+- The shared helpers in `server/tests/contractSigning.test.js` are therefore `makeOfficer()` → `{ user, token }` and `atPhotoshoot(user, { tenantId })` → the transaction row. Tasks 4-6 extend that file and reuse both.
 
 **Two decisions in the spec were assumptions, not stated rules.** Both are recorded in its Open Items section. If the answer changes before this ships:
 - *Document visibility* — typed documents inherit `assertCanAccess`, so the linked lessor and lessee can both download the LOI and the signed contract. Making either staff-only is one condition in `getDocumentForDownload`, and Task 5's last two tests are where it would be pinned.
