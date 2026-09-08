@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { resetCrudTables } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
 import { inquiryCreateSchema } from "../src/validation/inquiry.js";
+import { createInquiry } from "../src/services/inquiryService.js";
 
 beforeEach(async () => { await resetCrudTables(); });
 
@@ -32,5 +33,19 @@ describe("inquiryCreateSchema unitId", () => {
   it("is valid without a unitId", () => {
     const parsed = inquiryCreateSchema.parse(base);
     expect(parsed.unitId).toBeUndefined();
+  });
+});
+
+describe("createInquiry unit linking", () => {
+  const base = { category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability", fullName: "Ana", email: "ana@example.com", consent: true, status: "NEW" };
+  it("stores a valid unitId", async () => {
+    const { unit } = await ownerAndUnit();
+    const inq = await createInquiry({ ...base, unitId: unit.id });
+    expect(inq.unitId).toBe(unit.id);
+  });
+  it("nulls an unknown unitId but still creates the inquiry", async () => {
+    const inq = await createInquiry({ ...base, unitId: "does-not-exist" });
+    expect(inq.id).toBeTruthy();
+    expect(inq.unitId).toBeNull();
   });
 });
