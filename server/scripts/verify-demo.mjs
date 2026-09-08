@@ -61,7 +61,10 @@ const pending = await get("/auth/pending", adminTok);
 check("accounts awaiting approval", pending.length, 1);
 check("the pending applicant is Rosa Mendoza", pending[0]?.name, "Rosa Mendoza");
 check("all inquiries visible", (await get("/inquiries", adminTok)).length, 4);
-check("all transactions visible", (await get("/leasing-transactions", adminTok)).length, 3);
+// 3 are the hand-walked demo transactions (A/B/C); the other 6 are the
+// onboarding transactions approving each of the 6 approved units opens
+// automatically (one per unit: u1, u2, u4, u6, u7, u8).
+check("all transactions visible", (await get("/leasing-transactions", adminTok)).length, 9);
 check("owners", (await get("/owners", adminTok)).length, 2);
 check("tenants", (await get("/tenants", adminTok)).length, 2);
 check("leases", (await get("/leases", adminTok)).length, 2);
@@ -123,7 +126,7 @@ section("VIEWER — read-only staff");
 const viewer = (await login("viewer.audit", "Viewer2026!")).body.token;
 check("viewer signs in", !!viewer, true);
 check("viewer reads the dashboard", (await get("/dashboard/executive", viewer)).all.length, 8);
-check("viewer sees every transaction unscoped", (await get("/leasing-transactions", viewer)).length, 3);
+check("viewer sees every transaction unscoped", (await get("/leasing-transactions", viewer)).length, 9);
 for (const [label, path] of [["advance a transaction", `/leasing-transactions/${all[0].id}/advance`], ["approve a unit", `/units/${units[0].id}/approve`]]) {
   const r = await raw("PATCH", path, viewer);
   if (r.status === 403) ok(`viewer cannot ${label}`, "403"); else bad(`viewer should not ${label}`, `${r.status}`);

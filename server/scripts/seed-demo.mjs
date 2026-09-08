@@ -154,6 +154,34 @@ await api("PATCH", `/units/${u4.id}/approve`, { token: officer2 });
 await api("PATCH", `/units/${u5.id}/reject`, { token: officer2, body: { remarks: "Floor plan and RPT receipt do not match the unit number. Please correct and resubmit." } });
 log("   6 approved · 1 rejected with remarks · 1 still a draft");
 
+step("Lessor checklists");
+for (const k of LESSOR_KEYS) await api("POST", `/lessor-requirements/mine/${k}`, { token: santos.token, form: pdf(`${k.toLowerCase()}.pdf`) });
+for (const r of await api("GET", `/lessor-requirements/${santos.unitOwnerId}`, { token: officer })) {
+  if (r.id) await api("PATCH", `/lessor-requirements/${r.id}/review`, { token: officer, body: { status: "Approved", remarks: "Verified" } });
+}
+log("   Santos — all 7 approved");
+
+// Tan hits a rejection and resubmits before everything clears — the listing
+// gate needs every one of Tan's requirements Approved too, since two of his
+// units are about to be published.
+for (const k of LESSOR_KEYS) await api("POST", `/lessor-requirements/mine/${k}`, { token: tan.token, form: pdf(`${k.toLowerCase()}.pdf`) });
+let tanReqs = await api("GET", `/lessor-requirements/${tan.unitOwnerId}`, { token: officer2 });
+await api("PATCH", `/lessor-requirements/${tanReqs.find((r) => r.requirementKey === "TAX_DEC").id}/review`, { token: officer2, body: { status: "Rejected", remarks: "Tax declaration is for a different property." } });
+await api("POST", `/lessor-requirements/mine/TAX_DEC`, { token: tan.token, form: pdf("tax_dec_v2.pdf") });
+tanReqs = await api("GET", `/lessor-requirements/${tan.unitOwnerId}`, { token: officer2 });
+for (const r of tanReqs) if (r.id) await api("PATCH", `/lessor-requirements/${r.id}/review`, { token: officer2, body: { status: "Approved", remarks: "Verified" } });
+log("   Tan — all 7 approved (one rejected, corrected, and resubmitted along the way)");
+
+// A published listing now needs the owner's checklist approved and a
+// completed photoshoot on the unit's transaction — approving the unit above
+// already opened one (resting at Send Requirements), so find it and shoot it.
+async function completeShoot(unitId) {
+  const txns = await api("GET", "/leasing-transactions", { token: adminToken });
+  const t = txns.find((x) => x.unitId === unitId);
+  const appt = await api("POST", `/appointments/transaction/${t.id}/PHOTOSHOOT`, { token: adminToken, body: { scheduledAt: days(-3), location: "Unit shoot" } });
+  await api("PATCH", `/appointments/${appt.id}/complete`, { token: adminToken, body: {} });
+}
+
 step("Listings — publish the approved units");
 // Detail keys come from shared/unitListingFields.js and are validated server-side.
 const LISTINGS = [
@@ -182,24 +210,13 @@ for (const [i, [u, headline, details]] of LISTINGS.entries()) {
   });
   await uploadPhoto(u.id, photoFor(...TONES[i % TONES.length]), `${u.unitNumber}-living.png`);
   await uploadPhoto(u.id, photoFor(TONES[i % TONES.length][1], TONES[i % TONES.length][0]), `${u.unitNumber}-bedroom.png`);
+  await completeShoot(u.id);
   await api("PATCH", `/unit-listings/${u.id}/publish`, { token: officer });
 }
 const live = await api("GET", "/public/units");
 log(`   ${live.length} listing(s) live on the public gallery`);
 
 // ───────────────────────────────────────────────────────────── requirements
-step("Lessor checklists");
-for (const k of LESSOR_KEYS) await api("POST", `/lessor-requirements/mine/${k}`, { token: santos.token, form: pdf(`${k.toLowerCase()}.pdf`) });
-for (const r of await api("GET", `/lessor-requirements/${santos.unitOwnerId}`, { token: officer })) {
-  if (r.id) await api("PATCH", `/lessor-requirements/${r.id}/review`, { token: officer, body: { status: "Approved", remarks: "Verified" } });
-}
-log("   Santos — all 7 approved");
-
-for (const k of LESSOR_KEYS.slice(0, 4)) await api("POST", `/lessor-requirements/mine/${k}`, { token: tan.token, form: pdf(`${k.toLowerCase()}.pdf`) });
-const tanReqs = await api("GET", `/lessor-requirements/${tan.unitOwnerId}`, { token: officer2 });
-await api("PATCH", `/lessor-requirements/${tanReqs.find((r) => r.requirementKey === "TAX_DEC").id}/review`, { token: officer2, body: { status: "Rejected", remarks: "Tax declaration is for a different property." } });
-log("   Tan — 4 of 7 submitted, 1 rejected, 3 still outstanding");
-
 step("Lessee checklists");
 for (const k of LESSEE_KEYS) await api("POST", `/lessee-requirements/mine/${k}`, { token: garcia.token, form: pdf(`${k.toLowerCase()}.pdf`) });
 const gReqs = await api("GET", `/lessee-requirements/${garcia.tenantId}`, { token: officer });
@@ -235,9 +252,6 @@ for (const s of await api("GET", `/leasing-transactions/${txnA.id}/approval-step
 await advance(txnA.id);
 let a = await api("POST", `/appointments/transaction/${txnA.id}/UNIT_INSPECTION`, { token: officer, body: { scheduledAt: days(-6), location: "The Royalton · Unit 19A" } });
 await api("PATCH", `/appointments/${a.id}/complete`, { token: officer, body: { outcome: "Passed" } });
-await advance(txnA.id);
-a = await api("POST", `/appointments/transaction/${txnA.id}/KEY_TURNOVER`, { token: officer, body: { scheduledAt: days(-4), location: "RBU Leasing Office" } });
-await api("PATCH", `/appointments/${a.id}/complete`, { token: officer, body: {} });
 await advance(txnA.id);
 a = await api("POST", `/appointments/transaction/${txnA.id}/PHOTOSHOOT`, { token: officer, body: { scheduledAt: days(-2), location: "The Royalton · Unit 19A" } });
 await api("PATCH", `/appointments/${a.id}/complete`, { token: officer, body: {} });
