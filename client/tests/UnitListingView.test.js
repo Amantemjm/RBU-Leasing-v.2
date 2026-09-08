@@ -117,4 +117,14 @@ describe("UnitListingView publish readiness", () => {
     const w = await mountWith({ approved: false, requirementsApproved: 7, requirementsTotal: 7, photoshootCompleted: true, photoCount: 2 });
     expect(w.find(".blockers").text()).toContain("approved");
   });
+
+  it("lists the outstanding steps in the order the server refuses them", async () => {
+    const w = await mountWith({ approved: false, requirementsApproved: 0, requirementsTotal: 7, photoshootCompleted: false, photoCount: 0 });
+    const items = w.findAll(".blockers li").map((li) => li.text());
+    expect(items).toHaveLength(4);
+    expect(items[0]).toContain("approved");
+    expect(items[1]).toContain("0 of 7");
+    expect(items[2]).toContain("photoshoot");
+    expect(items[3]).toContain("photo");
+  });
 });
