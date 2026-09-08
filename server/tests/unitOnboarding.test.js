@@ -100,6 +100,29 @@ describe("ensureForUnit", () => {
   });
 });
 
+describe("reference generation", () => {
+  // References are derived from a row COUNT, and reference is @unique. An
+  // ADMIN deleting a transaction used to drop the count, so the next
+  // generated reference collided with a still-existing row and Prisma threw
+  // P2002 — silently, since approveUnit swallows the error.
+  it("does not collide after a transaction is deleted", async () => {
+    const { unit: unit1 } = await ownedUnit({ unitNumber: "01A" });
+    const { unit: unit2 } = await ownedUnit({ unitNumber: "01B" });
+    const { unit: unit3 } = await ownedUnit({ unitNumber: "01C" });
+
+    const t1 = await ensureForUnit(unit1, { userId: defaultOfficer.id });
+    const t2 = await ensureForUnit(unit2, { userId: defaultOfficer.id });
+    await prisma.leasingTransaction.delete({ where: { id: t1.id } });
+
+    const t3 = await ensureForUnit(unit3, { userId: defaultOfficer.id });
+
+    const refs = [t1.reference, t2.reference, t3.reference];
+    expect(new Set(refs).size).toBe(3);
+    expect(t3.reference).not.toBe(t1.reference);
+    expect(t3.reference).not.toBe(t2.reference);
+  });
+});
+
 describe("openTransactionForUnit", () => {
   it("returns null for a unit that has never been through the pipeline", async () => {
     const { unit } = await ownedUnit();
@@ -119,6 +142,22 @@ describe("openTransactionForUnit", () => {
     const { unit } = await ownedUnit();
     const t = await ensureForUnit(unit, { userId: defaultOfficer.id });
     expect((await openTransactionForUnit(unit.id)).id).toBe(t.id);
+  });
+
+  // The createdAt-desc ordering is load-bearing: a unit can carry both a
+  // closed deal (a prior lease that signed) and a fresh open one, and the
+  // seeded demo now has three units in exactly this shape.
+  it("returns the open transaction when the unit also has a closed one", async () => {
+    const { unit } = await ownedUnit();
+    const closed = await ensureForUnit(unit, { userId: defaultOfficer.id });
+    await prisma.leasingTransaction.update({
+      where: { id: closed.id }, data: { stage: "CONTRACT_SIGNING", status: "Signed", finalStatus: "Signed" },
+    });
+    const open = await ensureForUnit(unit, { userId: defaultOfficer.id });
+    expect(open.id).not.toBe(closed.id);
+    const found = await openTransactionForUnit(unit.id);
+    expect(found).not.toBeNull();
+    expect(found.id).toBe(open.id);
   });
 });
 

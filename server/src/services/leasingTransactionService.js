@@ -25,8 +25,17 @@ const includeFull = {
 async function nextReference() {
   const year = new Date().getFullYear();
   const prefix = `RBU-${year}-`;
-  const count = await prisma.leasingTransaction.count({ where: { reference: { startsWith: prefix } } });
-  return `${prefix}${String(count + 1).padStart(6, "0")}`;
+  // Derived from the highest existing reference, not a row count: deleting a
+  // transaction used to make the next one collide on the unique constraint,
+  // and approveUnit swallows that error, leaving a unit approved with no
+  // transaction and no way to publish it.
+  const last = await prisma.leasingTransaction.findFirst({
+    where: { reference: { startsWith: prefix } },
+    orderBy: { reference: "desc" },
+    select: { reference: true },
+  });
+  const n = last ? Number(last.reference.slice(prefix.length)) + 1 : 1;
+  return `${prefix}${String(n).padStart(6, "0")}`;
 }
 
 async function logEvent(transactionId, actor, message, stage) {
