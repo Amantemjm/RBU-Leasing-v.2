@@ -12,6 +12,13 @@ async function ownerAndUnit() {
   return { owner, unit };
 }
 
+// Publishes a UnitListing for the given unit so `unit.listing?.published` is
+// true — required to genuinely exercise the availability AND-check in
+// ensureForInquiry (status && approvalStatus && listing.published).
+async function publishListing(unitId) {
+  return prisma.unitListing.create({ data: { unitId, published: true, publishedAt: new Date() } });
+}
+
 describe("Inquiry.unitId column", () => {
   it("stores and reads back a unitId on an inquiry", async () => {
     const { unit } = await ownerAndUnit();
@@ -91,8 +98,12 @@ describe("accept pre-links the inquired unit + lessor", () => {
     expect(txn.unitOwnerId).toBeNull();
   });
 
-  it("logs a warning event when the inquired unit is not vacant", async () => {
+  it("logs a warning event when the inquired unit is not vacant, even though it is approved and published", async () => {
     const { unit } = await ownerAndUnit();
+    // approvalStatus defaults to APPROVED and we publish a listing, so status
+    // ("OCCUPIED") is the ONLY failing leg of the availability AND-check —
+    // this proves the VACANT check is load-bearing on its own.
+    await publishListing(unit.id);
     await prisma.unit.update({ where: { id: unit.id }, data: { status: "OCCUPIED" } });
     const inq = await createInquiry({ ...base, unitId: unit.id });
     const off = await officer();
@@ -100,5 +111,20 @@ describe("accept pre-links the inquired unit + lessor", () => {
     const txn = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inq.id } });
     const events = await prisma.transactionEvent.findMany({ where: { transactionId: txn.id } });
     expect(events.some((e) => e.message.includes("no longer available"))).toBe(true);
+  });
+
+  it("pre-links a fully available unit with no warning event", async () => {
+    const { owner, unit } = await ownerAndUnit();
+    // status VACANT + approvalStatus APPROVED (default) + a published listing
+    // — every leg of the availability check passes.
+    await publishListing(unit.id);
+    const inq = await createInquiry({ ...base, unitId: unit.id });
+    const off = await officer();
+    await acceptInquiry({ userId: off.id, role: "LEASING_OFFICER" }, inq.id);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inq.id } });
+    expect(txn.unitId).toBe(unit.id);
+    expect(txn.unitOwnerId).toBe(owner.id);
+    const events = await prisma.transactionEvent.findMany({ where: { transactionId: txn.id } });
+    expect(events.some((e) => e.message.includes("no longer available"))).toBe(false);
   });
 });
