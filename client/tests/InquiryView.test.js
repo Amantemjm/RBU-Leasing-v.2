@@ -6,9 +6,13 @@ import { createPinia, setActivePinia } from "pinia";
 vi.mock("../src/lib/inquiries.js", () => ({
   createInquiry: vi.fn(() => Promise.resolve({ id: "i1", status: "NEW" })),
 }));
+vi.mock("../src/lib/resource.js", () => ({
+  publicUnits: { get: vi.fn(() => Promise.resolve({ unitId: "u1", headline: "Elegant 2BR", details: { unitNumber: "12A", propertyName: "Empress at Capitol Commons" } })) },
+}));
 
 import InquiryView from "../src/views/InquiryView.vue";
 import { createInquiry } from "../src/lib/inquiries.js";
+import { publicUnits } from "../src/lib/resource.js";
 
 const stub = { template: "<div/>" };
 function makeRouter() {
@@ -21,6 +25,16 @@ async function mountView(as = "LESSEE") {
   setActivePinia(createPinia());
   const router = makeRouter(); router.push({ path: "/", query: { as } }); await router.isReady();
   return mount(InquiryView, { global: { plugins: [router] } });
+}
+
+async function mountWithUnit() {
+  setActivePinia(createPinia());
+  const router = makeRouter();
+  router.push({ path: "/", query: { as: "LESSEE", unit: "u1" } });
+  await router.isReady();
+  const w = mount(InquiryView, { global: { plugins: [router] } });
+  await flushPromises();
+  return w;
 }
 
 describe("InquiryView (Quick Inquiry form)", () => {
@@ -82,5 +96,20 @@ describe("InquiryView (Quick Inquiry form)", () => {
       fullName: "Maria Santos", email: "maria@example.com", consent: true,
     });
     expect(w.text()).toContain("Inquiry received");
+  });
+
+  it("shows the unit banner and sends unitId when arriving from a unit page", async () => {
+    const w = await mountWithUnit();
+    expect(w.text()).toContain("12A");
+    // fill the required fields the form still needs
+    await w.find("#fullName").setValue("Ana Reyes");
+    await w.find("#email").setValue("ana@example.com");
+    // choose the first valid inquiry type; category is prefilled to RESIDENCES
+    const typeSelect = w.find("select#inquiryType");
+    await typeSelect.setValue("Unit Availability");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(createInquiry).toHaveBeenCalledWith(expect.objectContaining({ unitId: "u1", category: "RESIDENCES" }));
   });
 });
