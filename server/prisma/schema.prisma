@@ -452,7 +452,7 @@ model TransactionEvent {
   @@index([transactionId])
 }
 
-// A scheduled visit for a transaction's Inspection / Turnover / Photoshoot stage.
+// A scheduled visit for a transaction's Inspection / Photoshoot stage.
 // One row per (transaction, stage); reschedule edits it in place.
 model Appointment {
   id              String   @id @default(cuid())
