@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import { UNIT_LISTING_FIELDS, DEFAULT_VISIBLE_FIELDS, isListingFieldKey } from "../../../shared/unitListingFields.js";
+import { listForOwner } from "./lessorRequirementService.js";
 
 const PHOTO_META = { id: true, mimeType: true, size: true, caption: true, sortOrder: true, createdByName: true, createdAt: true };
 
@@ -41,7 +42,28 @@ export async function getForUnit(unitId) {
     unitId, published: false, publishedAt: null, headline: null,
     details: defaultDetails(unit), visibleFields: [...DEFAULT_VISIBLE_FIELDS], coverPhotoId: null,
   };
-  return { unit: unitCore(unit), listing: effective, photos };
+  return { unit: unitCore(unit), listing: effective, photos, readiness: await publishReadiness(unit) };
+}
+
+// Everything that has to be true before a unit can go on the market. Exported
+// because getForUnit hands it to the listing page, which lists the unmet steps.
+export async function publishReadiness(unit) {
+  // listForOwner completes the checklist from the shared config, so an
+  // untouched document type counts as outstanding rather than missing.
+  const reqs = await listForOwner(unit.ownerId);
+  // Asking the appointment answers "did the shoot happen", where stageData
+  // only answers "is the marker set".
+  const shoot = await prisma.appointment.findFirst({
+    where: { stage: "PHOTOSHOOT", status: "Completed", transaction: { unitId: unit.id } },
+    select: { id: true },
+  });
+  return {
+    approved: unit.approvalStatus === "APPROVED",
+    requirementsApproved: reqs.filter((r) => r.status === "Approved").length,
+    requirementsTotal: reqs.length,
+    photoshootCompleted: !!shoot,
+    photoCount: await prisma.unitPhoto.count({ where: { unitId: unit.id } }),
+  };
 }
 
 export async function updateListing(user, unitId, { details, visibleFields, headline }) {
@@ -116,9 +138,14 @@ function cardDetails(listing) {
 
 export async function publish(user, unitId) {
   const unit = await loadUnit(unitId);
-  if (unit.approvalStatus !== "APPROVED") throw new ConflictError("Only an approved unit can be published");
-  const count = await prisma.unitPhoto.count({ where: { unitId } });
-  if (count === 0) throw new ConflictError("Add at least one photo before publishing");
+  const r = await publishReadiness(unit);
+  if (!r.approved) throw new ConflictError("Only an approved unit can be published");
+  if (r.requirementsApproved < r.requirementsTotal) {
+    throw new ConflictError(`All lessor requirements must be approved first (${r.requirementsApproved}/${r.requirementsTotal})`);
+  }
+  if (!r.photoshootCompleted) throw new ConflictError("The photoshoot has not been completed");
+  if (r.photoCount === 0) throw new ConflictError("Add at least one photo before publishing");
+
   await prisma.unitListing.upsert({
     where: { unitId },
     create: { unitId, published: true, publishedAt: new Date(), details: defaultDetails(unit), visibleFields: DEFAULT_VISIBLE_FIELDS },
