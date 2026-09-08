@@ -81,7 +81,7 @@ export async function approveUnit(id, actor) {
   try {
     await ensureForUnit(approved, actor);
   } catch (e) {
-    console.error(`Unit ${approved.unitNumber} approved but its transaction could not be opened:`, e.message);
+    console.error(`Unit ${approved.unitNumber} (${approved.id}) approved but its transaction could not be opened:`, e.message);
   }
   return approved;
 }
