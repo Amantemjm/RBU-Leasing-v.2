@@ -15,6 +15,7 @@ const error = ref("");
 const q = ref("");
 const busy = ref("");
 const covers = ref({}); // unitId -> object URL
+const rowErrors = ref({}); // unitId -> the server's refusal message for that row
 
 function revokeCovers() {
   for (const url of Object.values(covers.value)) { try { URL.revokeObjectURL(url); } catch { /* ignore */ } }
@@ -74,12 +75,17 @@ function manage(row) { router.push(`/app/units/${row.unitId}/listing`); }
 async function togglePublish(row) {
   busy.value = row.unitId;
   error.value = "";
+  rowErrors.value = { ...rowErrors.value, [row.unitId]: "" };
   try {
     if (row.published) await unitListings.unpublish(row.unitId);
     else await unitListings.publish(row.unitId);
     await load();
   } catch (e) {
-    error.value = e.response?.data?.error || "Action failed";
+    // The grid can't know a row's full publish readiness (that would mean an
+    // N+1 on every load), so the server is the real gate. Surface its refusal
+    // against this row, naming the unit, rather than a banner far from the card.
+    const reason = e.response?.data?.error || "Action failed";
+    rowErrors.value = { ...rowErrors.value, [row.unitId]: `Unit ${row.unitNumber}: ${reason}` };
   } finally {
     busy.value = "";
   }
@@ -125,6 +131,8 @@ async function togglePublish(row) {
           <p v-if="rate(r)" class="rate">{{ rate(r) }}<span class="per"> / mo</span></p>
           <p class="updated">Updated {{ formatDate(r.updatedAt) }}</p>
         </div>
+
+        <p v-if="rowErrors[r.unitId]" class="row-error">{{ rowErrors[r.unitId] }}</p>
 
         <div class="vfoot">
           <button type="button" class="secondary" @click="manage(r)">Manage</button>
@@ -177,6 +185,7 @@ async function togglePublish(row) {
 .rate { margin: 0.4rem 0 0; font-family: var(--display, Georgia, serif); font-size: 1.05rem; font-weight: 600; color: var(--accent-text); }
 .rate .per { font-size: 0.72rem; font-weight: 500; color: var(--muted); }
 .updated { margin: 0.35rem 0 0; font-size: 0.72rem; color: var(--muted); }
+.row-error { margin: 0 1rem; padding: 0.4rem 0.6rem; font-size: 0.78rem; color: var(--danger); background: var(--danger-050); border-radius: var(--radius-sm); }
 .vfoot { display: flex; gap: 0.4rem; padding: 0.65rem 1rem 0.9rem; }
 .vfoot button { flex: 1; padding: 0.45rem 0.6rem; font-size: 0.83rem; }
 </style>
