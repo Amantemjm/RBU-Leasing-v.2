@@ -49,7 +49,7 @@ function eventTime(iso) { return new Date(iso).toLocaleString(undefined, { month
     <div v-else-if="!list.length" class="empty panel">
       <div class="empty__icon">📋</div>
       <h2>No active leasing transaction yet</h2>
-      <p class="muted">Once the leasing team accepts your inquiry, your progress will appear here.</p>
+      <p class="muted">Once your inquiry is accepted or your unit is approved, your progress will appear here.</p>
     </div>
 
     <template v-else-if="active">
