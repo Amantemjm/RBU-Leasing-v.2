@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { resetCrudTables } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
 import { inquiryCreateSchema } from "../src/validation/inquiry.js";
-import { createInquiry } from "../src/services/inquiryService.js";
+import { createInquiry, listInquiries } from "../src/services/inquiryService.js";
 
 beforeEach(async () => { await resetCrudTables(); });
 
@@ -47,5 +47,20 @@ describe("createInquiry unit linking", () => {
     const inq = await createInquiry({ ...base, unitId: "does-not-exist" });
     expect(inq.id).toBeTruthy();
     expect(inq.unitId).toBeNull();
+  });
+});
+
+describe("listInquiries includes the unit summary", () => {
+  const base = { category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability", fullName: "Ana", email: "ana@example.com", consent: true, status: "NEW" };
+  it("returns a unit summary when the inquiry has one", async () => {
+    const { unit } = await ownerAndUnit();
+    await createInquiry({ ...base, unitId: unit.id });
+    const rows = await listInquiries({ role: "ADMIN" });
+    expect(rows[0].unit).toMatchObject({ id: unit.id, unitNumber: "15-08" });
+  });
+  it("returns null unit when there is none", async () => {
+    await createInquiry({ ...base });
+    const rows = await listInquiries({ role: "ADMIN" });
+    expect(rows[0].unit).toBeNull();
   });
 });

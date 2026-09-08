@@ -2,7 +2,10 @@ import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import { ensureForInquiry } from "./leasingTransactionService.js";
 
-const assigneeInclude = { assignedTo: { select: { id: true, name: true, email: true } } };
+const assigneeInclude = {
+  assignedTo: { select: { id: true, name: true, email: true } },
+  unit: { select: { id: true, unitNumber: true, building: true } },
+};
 
 export async function createInquiry(data) {
   const { unitId, ...rest } = data;
