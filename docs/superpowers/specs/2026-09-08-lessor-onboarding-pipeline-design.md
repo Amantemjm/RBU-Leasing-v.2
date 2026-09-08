@@ -32,7 +32,7 @@ no transaction to track.
 Make the lessor-initiated path a tracked pipeline:
 
 **register → unit approval → upload requirements → review/approval →
-unit inspection → key turnover → photoshoot → publish**
+unit inspection → photoshoot → publish**
 
 Publication becomes the reward for completing that chain rather than something
 an officer can do at any point.
@@ -49,6 +49,7 @@ an officer can do at any point.
 | Photoshoot timing | **End of the chain**, following the existing stage order. Not bookable early. |
 | Publish gate | Unit `APPROVED` **and** all seven lessor requirements `Approved` **and** the photoshoot appointment `Completed` **and** at least one photo. |
 | Photo source | **Staff only, unchanged.** Photos come from the officer after the shoot; the lessor never uploads them. |
+| Key Turnover | **Removed from the pipeline.** It is not part of the lessor flow, so it goes from the shared stage registry entirely — there is only one stage list. Six stages remain. |
 
 ## Non-goals
 
@@ -148,6 +149,34 @@ guessing.
 `MyLeasingProgressView` needs no change. Once a transaction exists the lessor's
 tracker populates on its own.
 
+### 4. Removing Key Turnover (`shared/leasingStages.js`)
+
+The registry is a single shared list — there is no per-flow variant — so
+dropping the stage from the lessor flow drops it from the system. The pipeline
+becomes six stages:
+
+**Inquiry → Send Requirements → Approval → Unit Inspection → Photoshoot →
+Contract Signing**
+
+`SCHEDULABLE_STAGES` loses `KEY_TURNOVER` and keeps two: Unit Inspection and
+Photoshoot. Everything else in the registry is derived — `STAGE_KEYS`,
+`isFinalStage`, `nextStageKey`, the tracker's step count — so no other
+production code needs a change beyond one icon-map entry in `DeliveryTracker`
+and two stale comments in `SchedulingPanel` and `UpcomingAppointment`.
+
+**Live data was checked before deciding this.** No transaction is currently at
+Key Turnover, so nothing is stranded mid-stage. One completed transaction
+carries a stale `stageData.KEY_TURNOVER` key and there is one orphaned
+`Appointment` row at that stage.
+
+Neither is harmful: the tracker iterates `LEASING_STAGES`, so an unknown
+`stageData` key renders nothing. The orphaned appointment is the one loose end —
+`listForTransaction` returns every appointment for a transaction regardless of
+stage, so it would surface with no label. **Delete Key Turnover appointment
+rows as part of this change**, in the same additive-SQL style as the other
+manual migrations. The office server may hold real ones; the migration reports
+how many it removed rather than doing it silently.
+
 ## Tests
 
 **Server**
@@ -163,28 +192,27 @@ tracker populates on its own.
 9. Existing refusals (not approved, no photo) still fire, and in the stated order
 10. A failure inside `ensureForUnit` does not roll back the approval
 
+11. The registry has six stages in order, and `KEY_TURNOVER` is gone
+12. `SCHEDULABLE_STAGES` holds exactly Unit Inspection and Photoshoot
+13. Scheduling `KEY_TURNOVER` is refused as a non-schedulable stage
+14. A transaction advances Unit Inspection → Photoshoot directly
+
 **Client**
 
-11. The listing page lists the outstanding steps
-12. It shows nothing when every step is satisfied
+15. The tracker renders six milestones
+16. The listing page lists the outstanding steps
+17. It shows nothing when every step is satisfied
 
 ## Open items
 
-1. **Key Turnover is retained.** The sequence you gave — register, approval,
-   requirements, review, inspection, photoshoot — does not mention Key Turnover,
-   which currently sits between inspection and photoshoot. It is kept, because
-   removing a stage is destructive and was not asked for. If the lessor flow
-   should not include it, say so before implementation: it is a registry change
-   plus its tests, not a rewrite.
-
-2. **Existing approved units have no transaction.** There are six in the seeded
+1. **Existing approved units have no transaction.** There are six in the seeded
    demo and an unknown number on the office server. They will fail the publish
    gate at check 3 despite already being live. Three options: backfill a
    transaction for every approved unit; exempt units approved before this ships;
    or leave them, so re-publishing one requires walking it through the pipeline.
    **This needs a decision before deploy, not before implementation.**
 
-3. **A unit with more than one transaction.** `openTransactionForUnit` returns
+2. **A unit with more than one transaction.** `openTransactionForUnit` returns
    the most recent open one. This should not arise for lessor-initiated units,
    but an inquiry pre-linked to the same unit can produce a second — which is
    the case the Related Work below addresses.
