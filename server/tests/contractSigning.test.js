@@ -144,7 +144,7 @@ describe("Entering Contract Signing", () => {
     const { user, token } = await makeOfficer();
     const parked = await createTransaction(
       { userId: user.id, role: "LEASING_OFFICER" },
-      { lesseeName: "Ana Reyes", startStage: "KEY_TURNOVER" },
+      { lesseeName: "Ana Reyes", startStage: "UNIT_INSPECTION" },
     );
     const res = await advance(token, parked.id);
     expect(res.status).toBe(200);

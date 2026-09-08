@@ -324,8 +324,8 @@ const mine = await api("GET", "/leasing-transactions/mine", { token: lessee });
 if (mine.length === 1 && mine[0].id === txn.id) ok("Lessee sees only their own transaction");
 else bad("Lessee /mine should return exactly their transaction", `${mine.length} rows`);
 
-// ═════════════════════════════════════════════════════ F. THE SEVEN STAGES
-section("F · THE PIPELINE — officer walks all seven stages");
+// ═══════════════════════════════════════════════════════ F. THE SIX STAGES
+section("F · THE PIPELINE — officer walks all six stages");
 
 const setStatus = (status) => api("PATCH", `/leasing-transactions/${txn.id}/status`, { token: officer, body: { status } });
 const advance = () => api("PATCH", `/leasing-transactions/${txn.id}/advance`, { token: officer, body: {} });
@@ -374,17 +374,7 @@ await expectStatus("A completed appointment cannot be rescheduled", 409,
   "PATCH", `/appointments/${appt.id}/reschedule`, { token: officer, body: { scheduledAt: new Date().toISOString() } });
 await advance();
 
-step("5 · Key Turnover");
-appt = await api("POST", `/appointments/transaction/${txn.id}/KEY_TURNOVER`, {
-  token: officer, body: { scheduledAt: new Date(Date.now() + 1728e5).toISOString(), location: "Admin office" },
-});
-await api("PATCH", `/appointments/${appt.id}/complete`, { token: officer, body: {} });
-t = await readTxn();
-if (t.status === "Completed") ok("Turnover completed", `${t.stage}/${t.status}`);
-else bad("Turnover should be Completed", t.status);
-await advance();
-
-step("6 · Photoshoot — and the Awaiting Prospect resting state");
+step("5 · Photoshoot — and the Awaiting Prospect resting state");
 // Unlink the tenant so the shoot finishes with nobody in view.
 await api("PATCH", `/leasing-transactions/${txn.id}/link`, { token: officer, body: { tenantId: null } });
 appt = await api("POST", `/appointments/transaction/${txn.id}/PHOTOSHOOT`, {
@@ -409,7 +399,7 @@ else bad("Should return to Completed", relinked.status);
 await expectStatus("Cannot advance to signing without the Letter of Intent", 409,
   "PATCH", `/leasing-transactions/${txn.id}/advance`, { token: officer, body: {} });
 
-step("7 · Contract Signing — documents drive the pipeline");
+step("6 · Contract Signing — documents drive the pipeline");
 const loiAsLessee = await upDoc(txn.id, lessee, "loi.pdf", "LETTER_OF_INTENT");
 if (loiAsLessee.status === 403) ok("A lessee cannot upload a typed document", `403 "${loiAsLessee.data.error}"`);
 else bad("Lessee typed upload should be 403", `${loiAsLessee.status}`);
@@ -478,7 +468,7 @@ section("SUMMARY");
 log(`\n  Transaction ${txn.reference}`);
 const done = await readTxn();
 log(`  Final: ${done.stage} / ${done.status}  ·  finalStatus=${done.finalStatus}`);
-log(`  Stages recorded: ${Object.keys(done.stageData || {}).length}/7`);
+log(`  Stages recorded: ${Object.keys(done.stageData || {}).length}/6`);
 log(`  Documents on file: ${(done.documents || []).length}  (${(done.documents || []).map((d) => d.docType || "loose").join(", ")})`);
 log(`  Event log entries: ${(done.events || []).length}`);
 

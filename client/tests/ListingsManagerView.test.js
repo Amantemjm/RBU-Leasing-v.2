@@ -46,4 +46,18 @@ describe("ListingsManagerView", () => {
     const buttons = w.findAll("button").filter((b) => b.text() === "Publish");
     expect(buttons.some((b) => b.attributes("disabled") !== undefined)).toBe(true);
   });
+  it("a failed publish shows the server's refusal against that row, naming the unit", async () => {
+    unitListings.publish.mockRejectedValueOnce({ response: { data: { error: "The photoshoot has not been completed" } } });
+    const w = mount(ListingsManagerView);
+    await flushPromises();
+    const pub = w.findAll("button").find((b) => b.text() === "Publish" && !b.attributes("disabled"));
+    await pub.trigger("click");
+    await flushPromises();
+    // Message lands on the card, names unit 12A, and carries the server's text.
+    const card = w.findAll(".vcard").find((c) => c.text().includes("12A"));
+    expect(card.text()).toContain("12A");
+    expect(card.text()).toContain("The photoshoot has not been completed");
+    // The button stays enabled — the server remains the gate.
+    expect(pub.attributes("disabled")).toBeUndefined();
+  });
 });

@@ -106,16 +106,12 @@ log(`→ advanced to ${t.stage}`);
 step(6, "Unit Inspection");
 await walk("Unit Inspection", ["Scheduled", "In Progress", "Passed"]);
 
-// ---------------------------------------------------------------- KEY_TURNOVER
-step(7, "Key Turnover");
-await walk("Key Turnover", ["Scheduled", "Completed"]);
-
 // ---------------------------------------------------------------- PHOTOSHOOT
-step(8, "Photoshoot");
+step(7, "Photoshoot");
 await walk("Photoshoot", ["Scheduled", "In Progress", "Completed"], { advance: false });
 
 // ---------------------------------------------------------------- CONTRACT_SIGNING (final)
-step(9, "Contract Signing (final stage) — the Letter of Intent advances the stage, the Signed Contract closes it");
+step(8, "Contract Signing (final stage) — the Letter of Intent advances the stage, the Signed Contract closes it");
 await uploadDoc(T, officer, "Letter-of-Intent.pdf", "%PDF-1.4 letter of intent", "LETTER_OF_INTENT");
 t = await api("GET", `/leasing-transactions/${T}`, { token: officer });
 log(`Officer uploaded Letter-of-Intent.pdf → advanced to ${t.stage}`);

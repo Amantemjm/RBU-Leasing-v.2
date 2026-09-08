@@ -3,9 +3,37 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetCrudTables, tokens, factory } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
+import { ensureForUnit } from "../src/services/leasingTransactionService.js";
+import { LESSOR_REQUIREMENT_TYPES } from "../../shared/lessorRequirements.js";
 
 const app = createApp();
-beforeEach(async () => { await resetCrudTables(); });
+// assignedOfficerId on LeasingTransaction is FK-constrained to User, so
+// ensureForUnit's actor (used whenever the owner has no assigned officer)
+// must resolve to a real row.
+let officer;
+beforeEach(async () => {
+  await prisma.lessorRequirement.deleteMany();
+  await resetCrudTables();
+  officer = await prisma.user.create({
+    data: { name: "Default Officer", email: "officer-1@x.com", passwordHash: "x", role: "LEASING_OFFICER" },
+  });
+});
+
+// Publishing now requires an approved unit whose lessor's requirements are
+// all approved and whose photoshoot is complete — give every test that
+// publishes a unit this setup so it clears the gate.
+async function clearPublishGate(owner, unit) {
+  for (const t of LESSOR_REQUIREMENT_TYPES) {
+    await prisma.lessorRequirement.create({
+      data: { unitOwnerId: owner.id, requirementKey: t.key, status: "Approved" },
+    });
+  }
+  const txn = await ensureForUnit(unit, { userId: officer.id, role: "LEASING_OFFICER" });
+  await prisma.appointment.create({
+    data: { transactionId: txn.id, stage: "PHOTOSHOOT", status: "Completed",
+            outcome: "Completed", scheduledAt: new Date() },
+  });
+}
 
 async function aUnit(over = {}) {
   const owner = await factory.owner();
@@ -130,6 +158,7 @@ describe("Unit listing — publish", () => {
     await request(app).post(`/api/unit-listings/${u2.id}/photos`).set(staff()).attach("file", PNG, { filename: "a.png", contentType: "image/png" });
     const notApproved = await request(app).patch(`/api/unit-listings/${u2.id}/publish`).set(staff());
     expect(notApproved.status).toBe(409);
+    await clearPublishGate(owner, u);
     const ok = await request(app).patch(`/api/unit-listings/${u.id}/publish`).set(staff());
     expect(ok.status).toBe(200);
     expect(ok.body.listing.published).toBe(true);
@@ -146,6 +175,7 @@ describe("Unit listing — list all (Content Manager)", () => {
     await factory.unit(owner.id, { unitNumber: "CM-2", baseRent: 1 });
     // give unit A a photo and publish it
     await request(app).post(`/api/unit-listings/${a.id}/photos`).set(staff()).attach("file", PNG, { filename: "a.png", contentType: "image/png" });
+    await clearPublishGate(owner, a);
     await request(app).patch(`/api/unit-listings/${a.id}/publish`).set(staff());
     const res = await request(app).get("/api/unit-listings").set(staff());
     expect(res.status).toBe(200);

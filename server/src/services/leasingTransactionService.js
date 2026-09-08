@@ -25,8 +25,17 @@ const includeFull = {
 async function nextReference() {
   const year = new Date().getFullYear();
   const prefix = `RBU-${year}-`;
-  const count = await prisma.leasingTransaction.count({ where: { reference: { startsWith: prefix } } });
-  return `${prefix}${String(count + 1).padStart(6, "0")}`;
+  // Derived from the highest existing reference, not a row count: deleting a
+  // transaction used to make the next one collide on the unique constraint,
+  // and approveUnit swallows that error, leaving a unit approved with no
+  // transaction and no way to publish it.
+  const last = await prisma.leasingTransaction.findFirst({
+    where: { reference: { startsWith: prefix } },
+    orderBy: { reference: "desc" },
+    select: { reference: true },
+  });
+  const n = last ? Number(last.reference.slice(prefix.length)) + 1 : 1;
+  return `${prefix}${String(n).padStart(6, "0")}`;
 }
 
 async function logEvent(transactionId, actor, message, stage) {
@@ -96,6 +105,51 @@ export async function ensureForInquiry(inquiry, actor) {
       await logEvent(txn.id, actor, `Inquired unit ${unit.unitNumber} is no longer available (not vacant/published) — verify the link`, "INQUIRY");
     }
   }
+  return txn;
+}
+
+// The unit's current transaction, or null. "Closed" is only ever written at
+// Contract Signing, so anything earlier in the pipeline counts as open.
+export async function openTransactionForUnit(unitId) {
+  return prisma.leasingTransaction.findFirst({
+    where: { unitId, OR: [{ finalStatus: null }, { finalStatus: { notIn: ["Signed", "Declined"] } }] },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Opens the onboarding transaction for a unit the lessor has registered
+// (idempotent). There is no inquiry and no lessee — this is the lessor
+// bringing a unit to market, so Inquiry is marked Skipped rather than
+// pretending one happened, and the flow rests at Send Requirements.
+export async function ensureForUnit(unit, actor) {
+  const existing = await openTransactionForUnit(unit.id);
+  if (existing) return existing;
+
+  // The owner's officer owns the relationship; the approver is the fallback.
+  const owner = await prisma.unitOwner.findUnique({
+    where: { id: unit.ownerId }, select: { assignedOfficerId: true },
+  });
+
+  const now = stampNow();
+  const reference = await nextReference();
+  const stageData = {
+    INQUIRY: { status: "Skipped", completedAt: now },
+    SEND_REQUIREMENTS: { status: "Pending", startedAt: now },
+  };
+  const txn = await prisma.leasingTransaction.create({
+    data: {
+      reference,
+      stage: "SEND_REQUIREMENTS",
+      status: "Pending",
+      stageData,
+      unitId: unit.id,
+      unitOwnerId: unit.ownerId,
+      assignedOfficerId: owner?.assignedOfficerId || actor?.userId || null,
+    },
+  });
+  await logEvent(txn.id, actor,
+    `Unit ${unit.unitNumber} approved — onboarding transaction ${reference} opened`,
+    "SEND_REQUIREMENTS");
   return txn;
 }
 

@@ -102,13 +102,13 @@ describe("Appointments — schedule/list", () => {
 
   it("scheduling a non-current schedulable stage syncs only stageData, not top-level status", async () => {
     const t = await txnAtInspection();
-    const res = await request(app).post(`/api/appointments/transaction/${t.id}/KEY_TURNOVER`)
+    const res = await request(app).post(`/api/appointments/transaction/${t.id}/PHOTOSHOOT`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-05T09:00:00.000Z" });
     expect(res.status).toBe(201);
-    expect(res.body.stage).toBe("KEY_TURNOVER");
+    expect(res.body.stage).toBe("PHOTOSHOOT");
     const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
     expect(txn.status).toBe("Pending");
-    expect(txn.stageData.KEY_TURNOVER.status).toBe("Scheduled");
+    expect(txn.stageData.PHOTOSHOOT.status).toBe("Scheduled");
   });
 
   it("scheduling against an unknown transaction 404s", async () => {
@@ -120,16 +120,28 @@ describe("Appointments — schedule/list", () => {
   it("scheduling a stage the transaction has already completed 409s", async () => {
     const owner = await factory.owner(); const tenant = await factory.tenant();
     const t = await prisma.leasingTransaction.create({ data: {
-      reference: "RBU-2026-000010", stage: "KEY_TURNOVER", status: "Pending",
+      reference: "RBU-2026-000010", stage: "PHOTOSHOOT", status: "Pending",
       stageData: {
         UNIT_INSPECTION: { status: "Passed", completedAt: new Date().toISOString() },
-        KEY_TURNOVER: { status: "Pending" },
+        PHOTOSHOOT: { status: "Pending" },
       },
       tenantId: tenant.id, unitOwnerId: owner.id,
     } });
     const res = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_INSPECTION`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
     expect(res.status).toBe(409);
+  });
+
+  it("refuses to schedule a stage that no longer exists", async () => {
+    const t = await prisma.leasingTransaction.create({ data: {
+      reference: "RBU-2026-000011", stage: "UNIT_INSPECTION", status: "Pending",
+      stageData: { UNIT_INSPECTION: { status: "Pending" } },
+    } });
+    const res = await request(app).post(`/api/appointments/transaction/${t.id}/KEY_TURNOVER`)
+      .set("Authorization", `Bearer ${tokens.officer()}`)
+      .send({ scheduledAt: new Date().toISOString() });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("not a schedulable stage");
   });
 });
 
@@ -150,13 +162,13 @@ describe("Appointments — lifecycle", () => {
     expect(res.body.rescheduleCount).toBe(1);
   });
 
-  it("complete without outcome applies the stage default (turnover → Completed)", async () => {
-    // seed a txn at KEY_TURNOVER
+  it("complete without outcome applies the stage default (photoshoot → Completed)", async () => {
+    // seed a txn at PHOTOSHOOT
     const owner = await factory.owner(); const tenant = await factory.tenant();
     const t = await prisma.leasingTransaction.create({ data: {
-      reference: "RBU-2026-000009", stage: "KEY_TURNOVER", status: "Pending",
-      stageData: { KEY_TURNOVER: { status: "Pending" } }, tenantId: tenant.id, unitOwnerId: owner.id } });
-    const s = await request(app).post(`/api/appointments/transaction/${t.id}/KEY_TURNOVER`)
+      reference: "RBU-2026-000009", stage: "PHOTOSHOOT", status: "Pending",
+      stageData: { PHOTOSHOOT: { status: "Pending" } }, tenantId: tenant.id, unitOwnerId: owner.id } });
+    const s = await request(app).post(`/api/appointments/transaction/${t.id}/PHOTOSHOOT`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({ scheduledAt: "2026-09-01T09:00:00.000Z" });
     const res = await request(app).patch(`/api/appointments/${s.body.id}/complete`)
       .set("Authorization", `Bearer ${tokens.officer()}`).send({});

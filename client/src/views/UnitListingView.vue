@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { unitListings } from "../lib/resource.js";
 import { api } from "../lib/api.js";
@@ -13,6 +13,7 @@ const unitId = route.params.id;
 const unit = ref(null);
 const listing = ref(null);
 const photos = ref([]);
+const readiness = ref(null);
 const error = ref("");
 const loading = ref(true);
 const saving = ref(false);
@@ -67,6 +68,21 @@ function onListTextBlur(key) {
     .filter((s) => s.length > 0);
 }
 
+// The same steps the server gates on, in the same order, so the page tells the
+// officer what Publish would refuse before they click it.
+const blockers = computed(() => {
+  const r = readiness.value;
+  if (!r) return [];
+  const out = [];
+  if (!r.approved) out.push("The unit has not been approved yet");
+  if (r.requirementsApproved < r.requirementsTotal) {
+    out.push(`Lessor requirements: ${r.requirementsApproved} of ${r.requirementsTotal} approved`);
+  }
+  if (!r.photoshootCompleted) out.push("The photoshoot has not been completed");
+  if (!r.photoCount) out.push("No photos uploaded yet");
+  return out;
+});
+
 async function load() {
   error.value = "";
   try {
@@ -74,6 +90,7 @@ async function load() {
     unit.value = res.unit;
     listing.value = res.listing;
     photos.value = res.photos || [];
+    readiness.value = res.readiness || null;
     headline.value = res.listing?.headline || "";
     visibleFields.value = Array.isArray(res.listing?.visibleFields) ? [...res.listing.visibleFields] : [];
     applyDetailsToLocal();
@@ -205,23 +222,28 @@ async function togglePublish() {
 
     <template v-if="!loading && unit && listing">
       <section class="panel publish-panel">
-        <div class="publish-status">
-          <span :class="['status-tag', listing.published ? 'published' : 'draft']">
-            {{ listing.published ? "Published" : "Draft" }}
-          </span>
-          <span v-if="listing.published && listing.publishedAt" class="muted">
-            since {{ formatDate(listing.publishedAt) }}
-          </span>
+        <ul v-if="blockers.length" class="blockers">
+          <li v-for="b in blockers" :key="b">{{ b }}</li>
+        </ul>
+        <div class="publish-row">
+          <div class="publish-status">
+            <span :class="['status-tag', listing.published ? 'published' : 'draft']">
+              {{ listing.published ? "Published" : "Draft" }}
+            </span>
+            <span v-if="listing.published && listing.publishedAt" class="muted">
+              since {{ formatDate(listing.publishedAt) }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="primary"
+            :disabled="publishing || (!listing.published && photos.length === 0)"
+            :title="!listing.published && photos.length === 0 ? 'Add at least one photo before publishing' : ''"
+            @click="togglePublish"
+          >
+            {{ listing.published ? "Unpublish" : "Publish" }}
+          </button>
         </div>
-        <button
-          type="button"
-          class="primary"
-          :disabled="publishing || (!listing.published && photos.length === 0)"
-          :title="!listing.published && photos.length === 0 ? 'Add at least one photo before publishing' : ''"
-          @click="togglePublish"
-        >
-          {{ listing.published ? "Unpublish" : "Publish" }}
-        </button>
       </section>
 
       <section class="panel">
@@ -315,8 +337,11 @@ async function togglePublish() {
   padding: 1rem 1.25rem; margin: 1rem 0;
 }
 .muted { color: var(--muted); }
-.publish-panel { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.publish-panel { display: flex; flex-direction: column; gap: 0.6rem; }
+.publish-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .publish-status { display: flex; align-items: center; gap: 0.6rem; }
+.blockers { list-style: none; margin: 0; padding: 0.55rem 0.7rem; display: grid; gap: 0.25rem; border: 1px solid var(--warn, var(--line-strong)); border-radius: var(--radius-sm); background: var(--surface); font-size: 0.83rem; color: var(--muted); }
+.blockers li::before { content: "\2192 "; color: var(--faint); }
 .status-tag {
   font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
   padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--muted);

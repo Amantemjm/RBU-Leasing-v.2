@@ -27,7 +27,7 @@ export async function submit(req, res, next) {
   try { res.json(await service.submitUnit(req.user, req.params.id)); } catch (e) { next(e); }
 }
 export async function approve(req, res, next) {
-  try { res.json(await service.approveUnit(req.params.id)); } catch (e) { next(e); }
+  try { res.json(await service.approveUnit(req.params.id, req.user)); } catch (e) { next(e); }
 }
 export async function reject(req, res, next) {
   try {
