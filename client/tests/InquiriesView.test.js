@@ -7,7 +7,8 @@ vi.mock("../src/lib/inquiries.js", () => ({
     { id: "i1", category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability",
       fullName: "Maria Santos", email: "maria@example.com",
       message: "Interested in a 2BR", assignedToId: null, assignedTo: null,
-      status: "NEW", createdAt: "2026-08-12T00:00:00Z" },
+      status: "NEW", createdAt: "2026-08-12T00:00:00Z",
+      unit: { id: "u1", unitNumber: "12A", building: "Empress" } },
     { id: "i2", category: "OFFICES", inquirerType: "LESSOR", inquiryType: "Listing",
       fullName: "Pedro Cruz", email: "pedro@example.com",
       message: "Signed up as a lessor", assignedToId: null, assignedTo: null,
@@ -93,5 +94,11 @@ describe("InquiriesView (staff)", () => {
     await sel.setValue("o1");
     await flushPromises();
     expect(assignInquiry).toHaveBeenCalledWith("i1", "o1");
+  });
+
+  it("shows a unit chip for an inquiry that references a unit", async () => {
+    const w = mountAs("ADMIN");
+    await flushPromises();
+    expect(w.find(".unit-chip").text()).toContain("Unit 12A");
   });
 });
