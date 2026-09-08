@@ -191,6 +191,7 @@ model Unit {
   reviewRemarks  String?
   leases     Lease[]
   leasingTransactions LeasingTransaction[]
+  inquiries           Inquiry[]
   photos     UnitPhoto[]
   listing    UnitListing?
   createdAt  DateTime   @default(now())
@@ -359,6 +360,8 @@ model Inquiry {
   convertedUser   User?        @relation("InquiryConversion", fields: [convertedUserId], references: [id])
   convertedUserId String?
   leasingTransaction LeasingTransaction?
+  unit         Unit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  unitId       String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
