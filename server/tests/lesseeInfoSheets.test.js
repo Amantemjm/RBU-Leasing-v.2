@@ -116,4 +116,12 @@ describe("Lessee Information Sheets", () => {
     const res = await request(app).patch(`${BASE}/${s.body.id}/review`).set("Authorization", `Bearer ${tokens.officer()}`).send({ status: "APPROVED" });
     expect(res.status).toBe(200);
   });
+
+  // Self-serve creation is a lessor-only capability; the lessee sheet stays
+  // staff-initiated, so a tenant cannot create their own.
+  it("a tenant cannot self-create a lessee sheet (403)", async () => {
+    const t = await factory.tenant();
+    const res = await request(app).post(BASE).set("Authorization", `Bearer ${tokens.tenant(t.id)}`).send({});
+    expect(res.status).toBe(403);
+  });
 });

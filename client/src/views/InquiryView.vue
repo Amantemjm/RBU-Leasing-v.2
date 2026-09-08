@@ -2,6 +2,7 @@
 import { reactive, ref, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
+import { publicUnits } from "../lib/resource.js";
 import { INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
 import InquiryShell from "./InquiryShell.vue";
 
@@ -15,7 +16,15 @@ const route = useRoute();
 
 const VALID_TYPES = ["LESSOR", "LESSEE"];
 const selectedType = VALID_TYPES.includes(route.query.as) ? route.query.as : null;
-onMounted(() => { if (!selectedType) router.replace("/"); });
+const unitId = route.query.unit || null;
+const unitContext = ref(null);
+onMounted(async () => {
+  if (!selectedType) { router.replace("/"); return; }
+  if (unitId) {
+    form.category = "RESIDENCES"; // sensible default for the residential catalog; user can change
+    try { unitContext.value = await publicUnits.get(unitId); } catch { unitContext.value = null; }
+  }
+});
 
 const form = reactive({
   category: "", inquirerType: selectedType || "", inquiryType: "", fullName: "", email: "", message: "", consent: false,
@@ -42,6 +51,7 @@ async function submit() {
       fullName: form.fullName.trim(), email: form.email.trim(), consent: true,
     };
     if (form.message.trim()) payload.message = form.message.trim();
+    if (unitId) payload.unitId = unitId;
     await createInquiry(payload);
     submitted.value = true;
     form.category = ""; form.inquiryType = "";
@@ -69,6 +79,14 @@ async function submit() {
 
       <!-- Form -->
       <form v-else key="form" @submit.prevent="submit" novalidate>
+        <p v-if="unitContext" class="unit-context">
+          Inquiring about
+          <strong>Unit {{ unitContext.details?.unitNumber || "" }}</strong>
+          <template v-if="unitContext.details?.propertyName || unitContext.headline">
+            — {{ unitContext.details?.propertyName || unitContext.headline }}
+          </template>
+        </p>
+
         <div class="asrole">
           <span>Inquiring as <strong>{{ INQUIRER_LABEL[form.inquirerType] }}</strong></span>
           <a href="#" @click.prevent="router.push('/')">Change</a>
@@ -150,6 +168,8 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
 }
 .asrole strong { font-weight: 700; }
 .asrole a { color: var(--accent-text); font-weight: 600; font-size: 0.8rem; text-decoration: underline; }
+
+.unit-context { margin: 0 0 1rem; padding: 0.55rem 0.8rem; background: var(--accent-050); color: var(--accent-text); border-radius: var(--radius-sm); font-size: 0.9rem; }
 
 .field { display: flex; flex-direction: column; gap: 0.3rem; }
 .label, .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--muted); }

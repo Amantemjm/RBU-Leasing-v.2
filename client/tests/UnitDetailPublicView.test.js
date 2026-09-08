@@ -38,4 +38,11 @@ describe("UnitDetailPublicView", () => {
     await flushPromises();
     expect(w.text()).toMatch(/no longer available|not available|not found/i);
   });
+  it("points the inquire CTA at the unit-specific inquiry route", async () => {
+    const stubs = { RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" } };
+    const w = mount(UnitDetailPublicView, { global: { stubs } });
+    await flushPromises();
+    const cta = w.findAll("a").find((a) => a.text().includes("Inquire about this unit"));
+    expect(cta.attributes("href")).toContain("/inquiry?as=LESSEE&unit=u1");
+  });
 });

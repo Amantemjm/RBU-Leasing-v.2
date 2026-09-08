@@ -83,4 +83,23 @@ describe("InfoSheetSelf (split form + live preview)", () => {
     await dl.trigger("click");
     expect(client.downloadPdf).toHaveBeenCalledWith("s2", "UnitOwnerAcceptanceForm-s2.pdf");
   });
+
+  it("self-starts a sheet when none exists and selfStartId is given", async () => {
+    const create = vi.fn(() => Promise.resolve({ id: "new1", status: "REQUESTED", data: {} }));
+    const client = makeClient({ list: vi.fn(() => Promise.resolve([])), create });
+    const w = mount(InfoSheetSelf, { props: { client, filePrefix: "UnitOwnerAcceptanceForm", selfStartId: "owner-1" } });
+    await flushPromises();
+    expect(create).toHaveBeenCalledWith("owner-1");
+    expect(w.findComponent({ name: "ConfigurableForm" }).exists()).toBe(true);
+    expect(w.text()).not.toContain("No acceptance form has been requested");
+  });
+
+  it("shows the empty message when no sheet and no selfStartId (staff-requested path unchanged)", async () => {
+    const create = vi.fn();
+    const client = makeClient({ list: vi.fn(() => Promise.resolve([])), create });
+    const w = mount(InfoSheetSelf, { props: { client, filePrefix: "TenantAcceptanceForm" } });
+    await flushPromises();
+    expect(create).not.toHaveBeenCalled();
+    expect(w.text()).toContain("No acceptance form has been requested");
+  });
 });

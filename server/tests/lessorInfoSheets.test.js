@@ -229,3 +229,30 @@ describe("Lessor Information Sheets", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("Lessor self-serve acceptance form", () => {
+  it("an owner creates their own sheet without staff (201, REQUESTED, own id)", async () => {
+    const o = await factory.owner({ name: "Self" });
+    const res = await request(app).post(BASE).set("Authorization", `Bearer ${tokens.owner(o.id)}`).send({});
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("REQUESTED");
+    expect(res.body.unitOwnerId).toBe(o.id);
+  });
+
+  it("is idempotent — a second self-create returns the existing sheet (200, same id)", async () => {
+    const o = await factory.owner();
+    const first = await request(app).post(BASE).set("Authorization", `Bearer ${tokens.owner(o.id)}`).send({});
+    const second = await request(app).post(BASE).set("Authorization", `Bearer ${tokens.owner(o.id)}`).send({});
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(200);
+    expect(second.body.id).toBe(first.body.id);
+  });
+
+  it("ignores a body unitOwnerId — an owner can only create their own", async () => {
+    const me = await factory.owner({ name: "Me" });
+    const other = await factory.owner({ name: "Other" });
+    const res = await request(app).post(BASE).set("Authorization", `Bearer ${tokens.owner(me.id)}`).send({ unitOwnerId: other.id });
+    expect(res.status).toBe(201);
+    expect(res.body.unitOwnerId).toBe(me.id);
+  });
+});

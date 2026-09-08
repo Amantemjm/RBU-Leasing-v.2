@@ -11,6 +11,8 @@ export const inquiryCreateSchema = z
     message: z.string().optional(),
     // Consent is mandatory: must be present and exactly true.
     consent: z.literal(true),
+    // Optional: the specific unit a lessee is inquiring about (public unit page).
+    unitId: z.string().optional(),
   })
   // inquiryType must be one of the allowed options for the chosen inquirerType.
   .refine((d) => INQUIRY_TYPES[d.inquirerType]?.includes(d.inquiryType), {

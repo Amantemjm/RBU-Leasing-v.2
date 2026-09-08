@@ -2,10 +2,21 @@ import { prisma } from "../lib/prisma.js";
 import { NotFoundError, InvalidReferenceError, ConflictError } from "../lib/errors.js";
 import { ensureForInquiry } from "./leasingTransactionService.js";
 
-const assigneeInclude = { assignedTo: { select: { id: true, name: true, email: true } } };
+const assigneeInclude = {
+  assignedTo: { select: { id: true, name: true, email: true } },
+  unit: { select: { id: true, unitNumber: true, building: true } },
+};
 
-export function createInquiry(data) {
-  return prisma.inquiry.create({ data });
+export async function createInquiry(data) {
+  const { unitId, ...rest } = data;
+  // Only keep the unit link if it resolves to a real unit; a stale/invalid id
+  // must never block a public inquiry.
+  let linkedUnitId = null;
+  if (unitId) {
+    const unit = await prisma.unit.findUnique({ where: { id: unitId }, select: { id: true } });
+    if (unit) linkedUnitId = unit.id;
+  }
+  return prisma.inquiry.create({ data: { ...rest, unitId: linkedUnitId } });
 }
 
 // ADMIN and VIEWER see every inquiry. An O-Lease (LEASING_OFFICER) sees the

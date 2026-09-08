@@ -91,7 +91,7 @@ async function remove(row) {
     <table>
       <thead>
         <tr>
-          <th>Received</th><th>Status</th><th>Category</th><th>I am a</th><th>Inquiry Type</th><th>Full name</th><th>Email</th>
+          <th>Received</th><th>Status</th><th>Category</th><th>I am a</th><th>Inquiry Type</th><th>Unit</th><th>Full name</th><th>Email</th>
           <th>Message</th><th>Assigned to</th><th v-if="canWrite"></th>
         </tr>
       </thead>
@@ -102,6 +102,7 @@ async function remove(row) {
           <td><span class="cat-tag">{{ CATEGORY_LABEL[r.category] || r.category }}</span></td>
           <td>{{ INQUIRER_LABEL[r.inquirerType] || r.inquirerType }}</td>
           <td>{{ r.inquiryType }}</td>
+          <td><span v-if="r.unit" class="unit-chip">Unit {{ r.unit.unitNumber }}</span><span v-else class="muted">—</span></td>
           <td>{{ r.fullName }}</td>
           <td><a :href="`mailto:${r.email}`">{{ r.email }}</a></td>
           <td class="msg">{{ r.message }}</td>
@@ -130,7 +131,7 @@ async function remove(row) {
           </td>
         </tr>
         <tr v-if="rows.length === 0">
-          <td :colspan="canWrite ? 10 : 9" class="muted">No inquiries yet.</td>
+          <td :colspan="canWrite ? 11 : 10" class="muted">No inquiries yet.</td>
         </tr>
       </tbody>
     </table>
@@ -155,6 +156,7 @@ async function remove(row) {
 .mine { color: var(--accent-text); font-weight: 600; font-size: 0.85rem; }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
 .linkbtn:hover { color: var(--danger); }
+.unit-chip { display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--accent-text); background: var(--accent-050); border-radius: 999px; padding: 0.1rem 0.5rem; }
 .cat-tag {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);

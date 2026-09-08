@@ -27,4 +27,5 @@ export default makeInfoSheetRouter({
   pdfRenderer: streamLessorInfoSheetPdf,
   binaryField: "filledPdf",
   approveGuard: lessorAcceptanceGuard,
+  selfCreate: true, // lessors start their own acceptance form; no officer request needed
 });
