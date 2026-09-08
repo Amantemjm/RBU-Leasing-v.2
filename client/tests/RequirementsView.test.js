@@ -10,9 +10,12 @@ vi.mock("../src/lib/requirements.js", () => ({
   downloadRequirement: vi.fn(() => Promise.resolve()),
 }));
 // The Lessor tab pulls the owners list; stub it so the hub mounts cleanly.
+// lesseeRequirements is used by MyLesseeRequirementsView, which the tenant view
+// renders — without it, that child's onMounted load throws during mount.
 vi.mock("../src/lib/resource.js", () => ({
   owners: { list: vi.fn(() => Promise.resolve([{ id: "o1", name: "Ayala" }])) },
   lessorRequirements: { forOwner: vi.fn(() => Promise.resolve([])), review: vi.fn(), uploadFor: vi.fn(), download: vi.fn() },
+  lesseeRequirements: { mine: vi.fn(() => Promise.resolve([])), uploadMine: vi.fn(), download: vi.fn() },
 }));
 
 import RequirementsView from "../src/views/RequirementsView.vue";
