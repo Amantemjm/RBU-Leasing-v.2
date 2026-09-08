@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
-  LEASING_STAGES, STAGE_KEYS, stageByKey, isFinalStage, nextStageKey,
+  LEASING_STAGES, STAGE_KEYS, stageByKey, isFinalStage, nextStageKey, prevStageKey,
 } from "../../shared/leasingStages.js";
 import {
   SCHEDULABLE_STAGES, SCHEDULABLE_STAGE_KEYS, APPOINTMENT_STATUSES, isSchedulableStage,
 } from "../../shared/leasingStages.js";
 
 describe("Leasing stage engine (lessor flow)", () => {
-  it("has the seven lessor stages in order", () => {
+  it("has the six lessor stages in order", () => {
     expect(STAGE_KEYS).toEqual([
       "INQUIRY", "SEND_REQUIREMENTS", "APPROVAL",
-      "UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT", "CONTRACT_SIGNING",
+      "UNIT_INSPECTION", "PHOTOSHOOT", "CONTRACT_SIGNING",
     ]);
   });
 
@@ -27,7 +27,7 @@ describe("Leasing stage engine (lessor flow)", () => {
   });
 
   it("does not make Contract Signing schedulable", () => {
-    expect(SCHEDULABLE_STAGE_KEYS).toEqual(["UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT"]);
+    expect(SCHEDULABLE_STAGE_KEYS).toEqual(["UNIT_INSPECTION", "PHOTOSHOOT"]);
     expect(isSchedulableStage("CONTRACT_SIGNING")).toBe(false);
     expect(stageByKey("CONTRACT_SIGNING").done).toBe("Signed");
   });
@@ -37,18 +37,28 @@ describe("Leasing stage engine (lessor flow)", () => {
     expect(stageByKey("SEND_REQUIREMENTS").done).toBe("Complete");
     expect(stageByKey("APPROVAL").done).toBe("Approved");
     expect(stageByKey("UNIT_INSPECTION").done).toBe("Passed");
-    expect(stageByKey("KEY_TURNOVER").done).toBe("Completed");
     expect(stageByKey("PHOTOSHOOT").done).toBe("Completed");
   });
 
   it("allows Inquiry to be marked Skipped", () => {
     expect(stageByKey("INQUIRY").statuses).toContain("Skipped");
   });
+
+  it("no longer knows about Key Turnover", () => {
+    expect(STAGE_KEYS).not.toContain("KEY_TURNOVER");
+    expect(stageByKey("KEY_TURNOVER")).toBeUndefined();
+    expect(isSchedulableStage("KEY_TURNOVER")).toBe(false);
+  });
+
+  it("runs Unit Inspection straight into Photoshoot", () => {
+    expect(nextStageKey("UNIT_INSPECTION")).toBe("PHOTOSHOOT");
+    expect(prevStageKey("PHOTOSHOOT")).toBe("UNIT_INSPECTION");
+  });
 });
 
 describe("schedulable stages", () => {
-  it("exposes the three schedulable stages with valid outcomes", () => {
-    expect(SCHEDULABLE_STAGE_KEYS).toEqual(["UNIT_INSPECTION", "KEY_TURNOVER", "PHOTOSHOOT"]);
+  it("exposes the two schedulable stages with valid outcomes", () => {
+    expect(SCHEDULABLE_STAGE_KEYS).toEqual(["UNIT_INSPECTION", "PHOTOSHOOT"]);
     for (const key of SCHEDULABLE_STAGE_KEYS) {
       const stage = LEASING_STAGES.find((s) => s.key === key);
       const cfg = SCHEDULABLE_STAGES[key];

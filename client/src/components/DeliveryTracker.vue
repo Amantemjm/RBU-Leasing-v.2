@@ -17,7 +17,7 @@ const props = defineProps({
 
 const STAGE_ICON = {
   INQUIRY: "📝", SEND_REQUIREMENTS: "📎", APPROVAL: "✅",
-  UNIT_INSPECTION: "🔍", KEY_TURNOVER: "🔑", PHOTOSHOOT: "📸", CONTRACT_SIGNING: "✍️",
+  UNIT_INSPECTION: "🔍", PHOTOSHOOT: "📸", CONTRACT_SIGNING: "✍️",
 };
 const TOTAL = LEASING_STAGES.length;
 const currentIdx = computed(() => Math.max(0, stageIndex(props.currentStage)));

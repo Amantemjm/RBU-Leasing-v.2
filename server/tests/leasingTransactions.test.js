@@ -89,8 +89,7 @@ describe("Leasing transactions (process tracker)", () => {
     const adv = () => request(app).patch(`/api/leasing-transactions/${txnId}/advance`).set("Authorization", `Bearer ${token}`).send({});
     await adv(); // SEND_REQUIREMENTS -> APPROVAL
     await adv(); // APPROVAL -> UNIT_INSPECTION
-    await adv(); // UNIT_INSPECTION -> KEY_TURNOVER
-    await adv(); // KEY_TURNOVER -> PHOTOSHOOT
+    await adv(); // UNIT_INSPECTION -> PHOTOSHOOT
 
     // Contract Signing requires a linked prospect tenant and an LOI on file.
     const tenant = await factory.tenant({ name: "Maria Santos" });

@@ -1,7 +1,7 @@
 <script setup>
 // Read-only card shown to a party (owner/tenant) on their portal landing view,
-// summarizing their next scheduled site visits (Unit Inspection, Key Turnover,
-// Photoshoot) across all of their leasing transactions.
+// summarizing their next scheduled site visits (Unit Inspection, Photoshoot)
+// across all of their leasing transactions.
 import { ref, onMounted } from "vue";
 import { appointments } from "../lib/resource.js";
 import { stageByKey } from "../../../shared/leasingStages.js";

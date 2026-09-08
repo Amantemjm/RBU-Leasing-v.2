@@ -1,6 +1,6 @@
 <script setup>
 // Staff scheduling panel for the current stage's site visit (Unit Inspection,
-// Key Turnover, Photoshoot). Shows a schedule form when no appointment exists
+// Photoshoot). Shows a schedule form when no appointment exists
 // yet for the stage, or the appointment's status + actions when one does.
 import { ref, computed, onMounted } from "vue";
 import { appointments } from "../lib/resource.js";

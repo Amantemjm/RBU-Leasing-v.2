@@ -3,7 +3,7 @@
 // server (validation + state machine) and the client (tracker UI) so the two
 // never drift.
 
-// Ordered list of the 7 process stages. `short` is the tracker label; `initial`
+// Ordered list of the 6 process stages. `short` is the tracker label; `initial`
 // is the status a stage takes when the transaction first enters it; `done` marks
 // the status that means the stage is complete and ready to advance.
 export const LEASING_STAGES = [
@@ -30,12 +30,6 @@ export const LEASING_STAGES = [
     statuses: ["Pending", "Scheduled", "In Progress", "Passed", "Passed with Remarks", "For Rectification", "Failed", "Rescheduled"],
     initial: "Pending", done: "Passed",
     lesseeAction: "Attend or acknowledge the unit inspection.",
-  },
-  {
-    key: "KEY_TURNOVER", label: "Key Turnover", short: "Turnover",
-    statuses: ["Pending", "Scheduled", "Completed", "Rescheduled"],
-    initial: "Pending", done: "Completed",
-    lesseeAction: "Turn over the unit keys.",
   },
   {
     key: "PHOTOSHOOT", label: "Photoshoot", short: "Photoshoot",
@@ -90,7 +84,6 @@ export function isValidStatus(stageKey, status) {
 // officer pick a specific result. Every value is a real status of its stage.
 export const SCHEDULABLE_STAGES = {
   UNIT_INSPECTION: { defaultOutcome: "Passed", outcomeOptions: ["Passed", "Passed with Remarks", "For Rectification", "Failed"] },
-  KEY_TURNOVER:    { defaultOutcome: "Completed" },
   PHOTOSHOOT:      { defaultOutcome: "Completed" },
 };
 export const SCHEDULABLE_STAGE_KEYS = Object.keys(SCHEDULABLE_STAGES);
