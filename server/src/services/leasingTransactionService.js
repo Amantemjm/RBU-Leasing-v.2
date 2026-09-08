@@ -59,6 +59,16 @@ export async function ensureForInquiry(inquiry, actor) {
   const existing = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inquiry.id } });
   if (existing) return existing;
 
+  // Pre-link the inquired unit + its lessor, if the inquiry carried one and it
+  // still exists. A deleted unit has already nulled inquiry.unitId (FK SetNull).
+  let unit = null;
+  if (inquiry.unitId) {
+    unit = await prisma.unit.findUnique({
+      where: { id: inquiry.unitId },
+      include: { listing: { select: { published: true } } },
+    });
+  }
+
   const now = stampNow();
   const reference = await nextReference();
   const stageData = {
@@ -74,9 +84,18 @@ export async function ensureForInquiry(inquiry, actor) {
       lesseeName: inquiry.fullName,
       inquiryId: inquiry.id,
       assignedOfficerId: inquiry.assignedToId || actor?.userId || null,
+      unitId: unit ? unit.id : null,
+      unitOwnerId: unit ? unit.ownerId : null,
     },
   });
   await logEvent(txn.id, actor, `Inquiry accepted — transaction ${reference} created`, "INQUIRY");
+  if (unit) {
+    await logEvent(txn.id, actor, `Pre-linked inquired unit ${unit.unitNumber} and its lessor`, "INQUIRY");
+    const available = unit.status === "VACANT" && unit.approvalStatus === "APPROVED" && unit.listing?.published === true;
+    if (!available) {
+      await logEvent(txn.id, actor, `Inquired unit ${unit.unitNumber} is no longer available (not vacant/published) — verify the link`, "INQUIRY");
+    }
+  }
   return txn;
 }
 

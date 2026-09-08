@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { resetCrudTables } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
 import { inquiryCreateSchema } from "../src/validation/inquiry.js";
-import { createInquiry, listInquiries } from "../src/services/inquiryService.js";
+import { createInquiry, listInquiries, acceptInquiry } from "../src/services/inquiryService.js";
 
 beforeEach(async () => { await resetCrudTables(); });
 
@@ -62,5 +62,43 @@ describe("listInquiries includes the unit summary", () => {
     await createInquiry({ ...base });
     const rows = await listInquiries({ role: "ADMIN" });
     expect(rows[0].unit).toBeNull();
+  });
+});
+
+async function officer() {
+  return prisma.user.create({ data: { name: "Officer", email: "officer@test.sim", passwordHash: "x", role: "LEASING_OFFICER" } });
+}
+
+describe("accept pre-links the inquired unit + lessor", () => {
+  const base = { category: "RESIDENCES", inquirerType: "LESSEE", inquiryType: "Unit Availability", fullName: "Ana", email: "ana@example.com", consent: true, status: "NEW" };
+
+  it("sets transaction unitId and unitOwnerId from the inquiry's unit", async () => {
+    const { owner, unit } = await ownerAndUnit();
+    const inq = await createInquiry({ ...base, unitId: unit.id });
+    const off = await officer();
+    await acceptInquiry({ userId: off.id, role: "LEASING_OFFICER" }, inq.id);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inq.id } });
+    expect(txn.unitId).toBe(unit.id);
+    expect(txn.unitOwnerId).toBe(owner.id);
+  });
+
+  it("leaves the transaction unlinked when the inquiry has no unit", async () => {
+    const inq = await createInquiry({ ...base });
+    const off = await officer();
+    await acceptInquiry({ userId: off.id, role: "LEASING_OFFICER" }, inq.id);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inq.id } });
+    expect(txn.unitId).toBeNull();
+    expect(txn.unitOwnerId).toBeNull();
+  });
+
+  it("logs a warning event when the inquired unit is not vacant", async () => {
+    const { unit } = await ownerAndUnit();
+    await prisma.unit.update({ where: { id: unit.id }, data: { status: "OCCUPIED" } });
+    const inq = await createInquiry({ ...base, unitId: unit.id });
+    const off = await officer();
+    await acceptInquiry({ userId: off.id, role: "LEASING_OFFICER" }, inq.id);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { inquiryId: inq.id } });
+    const events = await prisma.transactionEvent.findMany({ where: { transactionId: txn.id } });
+    expect(events.some((e) => e.message.includes("no longer available"))).toBe(true);
   });
 });
