@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { NotFoundError, ConflictError, InvalidReferenceError } from "../lib/errors.js";
+import { ensureForUnit } from "./leasingTransactionService.js";
 
 const withHierarchy = { tower: { include: { estate: true } }, owner: { select: { id: true, name: true } } };
 
@@ -65,14 +66,24 @@ export async function submitUnit(user, id) {
 // DRAFT would skip the submit step; approving/rejecting an already-decided
 // (APPROVED/REJECTED) unit would re-open a terminal state. A rejected unit must
 // be resubmitted by the owner before it can be approved.
-export async function approveUnit(id) {
+export async function approveUnit(id, actor) {
   const unit = await getUnit(id);
   if (unit.approvalStatus !== "SUBMITTED") {
     throw new ConflictError("Only a submitted unit can be approved");
   }
-  return prisma.unit.update({
+  const approved = await prisma.unit.update({
     where: { id }, data: { approvalStatus: "APPROVED", reviewRemarks: null }, include: withHierarchy,
   });
+  // Approval is what puts the unit into the pipeline — this is where its
+  // photoshoot becomes schedulable. Never let a failure here undo the
+  // approval: a unit approved without a transaction is recoverable, a
+  // half-applied approval is not.
+  try {
+    await ensureForUnit(approved, actor);
+  } catch (e) {
+    console.error(`Unit ${approved.unitNumber} approved but its transaction could not be opened:`, e.message);
+  }
+  return approved;
 }
 
 export async function rejectUnit(id, remarks) {

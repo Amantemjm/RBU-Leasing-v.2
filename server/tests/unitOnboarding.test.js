@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import request from "supertest";
 import { prisma } from "../src/lib/prisma.js";
-import { resetCrudTables, factory } from "./helpers.js";
+import { resetCrudTables, factory, tokens } from "./helpers.js";
 import { ensureForUnit, openTransactionForUnit } from "../src/services/leasingTransactionService.js";
+import { createApp } from "../src/app.js";
+
+const app = createApp();
 
 // A lessor bringing a unit to market gets a transaction of their own — there is
 // no lessee yet, and no inquiry to hang it off.
@@ -115,5 +119,49 @@ describe("openTransactionForUnit", () => {
     const { unit } = await ownedUnit();
     const t = await ensureForUnit(unit, { userId: defaultOfficer.id });
     expect((await openTransactionForUnit(unit.id)).id).toBe(t.id);
+  });
+});
+
+describe("Approving a unit opens its pipeline", () => {
+  async function submittedUnit() {
+    const owner = await factory.owner({ name: "Benjamin Tan" });
+    return prisma.unit.create({
+      data: { ownerId: owner.id, unitNumber: "23F", baseRent: 0, approvalStatus: "SUBMITTED" },
+    });
+  }
+
+  it("opens a transaction when an officer approves", async () => {
+    const unit = await submittedUnit();
+    const res = await request(app).patch(`/api/units/${unit.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.officer(defaultOfficer.id)}`);
+    expect(res.status).toBe(200);
+    const txn = await openTransactionForUnit(unit.id);
+    expect(txn).not.toBeNull();
+    expect(txn.stage).toBe("SEND_REQUIREMENTS");
+    expect(txn.unitOwnerId).toBe(unit.ownerId);
+  });
+
+  it("does not open a second one when a rejected unit is re-approved", async () => {
+    const unit = await submittedUnit();
+    const t = tokens.officer(defaultOfficer.id);
+    await request(app).patch(`/api/units/${unit.id}/approve`).set("Authorization", `Bearer ${t}`);
+    // Reject is only valid from SUBMITTED, so put it back there first.
+    await prisma.unit.update({ where: { id: unit.id }, data: { approvalStatus: "SUBMITTED" } });
+    await request(app).patch(`/api/units/${unit.id}/reject`).set("Authorization", `Bearer ${t}`)
+      .send({ remarks: "Wrong floor plan" });
+    await request(app).patch(`/api/units/${unit.id}/submit`).set("Authorization", `Bearer ${t}`);
+    await request(app).patch(`/api/units/${unit.id}/approve`).set("Authorization", `Bearer ${t}`);
+    expect(await prisma.leasingTransaction.count({ where: { unitId: unit.id } })).toBe(1);
+  });
+
+  it("leaves a draft or rejected unit alone", async () => {
+    const owner = await factory.owner({ name: "Draft Owner" });
+    const unit = await prisma.unit.create({
+      data: { ownerId: owner.id, unitNumber: "07C", baseRent: 0, approvalStatus: "DRAFT" },
+    });
+    const res = await request(app).patch(`/api/units/${unit.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.officer()}`);
+    expect(res.status).toBe(409);
+    expect(await openTransactionForUnit(unit.id)).toBeNull();
   });
 });
