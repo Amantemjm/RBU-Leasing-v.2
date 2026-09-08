@@ -55,6 +55,7 @@ const has = (k) => d.value[k] != null && d.value[k] !== "";
 const title = computed(() => unit.value?.headline || unit.value?.details?.propertyName || "Unit");
 const price = computed(() => (has("rentalRate") ? `PHP ${Number(d.value.rentalRate).toLocaleString("en-PH")}` : null));
 const typeChip = computed(() => unit.value?.type || d.value.unitType || null);
+const inquiryLink = computed(() => `/inquiry?as=LESSEE&unit=${unit.value?.unitId ?? route.params.id}`);
 const details = computed(() =>
   orderedDetails(unit.value?.details, { exclude: ["location", "rentalRate", "bedrooms", "bathrooms", "floorArea", "unitType"] })
 );
@@ -139,7 +140,7 @@ const details = computed(() =>
             </template>
           </dl>
 
-          <RouterLink to="/inquiry?as=LESSEE" class="inquire-cta">Inquire about this unit</RouterLink>
+          <RouterLink :to="inquiryLink" class="inquire-cta">Inquire about this unit</RouterLink>
         </aside>
       </div>
     </div>
