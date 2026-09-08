@@ -100,7 +100,7 @@ export function makeInfoSheetService({ model, parentModel, fkField, ownerRole, r
 // filled-PDF layout (defaults to the generic label:value renderer), backing the
 // live preview + staff download. `binaryField` enables the upload/edit-a-PDF
 // path (store/submit/retrieve the applicant's own PDF).
-export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, relationName, config, submitSchema, title, filePrefix, pdfRenderer, binaryField, approveGuard = null }) {
+export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, relationName, config, submitSchema, title, filePrefix, pdfRenderer, binaryField, approveGuard = null, selfCreate = false }) {
   const service = makeInfoSheetService({ model, parentModel, fkField, ownerRole, relationName, binaryField, version: config?.version || null, approveGuard });
   const render = pdfRenderer || streamInfoSheetPdf;
   const listRoles = [...STAFF, ownerRole];
@@ -119,8 +119,20 @@ export function makeInfoSheetRouter({ model, parentModel, fkField, ownerRole, re
     } catch (e) { next(e); }
   });
 
-  r.post("/", requireWrite, async (req, res, next) => {
-    try { res.status(201).json(await service.createRequest(req.body?.[fkField])); } catch (e) { next(e); }
+  // Creating a sheet: staff can always request one for a parent. When
+  // `selfCreate` is on, the owner role can also start their OWN sheet — the
+  // parent id is taken from the authenticated user (never the body), and the
+  // call is idempotent so opening the page repeatedly cannot create duplicates.
+  const createGuard = selfCreate ? requireRole("ADMIN", "LEASING_OFFICER", ownerRole) : requireWrite;
+  r.post("/", createGuard, async (req, res, next) => {
+    try {
+      if (selfCreate && req.user.role === ownerRole) {
+        const existing = (await service.list(req.user))[0];
+        if (existing) return res.json(existing); // 200 — already started
+        return res.status(201).json(await service.createRequest(req.user[fkField]));
+      }
+      res.status(201).json(await service.createRequest(req.body?.[fkField]));
+    } catch (e) { next(e); }
   });
 
   r.get("/", requireRole(...listRoles), async (req, res, next) => {

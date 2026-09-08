@@ -9,6 +9,10 @@ import { formatDate } from "../lib/formatters.js";
 const props = defineProps({
   client: { type: Object, required: true },
   filePrefix: { type: String, required: true },
+  // When set, the applicant may start their own sheet: if none exists yet, one
+  // is created for this parent id on open (no staff request needed). Left null
+  // for staff-requested flows (e.g. the lessee sheet).
+  selfStartId: { type: String, default: null },
 });
 
 const STATUS_LABEL = { REQUESTED: "Requested", SUBMITTED: "Submitted", APPROVED: "Approved", RETURNED: "Returned" };
@@ -52,6 +56,10 @@ async function load() {
     config.value = await props.client.config();
     const rows = await props.client.list();
     sheet.value = rows[0] || null;
+    // Self-serve: start one automatically when the applicant has none yet.
+    if (!sheet.value && props.selfStartId) {
+      sheet.value = await props.client.create(props.selfStartId);
+    }
     formData.value = sheet.value?.data || {};
     if (sheet.value) {
       // If a PDF is already stored, this form uses the upload/edit path.
