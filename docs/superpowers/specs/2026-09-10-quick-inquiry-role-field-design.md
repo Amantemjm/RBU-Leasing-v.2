@@ -73,6 +73,22 @@ reassurance but resolves the change on the page:
 
 The expanded choice reuses the existing `.seg` segmented-control pattern
 already used by the Category field, so it introduces no new visual language.
+Both roles are visible at once when expanded — this is not a dropdown menu,
+and no overlay, focus trap or outside-click handling is introduced:
+
+```
+collapsed (arrived with ?as=LESSOR)
+  Inquiring as  Lessor (Unit Owner)              [ Change ]
+
+expanded (after pressing Change)
+  I am a:  [ Lessor (Unit Owner) ✓ ][ Lessee (Prospective Tenant) ]
+
+collapsed again (after picking Lessee)
+  Inquiring as  Lessee (Prospective Tenant)      [ Change ]
+```
+
+The labels come from `INQUIRER_LABEL` in `shared/inquiryTypes.js`, so the
+collapsed strip and the two buttons always name the roles identically.
 
 Two behaviours already present in the file carry the rest without
 modification, and must be preserved rather than rewritten:
