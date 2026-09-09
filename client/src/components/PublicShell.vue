@@ -84,7 +84,7 @@ defineProps({
         <div class="foot__col">
           <h4>Get connected</h4>
           <p class="foot__social-note">Follow Ortigas Land for updates on projects, estates, and malls.</p>
-          <RouterLink to="/inquiry?as=LESSEE" class="foot__cta">Make an inquiry</RouterLink>
+          <RouterLink to="/inquiry" class="foot__cta">Make an inquiry</RouterLink>
         </div>
       </div>
       <p class="foot__copy">© Ortigas Land · Residential Leasing</p>

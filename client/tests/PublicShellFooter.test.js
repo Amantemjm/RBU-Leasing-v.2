@@ -27,4 +27,10 @@ describe("PublicShell footer prop", () => {
     const w = mount(PublicShell, { props: { footer: "none" }, global: { stubs } });
     expect(w.find(".foot").exists()).toBe(false);
   });
+
+  // The footer appears on every public page, so it cannot presume a role.
+  it("points the footer inquiry CTA at the role-neutral inquiry route", () => {
+    const w = mount(PublicShell, { global: { stubs } });
+    expect(w.find(".foot__cta").attributes("href")).toBe("/inquiry");
+  });
 });

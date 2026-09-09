@@ -45,4 +45,12 @@ describe("UnitDetailPublicView", () => {
     const cta = w.findAll("a").find((a) => a.text().includes("Inquire about this unit"));
     expect(cta.attributes("href")).toContain("/inquiry?as=LESSEE&unit=u1");
   });
+  it("keeps the nav inquiry link role-neutral while the unit CTA stays lessee-specific", async () => {
+    const stubs = { RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" } };
+    const w = mount(UnitDetailPublicView, { global: { stubs } });
+    await flushPromises();
+    expect(w.find(".nav__inquire").attributes("href")).toBe("/inquiry");
+    const cta = w.findAll("a").find((a) => a.text().includes("Inquire about this unit"));
+    expect(cta.attributes("href")).toContain("/inquiry?as=LESSEE&unit=u1");
+  });
 });
