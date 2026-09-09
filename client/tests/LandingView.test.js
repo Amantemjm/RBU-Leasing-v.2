@@ -22,4 +22,11 @@ describe("LandingView (role selection)", () => {
     expect(w.find(".featured").exists()).toBe(false);
     expect(w.text()).not.toContain("Featured properties");
   });
+
+  it("shows the cover photo in the split hero", () => {
+    const w = mount(LandingView, { global: { stubs } });
+    const img = w.find(".hero__media img");
+    expect(img.exists()).toBe(true);
+    expect(img.attributes("src")).toBeTruthy();
+  });
 });
