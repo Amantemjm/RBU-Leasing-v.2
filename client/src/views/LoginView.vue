@@ -38,7 +38,7 @@ async function submit() {
 </script>
 
 <template>
-  <PublicShell main-label="Sign in" skip-label="Skip to sign in" narrow>
+  <PublicShell main-label="Sign in" skip-label="Skip to sign in" narrow footer="slim">
     <template #nav-actions>
       <RouterLink to="/signup" class="nav__signin">Create an account</RouterLink>
     </template>

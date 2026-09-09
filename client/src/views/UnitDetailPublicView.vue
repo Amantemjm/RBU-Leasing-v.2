@@ -69,12 +69,12 @@ const details = computed(() =>
     </template>
 
     <div class="wrap">
-      <RouterLink to="/" class="back-link">&larr; Back to Available Units</RouterLink>
+      <RouterLink to="/available-units" class="back-link">&larr; Back to Available Units</RouterLink>
 
       <div v-if="notFound" class="not-found">
         <h1>This unit is no longer available.</h1>
         <p>It may have been leased or unlisted. Browse the units that are still open.</p>
-        <RouterLink to="/" class="not-found__cta">See available units</RouterLink>
+        <RouterLink to="/available-units" class="not-found__cta">See available units</RouterLink>
       </div>
 
       <div v-else-if="unit" class="detail">

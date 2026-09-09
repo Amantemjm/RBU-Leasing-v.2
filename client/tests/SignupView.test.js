@@ -21,6 +21,16 @@ async function mountSignup() {
   return mount(SignupView, { global: { plugins: [router] } });
 }
 
+async function mountSignupAs(as) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/:pathMatch(.*)*", component: stub }],
+  });
+  router.push(`/signup?as=${as}`);
+  await router.isReady();
+  return mount(SignupView, { global: { plugins: [router] } });
+}
+
 async function fillValid(w, over = {}) {
   const v = { name: "Ana Reyes", username: "ana.reyes", contactEmail: "ana@example.com",
               password: "strong-pass-8", confirm: "strong-pass-8", ...over };
@@ -133,5 +143,11 @@ describe("SignupView", () => {
     await submit(w);
     await flushPromises();
     expect(w.text()).toContain("already exists");
+  });
+
+  it("preselects the Unit Owner role from ?as=LESSOR", async () => {
+    const w = await mountSignupAs("LESSOR");
+    const lessor = w.findAll(".roles button").find((b) => b.text().includes("Lessor"));
+    expect(lessor.classes()).toContain("on");
   });
 });
