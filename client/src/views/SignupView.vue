@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 import { api } from "../lib/api.js";
 import PublicShell from "../components/PublicShell.vue";
 // The brand lockup comes from the shell's header; the card used to repeat it.
 
-const role = ref("TENANT"); // "TENANT" (lessee) | "UNIT_OWNER" (lessor)
+// Preselect the role from ?as= (LESSOR → Unit Owner, LESSEE → Tenant); the
+// toggle stays user-editable. Defaults to Tenant.
+const route = useRoute();
+const role = ref(route.query.as === "LESSOR" ? "UNIT_OWNER" : "TENANT");
 const name = ref("");
 const username = ref("");
 const contactEmail = ref("");
