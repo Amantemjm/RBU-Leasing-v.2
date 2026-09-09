@@ -85,7 +85,7 @@ async function submit() {
 </script>
 
 <template>
-  <PublicShell main-label="Create your account" skip-label="Skip to the form" narrow>
+  <PublicShell main-label="Create your account" skip-label="Skip to the form" narrow footer="slim">
     <template #nav-actions>
       <RouterLink to="/login" class="nav__signin">Sign in</RouterLink>
     </template>

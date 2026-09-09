@@ -25,6 +25,9 @@ defineProps({
   // Widens the narrow column for pages whose content is a form rather than
   // prose. Ignored unless `narrow` is set.
   width: { type: String, default: "" },
+  // Footer size: "full" (columns + copyright), "slim" (copyright line only —
+  // for focused form pages), or "none". Defaults to the full site footer.
+  footer: { type: String, default: "full" },
 });
 </script>
 
@@ -63,8 +66,8 @@ defineProps({
       <slot />
     </main>
 
-    <footer class="foot" aria-label="Site footer">
-      <div class="foot__grid">
+    <footer v-if="footer !== 'none'" class="foot" :class="{ 'foot--slim': footer === 'slim' }" aria-label="Site footer">
+      <div v-if="footer === 'full'" class="foot__grid">
         <div class="foot__col foot__col--brand">
           <img :src="logoUrl" alt="" class="foot__logo" />
           <p class="foot__name">Residential Leasing by Ortigas Land</p>
@@ -229,6 +232,9 @@ defineProps({
 .foot__col a.foot__cta { display: inline-block; background: var(--chrome-text); color: var(--chrome-bg); text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); }
 .foot__col a.foot__cta:hover { background: var(--chrome-muted); color: var(--chrome-bg); }
 .foot__copy { max-width: 78rem; margin: 1.35rem auto 0; padding-top: 1rem; border-top: 1px solid var(--chrome-line); font-size: 0.78rem; color: var(--chrome-faint); }
+/* Slim footer for focused form pages: just the copyright line, no top rule. */
+.foot--slim { padding-top: 0.85rem; padding-bottom: 0.85rem; }
+.foot--slim .foot__copy { margin: 0; padding-top: 0; border-top: none; }
 
 @media (max-width: 720px) {
   .foot__grid { grid-template-columns: 1fr; gap: 1.5rem; }

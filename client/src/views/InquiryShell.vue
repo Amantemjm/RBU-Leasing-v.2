@@ -20,7 +20,7 @@ const appHome = computed(() => (auth.isOwner ? "/app/my-units" : auth.isTenant ?
 </script>
 
 <template>
-  <PublicShell main-label="Quick inquiry" skip-label="Skip to the inquiry form" narrow width="46rem">
+  <PublicShell main-label="Quick inquiry" skip-label="Skip to the inquiry form" narrow width="46rem" footer="slim">
     <template #nav-actions>
       <RouterLink v-if="auth.isAuthenticated" :to="appHome" class="nav__signin">Go to app</RouterLink>
       <RouterLink v-else to="/login" class="nav__signin">Sign in</RouterLink>
