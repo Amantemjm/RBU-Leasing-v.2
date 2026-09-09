@@ -73,7 +73,7 @@ async function submit() {
 </script>
 
 <template>
-  <InquiryShell :step="2" lede="A few quick details and our leasing team will get in touch — usually within one business day.">
+  <InquiryShell lede="A few quick details and our leasing team will get in touch — usually within one business day.">
     <transition name="swap" mode="out-in">
       <!-- Success -->
       <div v-if="submitted" key="done" class="thanks">

@@ -27,7 +27,6 @@ vi.mock("../src/lib/inquiries.js", () => ({
 import AvailableUnitsView from "../src/views/AvailableUnitsView.vue";
 import LoginView from "../src/views/LoginView.vue";
 import SignupView from "../src/views/SignupView.vue";
-import InquiryStartView from "../src/views/InquiryStartView.vue";
 import InquiryView from "../src/views/InquiryView.vue";
 import UnitDetailPublicView from "../src/views/UnitDetailPublicView.vue";
 
@@ -69,8 +68,7 @@ const PAGES = [
   ["front page", AvailableUnitsView, "/"],
   ["login", LoginView, "/login"],
   ["signup", SignupView, "/signup"],
-  ["inquiry step 1", InquiryStartView, "/inquire"],
-  ["inquiry step 2", InquiryView, "/inquiry?as=LESSEE"],
+  ["inquiry", InquiryView, "/inquiry?as=LESSEE"],
   ["public unit detail", UnitDetailPublicView, "/units-for-lease/u1"],
 ];
 
