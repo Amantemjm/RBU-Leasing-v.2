@@ -3,6 +3,7 @@ import { useAuthStore } from "../stores/auth.js";
 import AppLayout from "../components/AppLayout.vue";
 import InquiryStartView from "../views/InquiryStartView.vue";
 import InquiryView from "../views/InquiryView.vue";
+import LandingView from "../views/LandingView.vue";
 import AvailableUnitsView from "../views/AvailableUnitsView.vue";
 import UnitDetailPublicView from "../views/UnitDetailPublicView.vue";
 import LoginView from "../views/LoginView.vue";
@@ -50,10 +51,11 @@ const WRITE = ["ADMIN", "LEASING_OFFICER"];
 const ADMIN = ["ADMIN"];
 
 const routes = [
-  { path: "/", component: AvailableUnitsView, meta: { ownsThemeToggle: true } }, // public front page: browse published listings
+  { path: "/", component: LandingView, meta: { ownsThemeToggle: true } }, // public landing: role-selection entry point
+  { path: "/available-units", component: AvailableUnitsView, meta: { ownsThemeToggle: true } }, // public browse page (lessee "Get Started")
   { path: "/inquire", component: InquiryStartView, meta: { ownsThemeToggle: true } }, // "I am a…" user-type selection
   { path: "/inquiry", component: InquiryView, meta: { ownsThemeToggle: true } }, // Quick Inquiry form (user type via ?as=)
-  { path: "/units-for-lease", redirect: "/" }, // legacy list path → front page
+  { path: "/units-for-lease", redirect: "/available-units" }, // legacy list path → browse page
   { path: "/units-for-lease/:id", component: UnitDetailPublicView, meta: { ownsThemeToggle: true } },
   { path: "/login", component: LoginView, meta: { ownsThemeToggle: true } },
   { path: "/signup", component: SignupView, meta: { ownsThemeToggle: true } }, // public self-registration (lessor/lessee)
