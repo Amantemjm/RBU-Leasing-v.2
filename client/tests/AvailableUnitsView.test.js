@@ -34,7 +34,7 @@ describe("AvailableUnitsView", () => {
     expect(sw.attributes("role")).toBe("switch");
   });
 
-  // The header button is gone; the hero's lessor card stays.
+  // The header keeps only Sign in; the role cards moved to the landing page.
   it("drops the List your unit button from the header", async () => {
     const w = mount(AvailableUnitsView, { global: { stubs } });
     await flushPromises();
