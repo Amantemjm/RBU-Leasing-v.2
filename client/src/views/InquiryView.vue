@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from "vue";
+import { reactive, ref, computed, watch, onMounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
 import { publicUnits } from "../lib/resource.js";
@@ -32,6 +32,10 @@ const submitted = ref(false);
 const error = ref("");
 
 const inquiryTypeOptions = computed(() => (form.inquirerType ? INQUIRY_TYPES[form.inquirerType] : []));
+// unitId only ever means "the unit a lessee is inquiring about" — if the
+// visitor switches to Lessor after arriving from a unit page, the context
+// no longer applies and must not ride along in the payload.
+const showUnitContext = computed(() => !!unitContext.value && form.inquirerType === "LESSEE");
 watch(() => form.inquirerType, () => { form.inquiryType = ""; });
 
 // Who is inquiring is a field on this form, not a value frozen in the URL.
@@ -39,10 +43,21 @@ watch(() => form.inquirerType, () => { form.inquiryType = ""; });
 // unit page or the landing with the role settled — and open when we don't, so
 // a bare /inquiry is a valid starting state rather than a redirect.
 const roleOpen = ref(!selectedType);
+const changeBtnRef = ref(null);
+const roleGroupRef = ref(null);
 function chooseRole(type) {
   form.inquirerType = type;
   roleOpen.value = false;
 }
+// Opening/closing the inline disclosure swaps which button occupies this
+// spot in the DOM, so the keyboard focus that triggered the swap would
+// otherwise fall back to <body>. Move it to the control that just appeared.
+// (Skipped on initial mount — roleOpen's starting value isn't a user action.)
+watch(roleOpen, async (open) => {
+  await nextTick();
+  if (open) roleGroupRef.value?.querySelector("button")?.focus();
+  else changeBtnRef.value?.focus();
+});
 
 const canSubmit = computed(() =>
   !!form.category && !!form.inquirerType && !!form.inquiryType &&
@@ -59,7 +74,7 @@ async function submit() {
       fullName: form.fullName.trim(), email: form.email.trim(), consent: true,
     };
     if (form.message.trim()) payload.message = form.message.trim();
-    if (unitId) payload.unitId = unitId;
+    if (unitId && form.inquirerType === "LESSEE") payload.unitId = unitId;
     await createInquiry(payload);
     submitted.value = true;
     form.category = ""; form.inquiryType = "";
@@ -87,7 +102,7 @@ async function submit() {
 
       <!-- Form -->
       <form v-else key="form" @submit.prevent="submit" novalidate>
-        <p v-if="unitContext" class="unit-context">
+        <p v-if="showUnitContext" class="unit-context">
           Inquiring about
           <strong>Unit {{ unitContext.details?.unitNumber || "" }}</strong>
           <template v-if="unitContext.details?.propertyName || unitContext.headline">
@@ -99,13 +114,13 @@ async function submit() {
              most visitors arrive with the role already settled; Change reopens
              it here rather than sending them to "/", which now asks a
              different question (browse or sign up). -->
-        <div v-if="!roleOpen" class="asrole">
+        <div v-if="!roleOpen && form.inquirerType" class="asrole" role="status" aria-live="polite">
           <span>Inquiring as <strong>{{ INQUIRER_LABEL[form.inquirerType] }}</strong></span>
-          <button type="button" class="asrole__change" @click="roleOpen = true">Change</button>
+          <button type="button" class="asrole__change" ref="changeBtnRef" @click="roleOpen = true">Change</button>
         </div>
         <div v-else class="field">
           <span class="label">I am a <span class="req">*</span></span>
-          <div class="seg seg--role" role="group" aria-label="Who is inquiring">
+          <div class="seg seg--role" role="group" aria-label="Who is inquiring" ref="roleGroupRef">
             <button
               v-for="t in INQUIRER_TYPES"
               :key="t"

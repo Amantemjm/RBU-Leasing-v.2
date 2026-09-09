@@ -15,25 +15,28 @@ import { createInquiry } from "../src/lib/inquiries.js";
 import { publicUnits } from "../src/lib/resource.js";
 
 const stub = { template: "<div/>" };
+// "/" is a distinct stub from the form's own route so a stray redirect to
+// "/" is observable — mapping "/" to InquiryView itself would make a
+// router.replace("/") indistinguishable from staying put.
 function makeRouter() {
   return createRouter({ history: createMemoryHistory(), routes: [
-    { path: "/", component: InquiryView }, { path: "/login", component: stub },
+    { path: "/", component: stub }, { path: "/inquiry", component: InquiryView }, { path: "/login", component: stub },
   ]});
 }
 // The role may arrive from a unit page or the landing as ?as=…, or not at all.
 // Passing null mounts the bare /inquiry route, which is now a valid entry.
-async function mountView(as = "LESSEE") {
+async function mountView(as = "LESSEE", opts = {}) {
   setActivePinia(createPinia());
   const router = makeRouter();
-  router.push(as ? { path: "/", query: { as } } : { path: "/" });
+  router.push(as ? { path: "/inquiry", query: { as } } : { path: "/inquiry" });
   await router.isReady();
-  return mount(InquiryView, { global: { plugins: [router] } });
+  return mount(InquiryView, { global: { plugins: [router] }, ...opts });
 }
 
 async function mountWithUnit() {
   setActivePinia(createPinia());
   const router = makeRouter();
-  router.push({ path: "/", query: { as: "LESSEE", unit: "u1" } });
+  router.push({ path: "/inquiry", query: { as: "LESSEE", unit: "u1" } });
   await router.isReady();
   const w = mount(InquiryView, { global: { plugins: [router] } });
   await flushPromises();
@@ -63,10 +66,17 @@ describe("InquiryView (Quick Inquiry form)", () => {
   // A bare /inquiry used to redirect to "/", which now asks a different
   // question (browse or sign up) and drops the visitor out of the flow.
   it("opens the role choice and does not redirect when no role is carried over", async () => {
-    const w = await mountView(null);
+    setActivePinia(createPinia());
+    const router = makeRouter();
+    router.push({ path: "/inquiry" });
+    await router.isReady();
+    const w = mount(InquiryView, { global: { plugins: [router] } });
     expect(w.find(".seg--role").exists()).toBe(true);
     expect(w.find(".asrole").exists()).toBe(false);
     expect(w.find("form").exists()).toBe(true);
+    // "/" resolves to a distinct stub in the test router, so this fails if
+    // anything ever redirects away from the form instead of asking inline.
+    expect(router.currentRoute.value.path).toBe("/inquiry");
   });
 
   it("treats an unknown ?as= value as no role at all", async () => {
@@ -175,5 +185,62 @@ describe("InquiryView (Quick Inquiry form)", () => {
     await w.find("form").trigger("submit.prevent");
     await flushPromises();
     expect(createInquiry).toHaveBeenCalledWith(expect.objectContaining({ unitId: "u1", category: "RESIDENCES" }));
+  });
+
+  // The submit test above carries ?as=LESSEE straight through to the
+  // payload's inquirerType, so a bug that sent route.query.as instead of
+  // form.inquirerType would slip past every other test. Choosing the role
+  // through the control itself (no ?as= at all) closes that gap.
+  it("submits with a role chosen through the control, not carried in the URL", async () => {
+    const w = await mountView(null);
+    await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    await w.findAll(".seg__opt").find((b) => b.text().includes("Offices")).trigger("click");
+    await w.find("#inquiryType").setValue("Find a Tenant"); // lessor-only type
+    await w.find("#fullName").setValue("Carlos Ramos");
+    await w.find("#email").setValue("carlos@example.com");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(createInquiry).toHaveBeenCalledWith({
+      category: "OFFICES", inquirerType: "LESSOR", inquiryType: "Find a Tenant",
+      fullName: "Carlos Ramos", email: "carlos@example.com", consent: true,
+    });
+    expect(w.text()).toContain("Inquiry received");
+  });
+
+  // unitId means "the unit a lessee is inquiring about" — switching to Lessor
+  // mid-form must drop both the visible banner and the field from the payload.
+  it("drops the unit banner and unitId when switching away from Lessee", async () => {
+    const w = await mountWithUnit();
+    expect(w.find(".unit-context").exists()).toBe(true);
+    await w.find(".asrole__change").trigger("click");
+    await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    expect(w.find(".unit-context").exists()).toBe(false);
+
+    await w.find("#inquiryType").setValue("Find a Tenant"); // lessor-only type
+    await w.find("#fullName").setValue("Ana Reyes");
+    await w.find("#email").setValue("ana@example.com");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(createInquiry).toHaveBeenCalledWith(expect.not.objectContaining({ unitId: expect.anything() }));
+    expect(createInquiry).toHaveBeenCalledWith(expect.objectContaining({ inquirerType: "LESSOR" }));
+  });
+
+  // Keyboard/screen-reader users must not lose focus to <body> when the
+  // inline disclosure opens or closes.
+  it("moves focus into the role choice on Change, and back to Change once chosen", async () => {
+    const w = await mountView("LESSEE", { attachTo: document.body });
+    try {
+      await w.find(".asrole__change").trigger("click");
+      const firstRoleBtn = w.findAll(".seg--role .seg__opt")[0];
+      expect(document.activeElement).toBe(firstRoleBtn.element);
+
+      const lessor = w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor"));
+      await lessor.trigger("click");
+      expect(document.activeElement).toBe(w.find(".asrole__change").element);
+    } finally {
+      w.unmount();
+    }
   });
 });

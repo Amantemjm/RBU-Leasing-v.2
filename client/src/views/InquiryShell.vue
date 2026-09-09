@@ -23,12 +23,10 @@ const appHome = computed(() => (auth.isOwner ? "/app/my-units" : auth.isTenant ?
     <div class="iq__intro">
       <p class="eyebrow">Residential &amp; Office Leasing</p>
       <h1>Quick Inquiry</h1>
-      <p class="lede">{{ lede || "Tell us what you're looking for — our leasing team follows up within one business day." }}</p>
+      <p class="lede">{{ lede }}</p>
     </div>
 
     <div class="iq__card"><slot /></div>
-
-    <p class="iq__foot"><slot name="foot" /></p>
   </PublicShell>
 </template>
 
@@ -52,8 +50,6 @@ const appHome = computed(() => (auth.isOwner ? "/app/my-units" : auth.isTenant ?
   padding: 1.8rem 2.2rem;
   color: var(--text);
 }
-.iq__foot { text-align: center; color: var(--faint); font-size: 0.78rem; margin: 1rem 0 0; letter-spacing: 0.02em; }
-
 @media (max-width: 560px) {
   .iq__card { padding: 1.35rem; }
 }
