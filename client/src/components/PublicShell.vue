@@ -213,10 +213,10 @@ defineProps({
   padding: clamp(2rem, 5vw, 3.25rem) clamp(1rem, 4vw, 2rem) clamp(2.5rem, 6vw, 4rem);
 }
 
-.foot { background: var(--chrome-bg); color: var(--chrome-muted); padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem) 1.5rem; }
-.foot__grid { max-width: 78rem; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1.2fr; gap: 2rem; }
+.foot { background: var(--chrome-bg); color: var(--chrome-muted); padding: clamp(1.6rem, 3.2vw, 2.25rem) clamp(1rem, 4vw, 3rem) 1.1rem; }
+.foot__grid { max-width: 78rem; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1.2fr; gap: 1.5rem; }
 .foot__logo { width: 34px; height: 34px; filter: var(--chrome-logo); opacity: 0.92; }
-.foot__name { margin: 0.6rem 0 0.5rem; font-family: var(--display, Georgia, serif); font-size: 1.15rem; color: var(--chrome-text); }
+.foot__name { margin: 0.5rem 0 0.4rem; font-family: var(--display, Georgia, serif); font-size: 1.08rem; color: var(--chrome-text); }
 .foot__addr { margin: 0 0 0.4rem; font-size: 0.85rem; line-height: 1.5; }
 .foot__phone { margin: 0; font-size: 0.85rem; color: var(--chrome-faint); }
 .foot__col h4 { margin: 0 0 0.75rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--chrome-faint); font-weight: 700; }
@@ -228,7 +228,7 @@ defineProps({
    Qualify the selector so the button wins on its own ground. */
 .foot__col a.foot__cta { display: inline-block; background: var(--chrome-text); color: var(--chrome-bg); text-decoration: none; font-weight: 650; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); }
 .foot__col a.foot__cta:hover { background: var(--chrome-muted); color: var(--chrome-bg); }
-.foot__copy { max-width: 78rem; margin: 2rem auto 0; padding-top: 1.25rem; border-top: 1px solid var(--chrome-line); font-size: 0.78rem; color: var(--chrome-faint); }
+.foot__copy { max-width: 78rem; margin: 1.35rem auto 0; padding-top: 1rem; border-top: 1px solid var(--chrome-line); font-size: 0.78rem; color: var(--chrome-faint); }
 
 @media (max-width: 720px) {
   .foot__grid { grid-template-columns: 1fr; gap: 1.5rem; }
