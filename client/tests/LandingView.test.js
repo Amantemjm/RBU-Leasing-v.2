@@ -22,13 +22,4 @@ describe("LandingView (role selection)", () => {
     expect(w.find(".featured").exists()).toBe(false);
     expect(w.text()).not.toContain("Featured properties");
   });
-
-  // Lessors inquire too; the landing sends them to signup, so the inquiry
-  // route needs a way in that is not the footer.
-  it("offers a quiet inquiry link beneath the two role cards", () => {
-    const w = mount(LandingView, { global: { stubs } });
-    const link = w.find(".hero__aside a");
-    expect(link.exists()).toBe(true);
-    expect(link.attributes("href")).toBe("/inquiry");
-  });
 });

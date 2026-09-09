@@ -33,10 +33,6 @@ import PublicShell from "../components/PublicShell.vue";
             <span class="choice__go">List your unit <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
           </RouterLink>
         </div>
-        <p class="hero__aside">
-          Not ready to decide?
-          <RouterLink to="/inquiry">Send us an inquiry</RouterLink>
-        </p>
       </div>
     </section>
   </PublicShell>
@@ -80,7 +76,4 @@ import PublicShell from "../components/PublicShell.vue";
 @media (max-width: 720px) { .choices { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .choice:hover { transform: none; } }
 
-/* Deliberately quiet — a third option here would compete with the two cards. */
-.hero__aside { margin: 1.6rem 0 0; font-size: 0.9rem; color: var(--muted); }
-.hero__aside a { color: var(--accent-text); font-weight: 600; text-decoration: underline; }
 </style>
