@@ -84,6 +84,32 @@ defineProps({
         <div class="foot__col">
           <h4>Get connected</h4>
           <p class="foot__social-note">Follow Ortigas Land for updates on projects, estates, and malls.</p>
+          <div class="foot__social">
+            <a
+              href="https://www.instagram.com/oleasebyortigasland/"
+              target="_blank"
+              rel="noopener"
+              class="foot__social-link"
+              aria-label="O Lease by Ortigas Land on Instagram"
+            >
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <path d="M16.9 7.1h.01" />
+              </svg>
+            </a>
+            <a
+              href="https://www.facebook.com/OLeasebyOrtigasLand"
+              target="_blank"
+              rel="noopener"
+              class="foot__social-link"
+              aria-label="O Lease by Ortigas Land on Facebook"
+            >
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true">
+                <path d="M13.4 21v-8h2.7l.4-3.13h-3.1V7.87c0-.9.25-1.52 1.55-1.52h1.65V3.55c-.29-.04-1.27-.12-2.4-.12-2.38 0-4 1.45-4 4.11v2.33H7.5V13h2.7v8h3.2Z" />
+              </svg>
+            </a>
+          </div>
           <RouterLink to="/inquiry" class="foot__cta">Make an inquiry</RouterLink>
         </div>
       </div>
@@ -226,6 +252,16 @@ defineProps({
 .foot__col a { display: block; color: var(--chrome-muted); text-decoration: none; font-size: 0.88rem; padding: 0.25rem 0; }
 .foot__col a:hover { color: var(--chrome-text); }
 .foot__social-note { margin: 0 0 0.9rem; font-size: 0.85rem; line-height: 1.5; }
+/* Same specificity trap as .foot__cta below: `.foot__col a` sets display:block,
+   which would stack the two icons vertically instead of sitting them in a row. */
+.foot__social { display: flex; gap: 0.5rem; margin: 0 0 1rem; }
+.foot__col a.foot__social-link {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  width: 2.15rem; height: 2.15rem; color: var(--chrome-muted);
+  border: 1px solid var(--chrome-line); border-radius: var(--radius-sm);
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.foot__col a.foot__social-link:hover { color: var(--chrome-text); border-color: var(--chrome-muted); }
 /* `.foot__col a` outranks a bare `.foot__cta`, so the button was taking the pale
    footer-link colour on its own white fill — 1.28:1, effectively invisible.
    Qualify the selector so the button wins on its own ground. */

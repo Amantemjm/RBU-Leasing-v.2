@@ -15,6 +15,24 @@ describe("PublicShell footer prop", () => {
     expect(w.find(".foot__copy").exists()).toBe(true);
   });
 
+  // External profiles, so they must open in a new tab and carry rel="noopener".
+  // The aria-labels are the only text these links have — the icons are decorative.
+  it("links the Instagram and Facebook profiles from Get connected", () => {
+    const w = mount(PublicShell, { global: { stubs } });
+    const links = w.findAll(".foot__social-link");
+    expect(links.length).toBe(2);
+    const [ig, fb] = links;
+    expect(ig.attributes("href")).toBe("https://www.instagram.com/oleasebyortigasland/");
+    expect(ig.attributes("aria-label")).toContain("Instagram");
+    expect(fb.attributes("href")).toBe("https://www.facebook.com/OLeasebyOrtigasLand");
+    expect(fb.attributes("aria-label")).toContain("Facebook");
+    for (const a of links) {
+      expect(a.attributes("target")).toBe("_blank");
+      expect(a.attributes("rel")).toContain("noopener");
+      expect(a.find("svg").attributes("aria-hidden")).toBe("true");
+    }
+  });
+
   it("renders a slim footer — the copyright line only, no columns", () => {
     const w = mount(PublicShell, { props: { footer: "slim" }, global: { stubs } });
     expect(w.find(".foot").exists()).toBe(true);
