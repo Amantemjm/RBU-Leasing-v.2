@@ -91,11 +91,10 @@ describe("AvailableUnitsView", () => {
     await flushPromises();
     expect(w.text()).toMatch(/no units/i);
   });
-  it("shows a 'List your unit' CTA linking to the lessor inquiry", async () => {
+  it("no longer shows the role-selection choice cards (moved to the landing page)", async () => {
     const w = mount(AvailableUnitsView, { global: { stubs } });
     await flushPromises();
-    const cta = w.findAll("a").find((a) => /list your unit/i.test(a.text()));
-    expect(cta).toBeTruthy();
-    expect(cta.attributes("href")).toBe("/inquiry?as=LESSOR");
+    expect(w.find(".choice").exists()).toBe(false);
+    expect(w.find(".featured").exists()).toBe(true);
   });
 });
