@@ -25,12 +25,27 @@ import unitListingRoutes from "./routes/unitListingRoutes.js";
 import publicUnitRoutes from "./routes/publicUnitRoutes.js";
 import { auditMiddleware } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/error.js";
+import { prisma } from "./lib/prisma.js";
 
 export function createApp() {
   const app = express();
   app.use(cors());
   app.use(express.json());
-  app.get("/api/health", (req, res) => res.json({ ok: true }));
+  // Sits ahead of every guard so monitoring needs no credentials, and reaches
+  // the database rather than answering from a literal: this used to report
+  // `{ ok: true }` unconditionally, so it stayed green through an outage where
+  // every data endpoint was returning 500. The error is logged, never returned
+  // — a health check is a public endpoint and a database error names the user
+  // and the failure mode.
+  app.get("/api/health", async (req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ ok: true, db: "up" });
+    } catch (e) {
+      console.error("Health check failed — database unreachable:", e.message);
+      res.status(503).json({ ok: false, db: "down" });
+    }
+  });
   app.use(auditMiddleware); // records every successful mutating action
   app.use("/api/auth", authRoutes);
   app.use("/api/owners", ownerRoutes);
