@@ -1,7 +1,8 @@
 <script setup>
 // Public landing page: a role-selection entry point. A lessee browses available
-// units; a lessor signs up as a Unit Owner. Split hero — text + role cards on
-// the left, the Ortigas Land cover photo on the right. No listings are shown.
+// units; a lessor signs up as a Unit Owner. The Ortigas Land cover photo sits
+// behind the hero (heading + role cards) under a light veil for legibility.
+// No listings are shown here.
 import { RouterLink } from "vue-router";
 import PublicShell from "../components/PublicShell.vue";
 import heroUrl from "../assets/landing-hero.jpg";
@@ -9,8 +10,8 @@ import heroUrl from "../assets/landing-hero.jpg";
 
 <template>
   <PublicShell main-label="Get started" skip-label="Skip to the options">
-    <section class="hero" aria-label="Introduction">
-      <div class="hero__text">
+    <section class="hero" :style="{ '--hero-img': `url(${heroUrl})` }" aria-label="Introduction">
+      <div class="hero__inner">
         <p class="eyebrow">Welcome to Residential Leasing by Ortigas Land</p>
         <h1 class="hero__title">Home Lease, Made Simple</h1>
         <p class="hero__lede">
@@ -36,29 +37,39 @@ import heroUrl from "../assets/landing-hero.jpg";
           </RouterLink>
         </div>
       </div>
-
-      <div class="hero__media" aria-hidden="true">
-        <img :src="heroUrl" alt="" loading="eager" />
-      </div>
     </section>
   </PublicShell>
 </template>
 
 <style scoped>
 .hero {
-  max-width: 84rem;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  position: relative;
+  background: var(--hero-img) center / cover no-repeat;
+  display: flex;
   align-items: center;
-  gap: clamp(1.75rem, 4vw, 3.5rem);
-  padding: clamp(2.25rem, 5.5vw, 4.5rem) clamp(1rem, 4vw, 3rem);
 }
-.hero__text { text-align: left; }
+/* Light veil so the dark heading + text read clearly over the photo; the cards
+   are opaque so they always pop. Slightly stronger at the top where the heading
+   sits, easing off toward the bottom where the photo shows through more. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.82) 45%, rgba(255, 255, 255, 0.7) 100%);
+}
+.hero__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: clamp(2.75rem, 6.5vw, 5.5rem) clamp(1rem, 4vw, 3rem);
+  text-align: left;
+}
 .eyebrow { margin: 0 0 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--accent-text); }
-.hero__title { margin: 0; color: var(--ink-800); font-family: var(--display, Georgia, serif); font-weight: 600; font-size: clamp(2.1rem, 4.6vw, 3.4rem); line-height: 1.06; letter-spacing: -0.01em; }
-.hero__lede { margin: 1.1rem 0 0; max-width: 34rem; font-size: clamp(0.96rem, 1.6vw, 1.1rem); line-height: 1.6; color: var(--muted); }
-.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0 0; }
+.hero__title { margin: 0; color: var(--ink-800); font-family: var(--display, Georgia, serif); font-weight: 600; font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -0.01em; }
+.hero__lede { margin: 1.15rem 0 0; max-width: 40rem; font-size: clamp(0.98rem, 2vw, 1.12rem); line-height: 1.6; color: var(--ink-700); }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; max-width: 44rem; margin: 2.25rem 0 0; }
 .choice {
   display: flex;
   flex-direction: column;
@@ -70,10 +81,10 @@ import heroUrl from "../assets/landing-hero.jpg";
   border-radius: 14px;
   text-decoration: none;
   color: var(--text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
-.choice:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent-text); }
+.choice:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent-text); }
 .choice__ic { width: 46px; height: 46px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-050); color: var(--accent-text); }
 .choice__t { font-family: var(--display, Georgia, serif); font-size: 1.3rem; font-weight: 600; margin-top: 0.35rem; color: var(--ink-800); }
 .choice__d { font-size: 0.88rem; color: var(--muted); }
@@ -81,19 +92,6 @@ import heroUrl from "../assets/landing-hero.jpg";
 .choice__go svg { transition: transform 0.18s ease; }
 .choice:hover .choice__go svg { transform: translateX(3px); }
 
-.hero__media img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 11;
-  object-fit: cover;
-  border-radius: 18px;
-  box-shadow: var(--shadow-lg);
-}
-
-@media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; gap: 1.75rem; }
-  .hero__media img { aspect-ratio: 16 / 9; }
-}
-@media (max-width: 520px) { .choices { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .choices { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .choice:hover { transform: none; } }
 </style>

@@ -23,10 +23,11 @@ describe("LandingView (role selection)", () => {
     expect(w.text()).not.toContain("Featured properties");
   });
 
-  it("shows the cover photo in the split hero", () => {
+  it("uses the cover photo as the hero background", () => {
     const w = mount(LandingView, { global: { stubs } });
-    const img = w.find(".hero__media img");
-    expect(img.exists()).toBe(true);
-    expect(img.attributes("src")).toBeTruthy();
+    const hero = w.find(".hero");
+    expect(hero.exists()).toBe(true);
+    // The photo is applied as a CSS background via the --hero-img custom prop.
+    expect(hero.attributes("style") || "").toContain("url(");
   });
 });
