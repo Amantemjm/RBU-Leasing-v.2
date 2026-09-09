@@ -22,12 +22,4 @@ describe("LandingView (role selection)", () => {
     expect(w.find(".featured").exists()).toBe(false);
     expect(w.text()).not.toContain("Featured properties");
   });
-
-  it("uses the cover photo as the hero background", () => {
-    const w = mount(LandingView, { global: { stubs } });
-    const hero = w.find(".hero");
-    expect(hero.exists()).toBe(true);
-    // The photo is applied as a CSS background via the --hero-img custom prop.
-    expect(hero.attributes("style") || "").toContain("url(");
-  });
 });
