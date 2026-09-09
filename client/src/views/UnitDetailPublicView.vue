@@ -64,7 +64,7 @@ const details = computed(() =>
 <template>
   <PublicShell main-label="Unit details" skip-label="Skip to unit details">
     <template #nav-actions>
-      <RouterLink to="/inquiry?as=LESSEE" class="nav__inquire">Make an inquiry</RouterLink>
+      <RouterLink to="/inquiry" class="nav__inquire">Make an inquiry</RouterLink>
       <RouterLink to="/login" class="nav__signin">Sign in</RouterLink>
     </template>
 

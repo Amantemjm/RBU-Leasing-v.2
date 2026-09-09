@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import router from "../src/router/index.js";
-import InquiryStartView from "../src/views/InquiryStartView.vue";
 import InquiryView from "../src/views/InquiryView.vue";
 import AvailableUnitsView from "../src/views/AvailableUnitsView.vue";
 import LandingView from "../src/views/LandingView.vue";
@@ -13,13 +12,20 @@ describe("router", () => {
   it("serves the landing page at /, available units at /available-units, and the Inquiry form at /inquiry", () => {
     expect(router.resolve("/").matched[0].components.default).toBe(LandingView);
     expect(router.resolve("/available-units").matched[0].components.default).toBe(AvailableUnitsView);
-    expect(router.resolve("/inquire").matched[0].components.default).toBe(InquiryStartView);
     expect(router.resolve("/inquiry").matched[0].components.default).toBe(InquiryView);
   });
 
   it("redirects the old /units-for-lease list path to the browse page", async () => {
     await router.push("/units-for-lease");
     expect(router.currentRoute.value.path).toBe("/available-units");
+  });
+
+  // /inquire was the "I am a…" picker. The landing page asks that question
+  // now, and the form itself owns the role, so old bookmarks/links redirect
+  // rather than rendering a blank page.
+  it("redirects the old /inquire picker path to the Inquiry form", async () => {
+    await router.push("/inquire");
+    expect(router.currentRoute.value.path).toBe("/inquiry");
   });
 
   it("sends an unauthenticated visitor from the app to /login", async () => {

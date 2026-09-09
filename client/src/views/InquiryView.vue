@@ -1,9 +1,9 @@
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { reactive, ref, computed, watch, onMounted, nextTick } from "vue";
+import { useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
 import { publicUnits } from "../lib/resource.js";
-import { INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
+import { INQUIRER_TYPES, INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
 import InquiryShell from "./InquiryShell.vue";
 
 const CONSENT_TEXT =
@@ -11,7 +11,6 @@ const CONSENT_TEXT =
   "service providers collecting and using the personal data in this form to respond to my " +
   "inquiry and share relevant products and services by email.";
 
-const router = useRouter();
 const route = useRoute();
 
 const VALID_TYPES = ["LESSOR", "LESSEE"];
@@ -19,7 +18,6 @@ const selectedType = VALID_TYPES.includes(route.query.as) ? route.query.as : nul
 const unitId = route.query.unit || null;
 const unitContext = ref(null);
 onMounted(async () => {
-  if (!selectedType) { router.replace("/"); return; }
   if (unitId) {
     form.category = "RESIDENCES"; // sensible default for the residential catalog; user can change
     try { unitContext.value = await publicUnits.get(unitId); } catch { unitContext.value = null; }
@@ -34,7 +32,32 @@ const submitted = ref(false);
 const error = ref("");
 
 const inquiryTypeOptions = computed(() => (form.inquirerType ? INQUIRY_TYPES[form.inquirerType] : []));
+// unitId only ever means "the unit a lessee is inquiring about" — if the
+// visitor switches to Lessor after arriving from a unit page, the context
+// no longer applies and must not ride along in the payload.
+const showUnitContext = computed(() => !!unitContext.value && form.inquirerType === "LESSEE");
 watch(() => form.inquirerType, () => { form.inquiryType = ""; });
+
+// Who is inquiring is a field on this form, not a value frozen in the URL.
+// It starts collapsed when we already know it — most visitors arrive from a
+// unit page or the landing with the role settled — and open when we don't, so
+// a bare /inquiry is a valid starting state rather than a redirect.
+const roleOpen = ref(!selectedType);
+const changeBtnRef = ref(null);
+const roleGroupRef = ref(null);
+function chooseRole(type) {
+  form.inquirerType = type;
+  roleOpen.value = false;
+}
+// Opening/closing the inline disclosure swaps which button occupies this
+// spot in the DOM, so the keyboard focus that triggered the swap would
+// otherwise fall back to <body>. Move it to the control that just appeared.
+// (Skipped on initial mount — roleOpen's starting value isn't a user action.)
+watch(roleOpen, async (open) => {
+  await nextTick();
+  if (open) roleGroupRef.value?.querySelector("button")?.focus();
+  else changeBtnRef.value?.focus();
+});
 
 const canSubmit = computed(() =>
   !!form.category && !!form.inquirerType && !!form.inquiryType &&
@@ -51,7 +74,7 @@ async function submit() {
       fullName: form.fullName.trim(), email: form.email.trim(), consent: true,
     };
     if (form.message.trim()) payload.message = form.message.trim();
-    if (unitId) payload.unitId = unitId;
+    if (unitId && form.inquirerType === "LESSEE") payload.unitId = unitId;
     await createInquiry(payload);
     submitted.value = true;
     form.category = ""; form.inquiryType = "";
@@ -65,7 +88,7 @@ async function submit() {
 </script>
 
 <template>
-  <InquiryShell :step="2" lede="A few quick details and our leasing team will get in touch — usually within one business day.">
+  <InquiryShell lede="A few quick details and our leasing team will get in touch — usually within one business day.">
     <transition name="swap" mode="out-in">
       <!-- Success -->
       <div v-if="submitted" key="done" class="thanks">
@@ -79,7 +102,7 @@ async function submit() {
 
       <!-- Form -->
       <form v-else key="form" @submit.prevent="submit" novalidate>
-        <p v-if="unitContext" class="unit-context">
+        <p v-if="showUnitContext" class="unit-context">
           Inquiring about
           <strong>Unit {{ unitContext.details?.unitNumber || "" }}</strong>
           <template v-if="unitContext.details?.propertyName || unitContext.headline">
@@ -87,9 +110,27 @@ async function submit() {
           </template>
         </p>
 
-        <div class="asrole">
+        <!-- Who is inquiring. Collapsed to a confirmation once we know, since
+             most visitors arrive with the role already settled; Change reopens
+             it here rather than sending them to "/", which now asks a
+             different question (browse or sign up). -->
+        <div v-if="!roleOpen && form.inquirerType" class="asrole" role="status" aria-live="polite">
           <span>Inquiring as <strong>{{ INQUIRER_LABEL[form.inquirerType] }}</strong></span>
-          <a href="#" @click.prevent="router.push('/')">Change</a>
+          <button type="button" class="asrole__change" ref="changeBtnRef" @click="roleOpen = true">Change</button>
+        </div>
+        <div v-else class="field">
+          <span class="label">I am a <span class="req">*</span></span>
+          <div class="seg seg--role" role="group" aria-label="Who is inquiring" ref="roleGroupRef">
+            <button
+              v-for="t in INQUIRER_TYPES"
+              :key="t"
+              type="button"
+              class="seg__opt"
+              :class="{ on: form.inquirerType === t }"
+              :aria-pressed="form.inquirerType === t"
+              @click="chooseRole(t)"
+            >{{ INQUIRER_LABEL[t] }}</button>
+          </div>
         </div>
 
         <div class="row">
@@ -167,7 +208,10 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
   border-radius: 999px; padding: 0.5rem 0.95rem; font-size: 0.86rem;
 }
 .asrole strong { font-weight: 700; }
-.asrole a { color: var(--accent-text); font-weight: 600; font-size: 0.8rem; text-decoration: underline; }
+.asrole__change {
+  background: none; border: none; padding: 0; font: inherit; font-size: 0.8rem; font-weight: 600;
+  color: var(--accent-text); text-decoration: underline; cursor: pointer;
+}
 
 .unit-context { margin: 0 0 1rem; padding: 0.55rem 0.8rem; background: var(--accent-050); color: var(--accent-text); border-radius: var(--radius-sm); font-size: 0.9rem; }
 
@@ -190,6 +234,11 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
 .seg__opt.on { border-color: var(--accent); background: var(--accent-050); color: var(--accent-text); }
 .seg__opt.on svg { color: var(--accent); }
 .seg__opt:active { transform: scale(0.98); }
+
+/* The role labels are longer than "Residences"/"Offices", so they stack on
+   narrow screens rather than truncating. */
+.seg--role .seg__opt { font-size: 0.88rem; }
+@media (max-width: 620px) { .seg--role { grid-template-columns: 1fr; } }
 
 .field input, .field select, .field textarea {
   font-family: inherit; font-size: 0.95rem; color: var(--text); background: var(--surface);
