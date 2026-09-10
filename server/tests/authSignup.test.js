@@ -6,6 +6,8 @@ import { factory } from "./helpers.js";
 
 const app = createApp();
 const EMAILS = ["lessee.signup@x.com", "lessor.signup@x.com"];
+const ESTATE_NAME = "AuthSignup Test Estate";
+const TOWER_NAME = "AuthSignup Test Tower";
 
 async function cleanup() {
   for (const e of EMAILS) {
@@ -14,6 +16,10 @@ async function cleanup() {
   }
   await prisma.tenant.deleteMany({ where: { email: { in: EMAILS } } });
   await prisma.unitOwner.deleteMany({ where: { email: { in: EMAILS } } });
+  // Towers reference estates (Tower.estateId is required) and units reference
+  // towers, so delete towers before the estate that owns them.
+  await prisma.tower.deleteMany({ where: { name: TOWER_NAME } });
+  await prisma.estate.deleteMany({ where: { name: ESTATE_NAME } });
 }
 beforeEach(cleanup);
 afterAll(cleanup);
@@ -67,8 +73,8 @@ describe("POST /api/auth/signup — public self-registration", () => {
   // be a Unit row yet — Unit.ownerId is required and no UnitOwner exists until
   // approval — so it rides along on the application.
   it("stores a lessor's unit with the application", async () => {
-    const estate = await factory.estate();
-    const tower = await factory.tower(estate.id);
+    const estate = await factory.estate({ name: ESTATE_NAME });
+    const tower = await factory.tower(estate.id, { name: TOWER_NAME });
     const res = await request(app).post("/api/auth/signup").send({
       ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
       role: "UNIT_OWNER",
