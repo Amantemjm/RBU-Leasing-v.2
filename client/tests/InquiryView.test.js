@@ -165,4 +165,27 @@ describe("InquiryView (Quick Inquiry form)", () => {
     expect(arg.inquirerType).toBe("LESSOR");
     expect(arg.unitId).toBeUndefined();
   });
+
+  it("restores the unit banner and unitId after toggling Lessor then back to Lessee", async () => {
+    const w = await mountWithUnit();
+    expect(w.text()).toContain("12A");
+    // switch to Lessor
+    await w.findAll("a").find((a) => a.text() === "Change").trigger("click");
+    await w.findAll(".rolepick .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    expect(w.text()).not.toContain("12A");
+    // switch back to Lessee
+    await w.findAll("a").find((a) => a.text() === "Change").trigger("click");
+    await w.findAll(".rolepick .seg__opt").find((b) => b.text().includes("Lessee")).trigger("click");
+    expect(w.text()).toContain("12A"); // banner restored
+    // submit sends unitId again
+    await w.find("#fullName").setValue("Ana Reyes");
+    await w.find("#email").setValue("ana@example.com");
+    await w.find("#inquiryType").setValue("Unit Availability");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    const arg = createInquiry.mock.calls.at(-1)[0];
+    expect(arg.inquirerType).toBe("LESSEE");
+    expect(arg.unitId).toBe("u1");
+  });
 });

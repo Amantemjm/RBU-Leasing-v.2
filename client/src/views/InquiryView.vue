@@ -66,7 +66,6 @@ async function submit() {
 
 function chooseRole(role) {
   form.inquirerType = role;
-  if (role !== "LESSEE") unitContext.value = null; // unit context is a lessee concept
   showPicker.value = false;
 }
 </script>
