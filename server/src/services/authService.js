@@ -105,18 +105,34 @@ export async function deleteUser(id) {
 // LEASING_OFFICER has to approve it first. The linked UnitOwner/Tenant record is
 // deliberately NOT created here — it is created on approval, so the Owners and
 // Tenants lists only ever contain vetted parties.
-export async function signupPortalUser({ name, email, contactEmail, password, role }) {
+export async function signupPortalUser({ name, email, contactEmail, password, role, unit }) {
   if (role !== "UNIT_OWNER" && role !== "TENANT") {
     throw new InvalidReferenceError("role must be UNIT_OWNER or TENANT");
   }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new ConflictError("An account with that username or email already exists");
 
+  // Only a lessor can bring a unit; a tenant application never carries one.
+  let pendingUnit = null;
+  if (unit && role === "UNIT_OWNER") {
+    // Validate the references now rather than at approval: an applicant who
+    // picked a real estate and tower should not be told at approval time that
+    // their application is unusable.
+    if (unit.estateId && !(await prisma.estate.findUnique({ where: { id: unit.estateId } }))) {
+      throw new InvalidReferenceError("estate not found");
+    }
+    if (unit.towerId && !(await prisma.tower.findUnique({ where: { id: unit.towerId } }))) {
+      throw new InvalidReferenceError("tower not found");
+    }
+    pendingUnit = unit;
+  }
+
   const user = await prisma.user.create({
     data: {
       name, email, contactEmail, role,
       passwordHash: await hashPassword(password), passwordPlain: password,
       status: "PENDING",
+      pendingUnit,
     },
   });
 
@@ -141,6 +157,7 @@ export async function signupPortalUser({ name, email, contactEmail, password, ro
 
 const PENDING_SELECT = {
   id: true, name: true, email: true, contactEmail: true, role: true, createdAt: true,
+  pendingUnit: true,
 };
 
 export async function listPendingAccounts() {

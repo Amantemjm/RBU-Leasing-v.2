@@ -87,6 +87,10 @@ model User {
   approvedByName String?
   decidedAt      DateTime?
   rejectionReason String?
+  // The unit a lessor described while applying, held until approval — see
+  // manual-migrations/2026-09-10-user-pending-unit.sql. Whitelisted keys only:
+  // estateId, towerId, unitNumber, floor, slotNo, type, baseRent.
+  pendingUnit  Json?
   unitOwner    UnitOwner? @relation(fields: [unitOwnerId], references: [id])
   unitOwnerId  String?
   tenant       Tenant?    @relation(fields: [tenantId], references: [id])
