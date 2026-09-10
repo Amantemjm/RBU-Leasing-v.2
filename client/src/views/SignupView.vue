@@ -32,9 +32,22 @@ const savedUnit = ref(null); // what was actually submitted, for the confirmatio
 watch(role, () => { if (!isLessor.value) step.value = 1; });
 watch(() => unit.value.unitNumber, () => delete errors.value.unitNumber);
 
+// Guarded like sendApplication so a double click on "Continue" can't fire the
+// estates fetch twice. step only flips once the fetch settles, so the submit
+// button's label (still "Continue" the whole time) never claims to be
+// submitting for a step that only advances, and re-entering the step always
+// starts with a clean unit-number error rather than one left over from a
+// previous visit.
 async function enterUnitStep() {
-  step.value = 2;
-  estateOptions.value = await publicRefs.estates();
+  if (submitting.value) return;
+  delete errors.value.unitNumber;
+  submitting.value = true;
+  try {
+    estateOptions.value = await publicRefs.estates();
+    step.value = 2;
+  } finally {
+    submitting.value = false;
+  }
 }
 async function onEstateChange() {
   unit.value.towerId = "";
@@ -48,6 +61,15 @@ const submitted = ref(false);
 const formError = ref("");
 // Per-field messages: one lumped error could not say which field was wrong.
 const errors = ref({});
+
+// Step 1's "Continue" only advances the lessor to the unit step — it never
+// hits the network to submit anything — so it must never claim "Submitting…"
+// even while enterUnitStep's own guard has `submitting` set.
+const submitLabel = computed(() => {
+  if (step.value === 1 && isLessor.value) return "Continue";
+  if (submitting.value) return "Submitting…";
+  return step.value === 2 ? "Submit application" : "Create account";
+});
 
 // There is no password-reset flow in this system, so a typo here locks the
 // applicant out permanently. Hence both the confirm field and the eye toggles.
@@ -301,7 +323,7 @@ async function sendApplication(unitPayload) {
               </button>
             </div>
 
-            <button type="submit" :disabled="submitting">{{ step === 1 && isLessor ? "Continue" : step === 2 ? "Submit application" : "Create account" }}</button>
+            <button type="submit" :disabled="submitting">{{ submitLabel }}</button>
             <p v-if="formError" class="error">{{ formError }}</p>
             <p class="approve-note">Accounts are reviewed by the leasing team before they can be used.</p>
           </form>

@@ -224,4 +224,22 @@ describe("SignupView", () => {
     expect(w.text()).toContain("Application received");
     expect(w.text()).toContain("19A");
   });
+
+  // Binding requirement: leaving Unit Owner while on the unit step must not
+  // strand the applicant there — it must snap back to the account details.
+  it("returns to step 1 when the role changes away from Unit Owner on the unit step", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    expect(w.find("#unitNumber").exists()).toBe(true);
+
+    const tenantButton = w.findAll(".roles button").find((b) => b.text().includes("Lessee"));
+    await tenantButton.trigger("click");
+    await flushPromises();
+
+    expect(w.find("#unitNumber").exists()).toBe(false);
+    expect(w.find("#name").exists()).toBe(true);
+    expect(w.find("#name").element.value).toBe("Ana Reyes");
+  });
 });
