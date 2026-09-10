@@ -6,6 +6,13 @@ vi.mock("../src/lib/api.js", () => ({
   api: { post: vi.fn(() => Promise.resolve({ data: { status: "PENDING", user: {} } })) },
 }));
 
+vi.mock("../src/lib/resource.js", () => ({
+  publicRefs: {
+    estates: vi.fn(() => Promise.resolve([{ id: "e1", name: "Capitol Commons" }])),
+    towers: vi.fn(() => Promise.resolve([{ id: "t1", name: "Empress" }])),
+  },
+}));
+
 import SignupView from "../src/views/SignupView.vue";
 import { api } from "../src/lib/api.js";
 
@@ -149,5 +156,72 @@ describe("SignupView", () => {
     const w = await mountSignupAs("LESSOR");
     const lessor = w.findAll(".roles button").find((b) => b.text().includes("Lessor"));
     expect(lessor.classes()).toContain("on");
+  });
+
+  // The landing card promises "List your unit", so a lessor is asked for one.
+  it("shows the unit step to a lessor after the account details", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    expect(w.find("#unitNumber").exists()).toBe(true);
+    expect(api.post).not.toHaveBeenCalled(); // advanced a step, not submitted
+  });
+
+  it("never shows the unit step to a tenant", async () => {
+    const w = await mountSignupAs("LESSEE");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    expect(w.find("#unitNumber").exists()).toBe(false);
+    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.not.objectContaining({ unit: expect.anything() }));
+  });
+
+  it("sends the unit the lessor described", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    await w.find("#unitNumber").setValue("19A");
+    await w.find("#floor").setValue("19");
+    await submit(w);
+    await flushPromises();
+    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.objectContaining({
+      role: "UNIT_OWNER",
+      unit: expect.objectContaining({ unitNumber: "19A", floor: "19" }),
+    }));
+  });
+
+  it("lets a lessor skip the unit and still apply", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    await w.find(".unit__skip").trigger("click");
+    await flushPromises();
+    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.not.objectContaining({ unit: expect.anything() }));
+  });
+
+  it("requires a unit number when the lessor does not skip", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    await submit(w); // unit number still blank
+    await flushPromises();
+    expect(api.post).not.toHaveBeenCalled();
+    expect(w.text()).toContain("Unit number is required.");
+  });
+
+  it("names the captured unit on the confirmation", async () => {
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w);
+    await flushPromises();
+    await w.find("#unitNumber").setValue("19A");
+    await submit(w);
+    await flushPromises();
+    expect(w.text()).toContain("Application received");
+    expect(w.text()).toContain("19A");
   });
 });

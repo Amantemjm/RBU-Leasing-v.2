@@ -170,3 +170,10 @@ export const publicUnits = {
   get: (unitId) => api.get(`/public/units/${unitId}`).then((r) => r.data),
   photoUrl: (photoId) => `/api/public/units/photo/${photoId}`,
 };
+
+// Reference data for the signed-out signup page — names only. The staff-facing
+// `estates`/`towers` above require a token and cannot be used there.
+export const publicRefs = {
+  estates: () => api.get("/public/estates").then((r) => r.data),
+  towers: (estateId) => api.get("/public/towers", { params: { estateId } }).then((r) => r.data),
+};
