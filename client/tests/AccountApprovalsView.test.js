@@ -91,4 +91,19 @@ describe("AccountApprovalsView", () => {
     const w = await mountView();
     expect(w.find(".error").text()).toBe("Forbidden");
   });
+
+  // The approver should see what unit a lessor is claiming before deciding.
+  it("shows the unit a lessor applied with, and nothing when they skipped", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "u1", name: "Maria Santos", email: "m.santos", contactEmail: "m@x.com", role: "UNIT_OWNER",
+        createdAt: new Date().toISOString(), pendingUnit: { unitNumber: "19A" } },
+      { id: "u2", name: "Ana Garcia", email: "a.garcia", contactEmail: "a@x.com", role: "TENANT",
+        createdAt: new Date().toISOString(), pendingUnit: null },
+    ]);
+    const w = await mountView();
+    await flushPromises();
+    const rows = w.findAll("tbody tr");
+    expect(rows[0].text()).toContain("19A");
+    expect(rows[1].find(".pending-unit").exists()).toBe(false);
+  });
 });
