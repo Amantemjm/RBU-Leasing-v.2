@@ -15,6 +15,7 @@ vi.mock("../src/lib/resource.js", () => ({
 
 import SignupView from "../src/views/SignupView.vue";
 import { api } from "../src/lib/api.js";
+import { publicRefs } from "../src/lib/resource.js";
 
 const stub = { template: "<div/>" };
 
@@ -241,5 +242,29 @@ describe("SignupView", () => {
     expect(w.find("#unitNumber").exists()).toBe(false);
     expect(w.find("#name").exists()).toBe(true);
     expect(w.find("#name").element.value).toBe("Ana Reyes");
+  });
+
+  // Race: the role buttons aren't gated by `submitting`, so a lessor can
+  // switch to Tenant while the estates() fetch triggered by "Continue" is
+  // still pending. The step must not advance to the lessor-only unit form
+  // for what is, by the time the fetch settles, a declared Tenant.
+  it("does not land a Tenant on the unit step if the role changes while estates() is pending", async () => {
+    let resolveEstates;
+    publicRefs.estates.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveEstates = resolve; })
+    );
+
+    const w = await mountSignupAs("LESSOR");
+    await fillValid(w);
+    await submit(w); // enters enterUnitStep(); suspends on the pending estates() fetch
+
+    const tenantButton = w.findAll(".roles button").find((b) => b.text().includes("Lessee"));
+    await tenantButton.trigger("click"); // role flips to TENANT while the fetch is still in flight
+
+    resolveEstates([{ id: "e1", name: "Capitol Commons" }]);
+    await flushPromises();
+
+    expect(w.find("#unitNumber").exists()).toBe(false);
+    expect(w.find("#name").exists()).toBe(true);
   });
 });

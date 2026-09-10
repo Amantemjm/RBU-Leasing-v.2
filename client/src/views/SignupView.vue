@@ -44,7 +44,10 @@ async function enterUnitStep() {
   submitting.value = true;
   try {
     estateOptions.value = await publicRefs.estates();
-    step.value = 2;
+    // The role can change while this fetch is in flight (the role buttons
+    // aren't gated by `submitting`) — re-check before advancing so a switch
+    // to Tenant during the await can't still land on the lessor-only step.
+    if (isLessor.value) step.value = 2;
   } finally {
     submitting.value = false;
   }
@@ -269,7 +272,9 @@ async function sendApplication(unitPayload) {
             <p v-if="errors.consent" class="fld__err">{{ errors.consent }}</p>
             </div>
 
-            <div v-if="step === 2" class="unit">
+            <!-- Belt-and-braces: even if some future path sets `step` to 2,
+                 this markup must still never render for a declared Tenant. -->
+            <div v-if="step === 2 && isLessor" class="unit">
               <h2 class="unit__h">Your unit</h2>
               <p class="unit__lede">Tell us about the unit you would like to list. You can change any of this later.</p>
 
