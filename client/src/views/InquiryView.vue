@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, ref, computed, watch, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
 import { publicUnits } from "../lib/resource.js";
 import { INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
@@ -11,15 +11,16 @@ const CONSENT_TEXT =
   "service providers collecting and using the personal data in this form to respond to my " +
   "inquiry and share relevant products and services by email.";
 
-const router = useRouter();
 const route = useRoute();
 
 const VALID_TYPES = ["LESSOR", "LESSEE"];
 const selectedType = VALID_TYPES.includes(route.query.as) ? route.query.as : null;
 const unitId = route.query.unit || null;
 const unitContext = ref(null);
+const showPicker = ref(false);
 onMounted(async () => {
-  if (!selectedType) { router.replace("/"); return; }
+  // No role carried in? Let the user pick one on this page (don't bounce home).
+  if (!selectedType) showPicker.value = true;
   if (unitId) {
     form.category = "RESIDENCES"; // sensible default for the residential catalog; user can change
     try { unitContext.value = await publicUnits.get(unitId); } catch { unitContext.value = null; }
@@ -51,7 +52,7 @@ async function submit() {
       fullName: form.fullName.trim(), email: form.email.trim(), consent: true,
     };
     if (form.message.trim()) payload.message = form.message.trim();
-    if (unitId) payload.unitId = unitId;
+    if (unitId && form.inquirerType === "LESSEE") payload.unitId = unitId;
     await createInquiry(payload);
     submitted.value = true;
     form.category = ""; form.inquiryType = "";
@@ -61,6 +62,12 @@ async function submit() {
   } finally {
     submitting.value = false;
   }
+}
+
+function chooseRole(role) {
+  form.inquirerType = role;
+  if (role !== "LESSEE") unitContext.value = null; // unit context is a lessee concept
+  showPicker.value = false;
 }
 </script>
 
@@ -79,7 +86,7 @@ async function submit() {
 
       <!-- Form -->
       <form v-else key="form" @submit.prevent="submit" novalidate>
-        <p v-if="unitContext" class="unit-context">
+        <p v-if="unitContext && form.inquirerType === 'LESSEE'" class="unit-context">
           Inquiring about
           <strong>Unit {{ unitContext.details?.unitNumber || "" }}</strong>
           <template v-if="unitContext.details?.propertyName || unitContext.headline">
@@ -87,9 +94,22 @@ async function submit() {
           </template>
         </p>
 
-        <div class="asrole">
+        <div v-if="showPicker" class="rolepick">
+          <span class="label">I am a…</span>
+          <div class="seg" role="group" aria-label="I am a">
+            <button type="button" class="seg__opt" :class="{ on: form.inquirerType === 'LESSEE' }" :aria-pressed="form.inquirerType === 'LESSEE'" @click="chooseRole('LESSEE')">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9.5 21v-5h5v5"/><path d="M9 11h.01M15 11h.01"/></svg>
+              Lessee
+            </button>
+            <button type="button" class="seg__opt" :class="{ on: form.inquirerType === 'LESSOR' }" :aria-pressed="form.inquirerType === 'LESSOR'" @click="chooseRole('LESSOR')">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14"/><path d="M10 9h4M10 13h4M10 17h4"/></svg>
+              Lessor
+            </button>
+          </div>
+        </div>
+        <div v-else class="asrole">
           <span>Inquiring as <strong>{{ INQUIRER_LABEL[form.inquirerType] }}</strong></span>
-          <a href="#" @click.prevent="router.push('/')">Change</a>
+          <a href="#" @click.prevent="showPicker = true">Change</a>
         </div>
 
         <div class="row">
@@ -168,6 +188,9 @@ form { display: flex; flex-direction: column; gap: 0.8rem; }
 }
 .asrole strong { font-weight: 700; }
 .asrole a { color: var(--accent-text); font-weight: 600; font-size: 0.8rem; text-decoration: underline; }
+
+.rolepick { display: flex; flex-direction: column; gap: 0.3rem; }
+.rolepick .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--muted); }
 
 .unit-context { margin: 0 0 1rem; padding: 0.55rem 0.8rem; background: var(--accent-050); color: var(--accent-text); border-radius: var(--radius-sm); font-size: 0.9rem; }
 

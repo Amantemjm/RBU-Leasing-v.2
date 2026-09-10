@@ -37,6 +37,14 @@ async function mountWithUnit() {
   return w;
 }
 
+async function mountNoRole() {
+  setActivePinia(createPinia());
+  const router = makeRouter();
+  router.push({ path: "/" }); // no ?as=
+  await router.isReady();
+  return mount(InquiryView, { global: { plugins: [router] } });
+}
+
 describe("InquiryView (Quick Inquiry form)", () => {
   beforeEach(() => createInquiry.mockClear());
 
@@ -111,5 +119,50 @@ describe("InquiryView (Quick Inquiry form)", () => {
     await w.find("form").trigger("submit.prevent");
     await flushPromises();
     expect(createInquiry).toHaveBeenCalledWith(expect.objectContaining({ unitId: "u1", category: "RESIDENCES" }));
+  });
+
+  it("Change reveals the inline role toggle instead of navigating away", async () => {
+    const w = await mountView("LESSEE");
+    expect(w.find(".rolepick").exists()).toBe(false); // pill shown, not the picker
+    await w.findAll("a").find((a) => a.text() === "Change").trigger("click");
+    expect(w.find(".rolepick").exists()).toBe(true);
+    const roleBtns = w.findAll(".rolepick .seg__opt").map((b) => b.text());
+    expect(roleBtns.some((t) => t.includes("Lessee"))).toBe(true);
+    expect(roleBtns.some((t) => t.includes("Lessor"))).toBe(true);
+  });
+
+  it("picking a role in the toggle switches the type options and keeps entries", async () => {
+    const w = await mountView("LESSEE");
+    await w.find("#fullName").setValue("Maria Santos");
+    await w.findAll("a").find((a) => a.text() === "Change").trigger("click");
+    await w.findAll(".rolepick .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    // Picker closes, the LESSOR type options are now in effect, and the typed name survives.
+    expect(w.find(".rolepick").exists()).toBe(false);
+    const opts = w.find("#inquiryType").findAll("option").map((o) => o.text());
+    expect(opts).toContain("Find a Tenant");
+    expect(w.find("#fullName").element.value).toBe("Maria Santos");
+  });
+
+  it("shows the role picker on a direct visit with no ?as= (no redirect)", async () => {
+    const w = await mountNoRole();
+    expect(w.find(".rolepick").exists()).toBe(true);
+  });
+
+  it("switching to Lessor drops the unit banner and omits unitId on submit", async () => {
+    const w = await mountWithUnit();
+    expect(w.text()).toContain("12A"); // lessee unit banner
+    await w.findAll("a").find((a) => a.text() === "Change").trigger("click");
+    await w.findAll(".rolepick .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    expect(w.text()).not.toContain("12A"); // banner gone for lessor
+    // Complete + submit; category is still RESIDENCES from the unit prefill.
+    await w.find("#fullName").setValue("Ana Reyes");
+    await w.find("#email").setValue("ana@example.com");
+    await w.find("#inquiryType").setValue("Find a Tenant");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    const arg = createInquiry.mock.calls.at(-1)[0];
+    expect(arg.inquirerType).toBe("LESSOR");
+    expect(arg.unitId).toBeUndefined();
   });
 });
