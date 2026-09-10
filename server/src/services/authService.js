@@ -182,6 +182,33 @@ async function approverName(approver) {
   return row?.name ?? null;
 }
 
+// The unit a lessor described at signup, turned into a real row now that they
+// have an owner record to hang it on.
+//
+// DRAFT is set explicitly: the schema default is APPROVED, which would put a
+// self-registered unit straight into the portfolio without review. The lessor
+// completes anything they skipped from My Units and submits it themselves.
+//
+// A tower deleted between signup and approval is dropped rather than fatal —
+// reference data changing must never leave an applicant unapprovable.
+async function buildPendingUnit(tx, ownerId, pending) {
+  const towerId = pending.towerId && (await tx.tower.findUnique({ where: { id: pending.towerId } }))
+    ? pending.towerId
+    : null;
+  return {
+    ownerId,
+    unitNumber: pending.unitNumber,
+    towerId,
+    floor: pending.floor || null,
+    slotNo: pending.slotNo || null,
+    // Unit.type has a default; only override it when the lessor named one.
+    ...(pending.type ? { type: pending.type } : {}),
+    // baseRent is a required Decimal while the signup field is optional.
+    baseRent: pending.baseRent ?? 0,
+    approvalStatus: "DRAFT",
+  };
+}
+
 export async function approveAccount(id, approver) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
@@ -201,6 +228,10 @@ export async function approveAccount(id, approver) {
     if (user.role === "UNIT_OWNER") {
       const owner = await tx.unitOwner.create({ data: { name: user.name, email: user.contactEmail } });
       data.unitOwnerId = owner.id;
+      if (user.pendingUnit) {
+        await tx.unit.create({ data: await buildPendingUnit(tx, owner.id, user.pendingUnit) });
+        data.pendingUnit = null; // consumed
+      }
     } else if (user.role === "TENANT") {
       const tenant = await tx.tenant.create({ data: { name: user.name, email: user.contactEmail } });
       data.tenantId = tenant.id;
