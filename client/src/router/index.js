@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import AppLayout from "../components/AppLayout.vue";
-import InquiryStartView from "../views/InquiryStartView.vue";
 import InquiryView from "../views/InquiryView.vue";
 import LandingView from "../views/LandingView.vue";
 import AvailableUnitsView from "../views/AvailableUnitsView.vue";
@@ -53,7 +52,7 @@ const ADMIN = ["ADMIN"];
 const routes = [
   { path: "/", component: LandingView, meta: { ownsThemeToggle: true } }, // public landing: role-selection entry point
   { path: "/available-units", component: AvailableUnitsView, meta: { ownsThemeToggle: true } }, // public browse page (lessee "Get Started")
-  { path: "/inquire", component: InquiryStartView, meta: { ownsThemeToggle: true } }, // "I am a…" user-type selection
+  { path: "/inquire", redirect: "/inquiry" }, // role picking now lives inline on /inquiry
   { path: "/inquiry", component: InquiryView, meta: { ownsThemeToggle: true } }, // Quick Inquiry form (user type via ?as=)
   { path: "/units-for-lease", redirect: "/available-units" }, // legacy list path → browse page
   { path: "/units-for-lease/:id", component: UnitDetailPublicView, meta: { ownsThemeToggle: true } },
