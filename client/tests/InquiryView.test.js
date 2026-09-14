@@ -208,6 +208,44 @@ describe("InquiryView (Quick Inquiry form)", () => {
     expect(w.text()).toContain("Inquiry received");
   });
 
+  // Ported from the parallel implementation on origin/master: a role switch
+  // must not cost the visitor what they have already typed.
+  it("keeps entries already typed when the role changes", async () => {
+    const w = await mountView("LESSEE");
+    await w.find("#fullName").setValue("Maria Santos");
+    await w.find(".asrole__change").trigger("click");
+    await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    expect(w.find(".seg--role").exists()).toBe(false);
+    const opts = w.find("#inquiryType").findAll("option").map((o) => o.text());
+    expect(opts).toContain("Find a Tenant");
+    expect(w.find("#fullName").element.value).toBe("Maria Santos");
+  });
+
+  // Also ported: dropping the unit on a switch away from Lessee is only half
+  // the contract — coming back must restore it, banner and payload alike.
+  it("restores the unit banner and unitId after switching to Lessor and back", async () => {
+    const w = await mountWithUnit();
+    expect(w.text()).toContain("12A");
+
+    await w.find(".asrole__change").trigger("click");
+    await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
+    expect(w.text()).not.toContain("12A");
+
+    await w.find(".asrole__change").trigger("click");
+    await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessee")).trigger("click");
+    expect(w.text()).toContain("12A");
+
+    await w.find("#fullName").setValue("Ana Reyes");
+    await w.find("#email").setValue("ana@example.com");
+    await w.find("#inquiryType").setValue("Unit Availability");
+    await w.find('input[type="checkbox"]').setValue(true);
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    const arg = createInquiry.mock.calls.at(-1)[0];
+    expect(arg.inquirerType).toBe("LESSEE");
+    expect(arg.unitId).toBe("u1");
+  });
+
   // unitId means "the unit a lessee is inquiring about" — switching to Lessor
   // mid-form must drop both the visible banner and the field from the payload.
   it("drops the unit banner and unitId when switching away from Lessee", async () => {

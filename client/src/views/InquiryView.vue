@@ -4,6 +4,14 @@ import { useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
 import { publicUnits } from "../lib/resource.js";
 import { INQUIRER_TYPES, INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
+
+// The same house / building pair the landing page uses for the two roles, so a
+// visitor meets one visual language across the public pages. Held as data
+// rather than duplicated markup, so the two buttons stay a single v-for.
+const ROLE_ICON = {
+  LESSEE: ["M3 21h18M5 21V8l7-4 7 4v13", "M9.5 21v-5h5v5", "M9 11h.01M15 11h.01"],
+  LESSOR: ["M3 21h18M6 21V7l6-4 6 4v14", "M10 9h4M10 13h4M10 17h4"],
+};
 import InquiryShell from "./InquiryShell.vue";
 
 const CONSENT_TEXT =
@@ -129,7 +137,12 @@ async function submit() {
               :class="{ on: form.inquirerType === t }"
               :aria-pressed="form.inquirerType === t"
               @click="chooseRole(t)"
-            >{{ INQUIRER_LABEL[t] }}</button>
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path v-for="d in ROLE_ICON[t]" :key="d" :d="d" />
+              </svg>
+              {{ INQUIRER_LABEL[t] }}
+            </button>
           </div>
         </div>
 
