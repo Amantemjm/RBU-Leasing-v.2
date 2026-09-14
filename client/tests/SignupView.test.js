@@ -39,6 +39,19 @@ async function mountSignupAs(as) {
   return mount(SignupView, { global: { plugins: [router] } });
 }
 
+// Like mountSignup(), but hands back the router too so a test can assert on
+// where the role toggle actually navigated.
+async function mountSignupWithRouter() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/:pathMatch(.*)*", component: stub }],
+  });
+  router.push("/signup");
+  await router.isReady();
+  const wrapper = mount(SignupView, { global: { plugins: [router] } });
+  return { wrapper, router };
+}
+
 async function fillValid(w, over = {}) {
   const v = { name: "Ana Reyes", username: "ana.reyes", contactEmail: "ana@example.com",
               password: "strong-pass-8", confirm: "strong-pass-8", ...over };
@@ -266,5 +279,19 @@ describe("SignupView", () => {
 
     expect(w.find("#unitNumber").exists()).toBe(false);
     expect(w.find("#name").exists()).toBe(true);
+  });
+
+  // The spec's Decisions table retires the account-first lessor path: a
+  // lessor two clicks from /login (via /signup) must land on the unit-first
+  // wizard instead, not the old flow with its "Skip for now" affordance.
+  it("redirects to /register-unit as soon as the role toggle switches to Unit Owner", async () => {
+    const { wrapper: w, router } = await mountSignupWithRouter();
+    expect(router.currentRoute.value.path).toBe("/signup");
+
+    const lessorButton = w.findAll(".roles button").find((b) => b.text().includes("Lessor"));
+    await lessorButton.trigger("click");
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe("/register-unit");
   });
 });

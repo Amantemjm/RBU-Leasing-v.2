@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { lessorRequirements } from "../lib/resource.js";
+import OnboardingProgress from "../components/OnboardingProgress.vue";
 
 const rows = ref([]);
 const busyKey = ref("");
@@ -28,6 +29,10 @@ async function download(row) {
 
 <template>
   <section>
+    <!-- Being on this page IS the Requirements step, so it can render the
+         stepper directly — no transaction-stage lookup needed. This is the
+         only place a lessor sees steps 4 and 5 after approval. -->
+    <OnboardingProgress current="requirements" class="prog" />
     <header><h1>My Requirements</h1><p class="muted">Upload the documents O-Lease needs. Track each one's status here.</p></header>
     <p v-if="error" class="error">{{ error }}</p>
     <ul class="list">
@@ -50,6 +55,7 @@ async function download(row) {
 </template>
 
 <style scoped>
+.prog { margin: 0 0 1.25rem; }
 .muted { color: var(--muted); }
 .list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
 .item { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; }

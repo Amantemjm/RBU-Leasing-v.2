@@ -109,4 +109,27 @@ describe("Public registration wizard", () => {
     await w.find("#password").setValue("secret12345");
     expect(sessionStorage.getItem("rbu.lessorApplication")).not.toContain("secret12345");
   });
+
+  // This branch inverted the flow specifically so the applicant CAN sign in
+  // before approval — the confirmation screen must not say the opposite, and
+  // must not promise contact the system never sends.
+  it("tells the applicant they can sign in to check status, and promises no contact", async () => {
+    const w = mountView();
+    await w.find("#unitNumber").setValue("19A");
+    await w.find("form").trigger("submit");
+    await flushPromises();
+    await w.find("#name").setValue("Jane Lessor");
+    await w.find("#username").setValue("janelessor");
+    await w.find("#contactEmail").setValue("jane@x.com");
+    await w.find("#password").setValue("secret12345");
+    await w.find("#confirm").setValue("secret12345");
+    await w.find("#consent").setValue(true);
+    await w.find("form").trigger("submit");
+    await flushPromises();
+
+    expect(w.text()).not.toContain("You will not be able to sign in");
+    expect(w.text()).not.toContain("We will reach you");
+    const link = w.findAll("a").find((a) => a.text() === "Check your application status");
+    expect(link).toBeTruthy();
+  });
 });

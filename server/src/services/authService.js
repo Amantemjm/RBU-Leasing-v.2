@@ -53,8 +53,10 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
-    // Only active, approved accounts belong in the system Users list. Pending,
-    // for-revision, and rejected applications all live in Account Approvals.
+    // Only active, approved accounts belong in the system Users list. The
+    // Account Approvals queue is PENDING-only — a for-revision or rejected
+    // application lives in neither list; the applicant reads it from their
+    // own application-status page instead.
     where: { status: "APPROVED" },
     orderBy: { createdAt: "desc" },
     select: {
@@ -213,6 +215,16 @@ async function buildPendingUnit(tx, ownerId, pending) {
 // previously sent back.
 const DECIDABLE = ["PENDING", "FOR_REVISION"];
 
+// The user-facing labels for account status — must match STATUS_LABEL in
+// ApplicationStatusView.vue. Used to keep a raw enum value (PENDING,
+// FOR_REVISION, ...) out of any message shown to a person.
+const STATUS_LABEL = {
+  PENDING: "Pending Review",
+  FOR_REVISION: "For Revision",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
 // Looks up the account and enforces that it is still open for a decision.
 // Shared by approveAccount/rejectAccount/reviseAccount so the not-found and
 // decidability checks stay in one place.
@@ -220,7 +232,9 @@ async function findDecidableAccount(id) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
   if (!DECIDABLE.includes(user.status)) {
-    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
+    // This message is shown verbatim in the officer's modal, so it must read
+    // as a proper label — not the raw lowercased enum (e.g. "for_revision").
+    throw new ConflictError(`account is already ${STATUS_LABEL[user.status] || user.status}`);
   }
   return user;
 }

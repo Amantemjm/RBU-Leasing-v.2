@@ -154,9 +154,9 @@ async function send() {
           <p class="done__status">Status: <strong>Pending Review</strong></p>
           <p class="done__body">
             Thanks, {{ name.trim() }}. Our leasing team will review your unit and account
-            details shortly. You will not be able to sign in until it is approved.
+            details shortly. You can sign in any time to check your application's status —
+            that's the only place the answer will appear, since we don't send any updates by email.
           </p>
-          <p class="done__note">We will reach you at <strong>{{ contactEmail.trim() }}</strong>.</p>
           <RouterLink class="done__link" to="/login">Check your application status</RouterLink>
         </div>
 

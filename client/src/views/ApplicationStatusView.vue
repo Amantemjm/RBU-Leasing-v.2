@@ -4,8 +4,13 @@
 // ever learns their status, reads an officer's remarks, and — on For
 // Revision — corrects the unit that came back.
 import { reactive, ref, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
 import { application, publicRefs } from "../lib/resource.js";
+import { useAuthStore } from "../stores/auth.js";
 import OnboardingProgress from "../components/OnboardingProgress.vue";
+
+const router = useRouter();
+const auth = useAuthStore();
 
 // The server renames the rejectionReason column to `remarks` on the way out —
 // one field carries both a rejection reason and revision remarks. The label
@@ -66,6 +71,15 @@ async function load() {
 }
 onMounted(load);
 
+// The JWT carries `status` at issue time and nothing refreshes it, so an
+// applicant approved while sitting on this page still holds a restricted
+// token — every portal link bounces them until it expires. Signing in again
+// is the only way to get a fresh one.
+function signInAgain() {
+  auth.logout();
+  router.push("/login");
+}
+
 async function onEstateChange() {
   form.towerId = "";
   towerOptions.value = form.estateId ? await publicRefs.towers(form.estateId) : [];
@@ -115,9 +129,10 @@ async function resubmit() {
         there is no other way we can reach you.
       </p>
 
-      <p v-if="status === 'APPROVED'" class="muted">
-        Your application has been approved.
-      </p>
+      <div v-if="status === 'APPROVED'" class="approved">
+        <p class="muted">Your application has been approved.</p>
+        <button type="button" class="reauth" @click="signInAgain">Sign in again to open your portal</button>
+      </div>
 
       <p v-if="status === 'FOR_REVISION' && app.remarks" class="remark remark--bad">
         <strong>What needs fixing:</strong> {{ app.remarks }}
@@ -196,6 +211,13 @@ async function resubmit() {
 
 .remark { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; margin: 0; }
 .remark--bad { border-color: var(--danger); background: var(--danger-050); color: var(--danger); }
+
+.approved { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+.reauth {
+  font: inherit; font-size: 0.85rem; font-weight: 600; color: #fff;
+  background: var(--accent); border: none; border-radius: var(--radius-sm);
+  padding: 0.6rem 1.1rem; cursor: pointer;
+}
 
 .fset { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 0.25rem 1rem 0.9rem; margin: 0; }
 .fset__title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; color: var(--accent-text); padding: 0 0.4rem; }

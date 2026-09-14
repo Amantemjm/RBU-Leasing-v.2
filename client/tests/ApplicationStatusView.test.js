@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { createRouter, createMemoryHistory } from "vue-router";
 import ApplicationStatusView from "../src/views/ApplicationStatusView.vue";
+import { useAuthStore } from "../src/stores/auth.js";
 
 const get = vi.fn();
 const resubmit = vi.fn(() => Promise.resolve({ status: "PENDING" }));
@@ -13,15 +16,28 @@ vi.mock("../src/lib/resource.js", () => ({
   publicRefs: { estates: (...a) => estates(...a), towers: (...a) => towers(...a) },
 }));
 
+const stub = { template: "<div/>" };
 const stubs = { RouterLink: { template: "<a><slot /></a>" } };
-const mountView = () => mount(ApplicationStatusView, { global: { stubs } });
 
-beforeEach(() => { vi.clearAllMocks(); });
+async function mountView() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/:pathMatch(.*)*", component: stub }],
+  });
+  router.push("/app/application");
+  await router.isReady();
+  return { wrapper: mount(ApplicationStatusView, { global: { plugins: [router], stubs } }), router };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  setActivePinia(createPinia());
+});
 
 describe("Application status page", () => {
   it("shows Pending Review while awaiting a decision", async () => {
     get.mockResolvedValue({ status: "PENDING", pendingUnit: { unitNumber: "19A" }, remarks: null });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     expect(w.text()).toContain("Pending Review");
     expect(w.find("form").exists()).toBe(false);
@@ -29,7 +45,7 @@ describe("Application status page", () => {
 
   it("shows the remarks and an editable unit form on For Revision", async () => {
     get.mockResolvedValue({ status: "FOR_REVISION", pendingUnit: { unitNumber: "19A" }, remarks: "Tower does not match" });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     expect(w.text()).toContain("For Revision");
     expect(w.text()).toContain("Tower does not match");
@@ -38,7 +54,7 @@ describe("Application status page", () => {
 
   it("resubmits the corrected unit", async () => {
     get.mockResolvedValue({ status: "FOR_REVISION", pendingUnit: { unitNumber: "19A" }, remarks: "wrong" });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     await w.get("#unitNumber").setValue("20B");
     await w.get("form").trigger("submit");
@@ -52,7 +68,7 @@ describe("Application status page", () => {
       pendingUnit: { unitNumber: "19A", slotNo: "B5-15", estateId: "e1", towerId: "t1" },
       remarks: "wrong",
     });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     await w.get("#unitNumber").setValue("20B");
     await w.get("form").trigger("submit");
@@ -68,7 +84,7 @@ describe("Application status page", () => {
       pendingUnit: { unitNumber: "19A", estateId: "e1", towerId: "t1" },
       remarks: "Tower does not match",
     });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     expect(towers).toHaveBeenCalledWith("e1");
     expect(w.get("#estateId").element.value).toBe("e1");
@@ -87,7 +103,7 @@ describe("Application status page", () => {
 
   it("shows the reason and no form when rejected", async () => {
     get.mockResolvedValue({ status: "REJECTED", pendingUnit: { unitNumber: "19A" }, remarks: "Could not verify identity" });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     expect(w.text()).toContain("Rejected");
     expect(w.text()).toContain("Could not verify identity");
@@ -96,11 +112,38 @@ describe("Application status page", () => {
 
   it("refuses to resubmit an empty unit number", async () => {
     get.mockResolvedValue({ status: "FOR_REVISION", pendingUnit: { unitNumber: "19A" }, remarks: "wrong" });
-    const w = mountView();
+    const { wrapper: w } = await mountView();
     await flushPromises();
     await w.get("#unitNumber").setValue("");
     await w.get("form").trigger("submit");
     await flushPromises();
     expect(resubmit).not.toHaveBeenCalled();
+  });
+
+  // The JWT carries status at issue time and nothing refreshes it after an
+  // officer approves. Without a way to get a fresh token, the applicant is
+  // stuck on this page behind a stale restricted session until it expires.
+  describe("Approved — the session must be refreshed", () => {
+    it("offers to sign in again rather than leaving the stale session in place", async () => {
+      get.mockResolvedValue({ status: "APPROVED", pendingUnit: { unitNumber: "19A" }, remarks: null });
+      const { wrapper: w } = await mountView();
+      await flushPromises();
+      expect(w.text()).toContain("Sign in again");
+    });
+
+    it("logs out and routes to /login when that action is taken", async () => {
+      get.mockResolvedValue({ status: "APPROVED", pendingUnit: { unitNumber: "19A" }, remarks: null });
+      const auth = useAuthStore();
+      auth.setSession({ token: "stale-token", user: { id: "u1", role: "UNIT_OWNER", status: "PENDING" } });
+
+      const { wrapper: w, router } = await mountView();
+      await flushPromises();
+      const btn = w.findAll("button").find((b) => b.text().includes("Sign in again"));
+      await btn.trigger("click");
+      await flushPromises();
+
+      expect(auth.isAuthenticated).toBe(false);
+      expect(router.currentRoute.value.path).toBe("/login");
+    });
   });
 });

@@ -72,6 +72,19 @@ describe("AccountApprovalsView", () => {
     expect(w.find(".modal .error").text()).toContain("reason");
   });
 
+  // The application row is kept (not deleted) so the applicant can be told
+  // why, and the username is never freed — a genuine re-application needs an
+  // officer to reopen the account. The modal must not claim the opposite.
+  it("describes reject accurately: kept on file, username stays taken", async () => {
+    const w = await mountView();
+    await btnIn(w.findAll("tbody tr")[0], "Reject").trigger("click");
+    const modalText = w.find(".modal").text();
+    expect(modalText).not.toContain("permanently removes the request");
+    expect(modalText).not.toContain("username is freed");
+    expect(modalText).toMatch(/kept/i);
+    expect(modalText).toMatch(/username.*(taken|stays)/i);
+  });
+
   it("rejects with the reason once given", async () => {
     const w = await mountView();
     await btnIn(w.findAll("tbody tr")[0], "Reject").trigger("click");

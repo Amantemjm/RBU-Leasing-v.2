@@ -181,6 +181,18 @@ describe("Approving an account", () => {
     expect(res.status).toBe(403);
   });
 
+  // The conflict message is shown verbatim in the officer's modal — it must
+  // read as a proper status label, not the raw lowercased enum.
+  it("describes an already-decided account with its proper label, not a raw enum", async () => {
+    await signup();
+    const u = await pendingUser();
+    const auth = { Authorization: `Bearer ${tokens.admin()}` };
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`).set(auth);
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`).set(auth);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("account is already Approved");
+  });
+
   // Approval is where a vetted party enters the business records, so it is also
   // where the unit they described becomes real — in the same transaction, so a
   // half-approved lessor with no unit cannot exist.

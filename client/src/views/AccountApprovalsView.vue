@@ -146,7 +146,7 @@ async function confirmRevise() {
     <div v-if="rejecting" class="modal-backdrop" @click.self="rejecting = null">
       <div class="modal" role="dialog" aria-modal="true" aria-label="Reject account">
         <h2>Reject {{ rejecting.name }}</h2>
-        <p class="muted small">This permanently removes the request; the username is freed so they can apply again later.</p>
+        <p class="muted small">The application is kept on file with this reason so the applicant can be told why. Their username stays taken — this cannot be undone from here.</p>
         <div class="field">
           <label for="reason">Reason</label>
           <input id="reason" type="text" v-model="reason" placeholder="e.g. Could not verify identity" />

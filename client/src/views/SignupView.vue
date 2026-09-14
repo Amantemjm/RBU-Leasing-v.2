@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "../lib/api.js";
 import { publicRefs } from "../lib/resource.js";
 import PublicShell from "../components/PublicShell.vue";
@@ -9,7 +9,15 @@ import PublicShell from "../components/PublicShell.vue";
 // Preselect the role from ?as= (LESSOR → Unit Owner, LESSEE → Tenant); the
 // toggle stays user-editable. Defaults to Tenant.
 const route = useRoute();
+const router = useRouter();
 const role = ref(route.query.as === "LESSOR" ? "UNIT_OWNER" : "TENANT");
+
+// The unit-first wizard is now the only lessor path — the moment the toggle
+// is switched to Unit Owner, leave this page for it rather than continuing
+// down the retired account-first flow (with its "Skip for now" affordance).
+// A ?as=LESSOR preselection is handled at the router level (see router/index.js),
+// so this only fires on an in-page toggle, never on that initial value.
+watch(role, (r) => { if (r === "UNIT_OWNER") router.replace("/register-unit"); });
 const name = ref("");
 const username = ref("");
 const contactEmail = ref("");
