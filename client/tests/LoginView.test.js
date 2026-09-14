@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 
@@ -23,6 +23,19 @@ async function mountLogin() {
 
 const pwInput = (w) => w.find("#password");
 const toggle = (w) => w.find(".pw-toggle");
+
+// Like mountLogin(), but hands back the router too so a test can assert on
+// where sign-in actually navigated.
+async function mountLoginWithRouter() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/:pathMatch(.*)*", component: stub }],
+  });
+  router.push("/login");
+  await router.isReady();
+  const wrapper = mount(LoginView, { global: { plugins: [router] } });
+  return { wrapper, router };
+}
 
 describe("LoginView — password visibility", () => {
   beforeEach(() => setActivePinia(createPinia()));
@@ -71,5 +84,31 @@ describe("LoginView — password visibility", () => {
     await toggle(w).trigger("click");
     await w.find("form").trigger("submit.prevent");
     expect(api.post).toHaveBeenCalledWith("/auth/login", { email: "admin@rbu.local", password: "secret123" });
+  });
+});
+
+describe("LoginView — where sign-in lands you", () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it("sends a non-approved account straight to the application page", async () => {
+    const { api } = await import("../src/lib/api.js");
+    api.post.mockResolvedValueOnce({ data: { token: "t", user: { role: "UNIT_OWNER", status: "PENDING" } } });
+    const { wrapper: w, router } = await mountLoginWithRouter();
+    await w.find("#username").setValue("jane");
+    await w.find("#password").setValue("secret12345");
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/app/application");
+  });
+
+  it("still sends an approved owner to their units", async () => {
+    const { api } = await import("../src/lib/api.js");
+    api.post.mockResolvedValueOnce({ data: { token: "t", user: { role: "UNIT_OWNER", status: "APPROVED" } } });
+    const { wrapper: w, router } = await mountLoginWithRouter();
+    await w.find("#username").setValue("jane");
+    await w.find("#password").setValue("secret12345");
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/app/my-units");
   });
 });

@@ -21,18 +21,17 @@ async function submit() {
   try {
     const { data } = await api.post("/auth/login", { email: email.value, password: password.value });
     auth.setSession(data);
-    const home = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
+    // A restricted session has exactly one page it may open; sending it to a
+    // portal home just to be bounced by the guard shows a flash of the wrong
+    // screen.
+    const home = !auth.isApproved
+      ? "/app/application"
+      : auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
     router.push(home);
-  } catch (e) {
-    // A pending account is a distinct situation from bad credentials, and the
-    // server says so — passing it through avoids applicants retyping a password
-    // that was never the problem. A rejected application is deleted outright, so
-    // it simply no longer exists: that login lands here as normal invalid
-    // credentials, and the message points the person to create an account.
-    const code = e.response?.data?.code;
-    error.value = code === "ACCOUNT_PENDING"
-      ? e.response.data.error
-      : "We couldn't find an account with those details. Check your username and password, or create an account below if you don't have one yet.";
+  } catch {
+    // Every account that exists can now sign in, whatever its status, so the
+    // only way to land here is credentials that do not match.
+    error.value = "We couldn't find an account with those details. Check your username and password, or create an account below if you don't have one yet.";
   }
 }
 </script>

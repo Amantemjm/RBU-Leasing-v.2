@@ -177,3 +177,10 @@ export const publicRefs = {
   estates: () => api.get("/public/estates").then((r) => r.data),
   towers: (estateId) => api.get("/public/towers", { params: { estateId } }).then((r) => r.data),
 };
+
+// A non-approved account's session is restricted to these two routes on the
+// server. This page is the only thing such a session can reach.
+export const application = {
+  get: () => api.get("/auth/application").then((r) => r.data),
+  resubmit: (unit) => api.patch("/auth/application", { unit }).then((r) => r.data),
+};

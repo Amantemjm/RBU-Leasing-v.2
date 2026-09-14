@@ -31,6 +31,7 @@ import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
 import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
 import MyLessorRequirementsView from "../views/MyLessorRequirementsView.vue";
 import LessorProfileView from "../views/LessorProfileView.vue";
+import ApplicationStatusView from "../views/ApplicationStatusView.vue";
 // Lazy-loaded: pull in the PDF.js live preview, keeping it out of the main bundle.
 const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
 const TenantInfoSheetView = () => import("../views/TenantInfoSheetView.vue");
@@ -71,6 +72,8 @@ const routes = [
     component: AppLayout,
     meta: { requiresAuth: true },
     children: [
+      // Reachable by a non-approved account, and the only thing it can reach.
+      { path: "application", component: ApplicationStatusView, meta: { roles: ["UNIT_OWNER", "TENANT"], allowPending: true } },
       // Staff
       { path: "", component: ExecutiveDashboardView, meta: { roles: STAFF } },
       // The page behind a dashboard tile: the same figure, itemised.
@@ -130,6 +133,11 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
   if (!auth.isAuthenticated) return;
+  // A restricted session gets one page. This is convenience, not security —
+  // the server refuses the routes regardless.
+  if (auth.isAuthenticated && !auth.isApproved) {
+    return to.meta.allowPending ? undefined : "/app/application";
+  }
   const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
   // "/" is always the public Inquiry landing — even for signed-in users.
   if (to.path === "/app" && appHome !== "/app") return appHome; // owners/tenants -> their portal

@@ -74,4 +74,16 @@ describe("router", () => {
     await router.push("/app/audit");
     expect(router.currentRoute.value.path).toBe("/app/audit");
   });
+
+  it("sends a non-approved account to the application page from any portal route", async () => {
+    useAuthStore().setSession({ token: "t", user: { role: "UNIT_OWNER", status: "PENDING" } });
+    await router.push("/app/my-units");
+    expect(router.currentRoute.value.path).toBe("/app/application");
+  });
+
+  it("leaves an approved account alone", async () => {
+    useAuthStore().setSession({ token: "t", user: { role: "UNIT_OWNER", status: "APPROVED" } });
+    await router.push("/app/my-units");
+    expect(router.currentRoute.value.path).toBe("/app/my-units");
+  });
 });

@@ -14,6 +14,10 @@ export const useAuthStore = defineStore("auth", {
     isOwner: (s) => s.user?.role === "UNIT_OWNER",
     isTenant: (s) => s.user?.role === "TENANT",
     canWrite: (s) => ["ADMIN", "LEASING_OFFICER"].includes(s.user?.role),
+    // Anything other than APPROVED is a restricted session: the server refuses
+    // every route but the application-status ones, and the router keeps the
+    // user on the page that explains why.
+    isApproved: (s) => (s.user?.status ?? "APPROVED") === "APPROVED",
   },
   actions: {
     setSession({ token, user }) {
