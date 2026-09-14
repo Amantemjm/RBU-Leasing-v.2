@@ -399,13 +399,32 @@ Replace `"blocks login after rejection like any other unknown account"`:
 
 Leave `"still rejects a wrong password on a pending account as invalid credentials"` exactly as it is — it must keep passing. The password check still precedes everything, which is what stops account statuses leaking to someone guessing credentials.
 
-Then search the rest of the suite for anything else asserting the old refusal:
+`server/tests/authSignup.test.js` asserts the same refusal and must be rewritten too. Replace `"does NOT let the new account log in until it is approved"`:
 
-```bash
-grep -rn "ACCOUNT_PENDING\|ACCOUNT_REJECTED\|AccountPendingError" server/tests server/src/controllers
+```js
+  it("lets the new account log in, but only to a restricted session", async () => {
+    await request(app).post("/api/auth/signup")
+      .send({ ...base, name: "New Lessee", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com", role: "TENANT" });
+    const login = await request(app).post("/api/auth/login")
+      .send({ email: "lessee.signup@x.com", password: base.password });
+    expect(login.status).toBe(200);
+    expect(login.body.user.status).toBe("PENDING");
+
+    // The gate moved from the door to the rooms: the session exists but
+    // verifyJwt refuses every route except the application-status ones.
+    const blocked = await request(app).get("/api/units")
+      .set("Authorization", `Bearer ${login.body.token}`);
+    expect(blocked.status).toBe(403);
+  });
 ```
 
-Any hit outside the error definitions themselves needs the same treatment.
+Then confirm nothing else asserts the old refusal:
+
+```bash
+grep -rn "ACCOUNT_PENDING\|ACCOUNT_REJECTED\|AccountPendingError\|AccountRejectedError" server/tests server/src client/src
+```
+
+Expected after this task: hits only in `client/src/views/LoginView.vue` (Task 7 owns it) and nowhere in `server/`.
 
 - [ ] **Step 3: Run the tests to verify they fail**
 
@@ -450,7 +469,9 @@ In `loginUser`, delete the two throwing lines and pass the status through:
   };
 ```
 
-Leave `AccountPendingError` and `AccountRejectedError` defined — the client may still want them later — but they are no longer thrown here.
+`AccountPendingError` and `AccountRejectedError` were thrown only by these two lines. Delete both classes from `server/src/lib/errors.js` and drop them from this file's import — nothing else throws them, and an error class no code can raise is a false promise to whoever reads the error surface next.
+
+`client/src/views/LoginView.vue` still tests for the `ACCOUNT_PENDING` code. That branch is now unreachable but harmless (a string comparison against a code the server no longer sends); Task 7 removes it.
 
 - [ ] **Step 6: Make the middleware fail closed**
 
@@ -1513,15 +1534,65 @@ Extend `router.beforeEach`, after the `requiresAuth` check:
   }
 ```
 
-- [ ] **Step 7: Run the tests**
+- [ ] **Step 7: Send a restricted session to the right place from sign-in**
 
-Run: `npx vitest run tests/ApplicationStatusView.test.js tests/router.test.js --reporter=verbose`
+`client/src/views/LoginView.vue` has two things that Task 2 invalidated: its
+`catch` branch tests for an `ACCOUNT_PENDING` code the server no longer sends,
+and its comment claims "a rejected application is deleted outright", which is no
+longer true. It also routes every successful sign-in to a portal home the guard
+will immediately bounce.
+
+First add the test to `client/tests/LoginView.test.js` (create the file if absent, matching the mocking style of `ApplicationStatusView.test.js`):
+
+```js
+it("sends a non-approved account straight to the application page", async () => {
+  post.mockResolvedValue({ data: { token: "t", user: { role: "UNIT_OWNER", status: "PENDING" } } });
+  const w = mountLogin();
+  await w.get("#email").setValue("jane");
+  await w.get("#password").setValue("secret12345");
+  await w.get("form").trigger("submit");
+  await flushPromises();
+  expect(push).toHaveBeenCalledWith("/app/application");
+});
+
+it("still sends an approved owner to their units", async () => {
+  post.mockResolvedValue({ data: { token: "t", user: { role: "UNIT_OWNER", status: "APPROVED" } } });
+  const w = mountLogin();
+  await w.get("#email").setValue("jane");
+  await w.get("#password").setValue("secret12345");
+  await w.get("form").trigger("submit");
+  await flushPromises();
+  expect(push).toHaveBeenCalledWith("/app/my-units");
+});
+```
+
+Then in `submit()`, route on approval and simplify the catch:
+
+```js
+    auth.setSession(data);
+    // A restricted session has exactly one page it may open; sending it to a
+    // portal home just to be bounced by the guard shows a flash of the wrong
+    // screen.
+    const home = !auth.isApproved
+      ? "/app/application"
+      : auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
+    router.push(home);
+  } catch {
+    // Every account that exists can now sign in, whatever its status, so the
+    // only way to land here is credentials that do not match.
+    error.value = "We couldn't find an account with those details. Check your username and password, or create an account below if you don't have one yet.";
+  }
+```
+
+- [ ] **Step 8: Run the tests**
+
+Run: `npx vitest run tests/ApplicationStatusView.test.js tests/router.test.js tests/LoginView.test.js --reporter=verbose`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add client/src/views/ApplicationStatusView.vue client/src/router/index.js client/src/stores/auth.js client/src/lib/resource.js client/tests/ApplicationStatusView.test.js client/tests/router.test.js
+git add client/src/views/ApplicationStatusView.vue client/src/views/LoginView.vue client/src/router/index.js client/src/stores/auth.js client/src/lib/resource.js client/tests/ApplicationStatusView.test.js client/tests/router.test.js client/tests/LoginView.test.js
 git commit -m "feat(application): a status page a waiting applicant can actually reach
 
 For Revision is only a useful decision if the applicant can act on it,
