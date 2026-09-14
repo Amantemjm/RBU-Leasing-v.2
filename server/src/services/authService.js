@@ -214,12 +214,20 @@ async function buildPendingUnit(tx, ownerId, pending) {
 // previously sent back.
 const DECIDABLE = ["PENDING", "FOR_REVISION"];
 
-export async function approveAccount(id, approver) {
+// Looks up the account and enforces that it is still open for a decision.
+// Shared by approveAccount/rejectAccount/reviseAccount so the not-found and
+// decidability checks stay in one place.
+async function findDecidableAccount(id) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
   if (!DECIDABLE.includes(user.status)) {
     throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
   }
+  return user;
+}
+
+export async function approveAccount(id, approver) {
+  const user = await findDecidableAccount(id);
   const decidedBy = await approverName(approver);
 
   return prisma.$transaction(async (tx) => {
@@ -250,11 +258,7 @@ export async function approveAccount(id, approver) {
 }
 
 export async function rejectAccount(id, approver, reason) {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new NotFoundError("account not found");
-  if (!DECIDABLE.includes(user.status)) {
-    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
-  }
+  const user = await findDecidableAccount(id);
   // The row is kept rather than deleted: the applicant signs in to a read-only
   // status page to be told why, which a deleted row cannot do.
   const updated = await prisma.user.update({
@@ -271,11 +275,7 @@ export async function rejectAccount(id, approver, reason) {
 }
 
 export async function reviseAccount(id, approver, remarks) {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new NotFoundError("account not found");
-  if (!DECIDABLE.includes(user.status)) {
-    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
-  }
+  const user = await findDecidableAccount(id);
   const updated = await prisma.user.update({
     where: { id },
     data: {
