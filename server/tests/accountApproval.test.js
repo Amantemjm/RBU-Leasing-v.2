@@ -384,9 +384,18 @@ describe("Rejecting an account", () => {
 });
 
 describe("For Revision", () => {
+  // For Revision only makes sense for a lessor — the thing being revised IS
+  // the unit they described. These success-path tests use a lessor signup
+  // (rather than the default TENANT applicant) so they still exercise a
+  // reachable case once revise is refused for a lessee below.
+  const lessorSignup = () => signup({
+    email: "lessor.revise", role: "UNIT_OWNER", name: "Lessor Revise",
+    contactEmail: "lessor.revise@example.com", unit: { unitNumber: "19A" },
+  });
+
   it("keeps the row, records remarks, and leaves the unit unmaterialised", async () => {
-    await signup();
-    const u = await pendingUser();
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
     const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
       .set("Authorization", `Bearer ${tokens.admin()}`)
       .send({ remarks: "Tower does not match the unit number" });
@@ -400,21 +409,38 @@ describe("For Revision", () => {
   });
 
   it("refuses empty remarks", async () => {
-    await signup();
-    const u = await pendingUser();
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
     const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "" });
     expect(res.status).toBe(400);
   });
 
   it("can still be approved after a revision round", async () => {
-    await signup();
-    const u = await pendingUser();
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
     await request(app).patch(`/api/auth/pending/${u.id}/revise`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "fix the floor" });
     const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send();
     expect(res.status).toBe(200);
+  });
+
+  // Finding 1 of the merge-gate review: a lessee has no unit to revise, so
+  // For Revision must be refused at the service, not merely hidden by the
+  // client — otherwise a direct API call can strand a TENANT in a status
+  // whose only exit demands a unit number they do not have.
+  it("refuses to send a lessee application back for revision", async () => {
+    await signup(); // default applicant is a TENANT
+    const u = await pendingUser();
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ remarks: "please add more detail" });
+    expect(res.status).toBe(409);
+
+    // Refused, not silently ignored: the account must still be PENDING.
+    const after = await pendingUser();
+    expect(after.status).toBe("PENDING");
   });
 });
 

@@ -306,6 +306,14 @@ export async function rejectAccount(id, approver, reason) {
 
 export async function reviseAccount(id, approver, remarks) {
   const user = await findDecidableAccount(id);
+  // For Revision only means something for a lessor: the thing being revised
+  // IS the unit they described. A lessee has nothing to revise, so refuse
+  // here rather than merely not offering the button — otherwise a direct API
+  // call can strand a TENANT in a status whose only exit demands a unit
+  // number they do not have.
+  if (user.role !== "UNIT_OWNER") {
+    throw new ConflictError("a lessee application has no unit to revise — approve or reject it instead");
+  }
   const updated = await prisma.user.update({
     where: { id },
     data: {

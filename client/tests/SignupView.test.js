@@ -6,16 +6,8 @@ vi.mock("../src/lib/api.js", () => ({
   api: { post: vi.fn(() => Promise.resolve({ data: { status: "PENDING", user: {} } })) },
 }));
 
-vi.mock("../src/lib/resource.js", () => ({
-  publicRefs: {
-    estates: vi.fn(() => Promise.resolve([{ id: "e1", name: "Capitol Commons" }])),
-    towers: vi.fn(() => Promise.resolve([{ id: "t1", name: "Empress" }])),
-  },
-}));
-
 import SignupView from "../src/views/SignupView.vue";
 import { api } from "../src/lib/api.js";
-import { publicRefs } from "../src/lib/resource.js";
 
 const stub = { template: "<div/>" };
 
@@ -170,115 +162,6 @@ describe("SignupView", () => {
     const w = await mountSignupAs("LESSOR");
     const lessor = w.findAll(".roles button").find((b) => b.text().includes("Lessor"));
     expect(lessor.classes()).toContain("on");
-  });
-
-  // The landing card promises "List your unit", so a lessor is asked for one.
-  it("shows the unit step to a lessor after the account details", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    expect(w.find("#unitNumber").exists()).toBe(true);
-    expect(api.post).not.toHaveBeenCalled(); // advanced a step, not submitted
-  });
-
-  it("never shows the unit step to a tenant", async () => {
-    const w = await mountSignupAs("LESSEE");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    expect(w.find("#unitNumber").exists()).toBe(false);
-    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.not.objectContaining({ unit: expect.anything() }));
-  });
-
-  it("sends the unit the lessor described", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    await w.find("#unitNumber").setValue("19A");
-    await w.find("#floor").setValue("19");
-    await submit(w);
-    await flushPromises();
-    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.objectContaining({
-      role: "UNIT_OWNER",
-      unit: expect.objectContaining({ unitNumber: "19A", floor: "19" }),
-    }));
-  });
-
-  it("lets a lessor skip the unit and still apply", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    await w.find(".unit__skip").trigger("click");
-    await flushPromises();
-    expect(api.post).toHaveBeenCalledWith("/auth/signup", expect.not.objectContaining({ unit: expect.anything() }));
-  });
-
-  it("requires a unit number when the lessor does not skip", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    await submit(w); // unit number still blank
-    await flushPromises();
-    expect(api.post).not.toHaveBeenCalled();
-    expect(w.text()).toContain("Unit number is required.");
-  });
-
-  it("names the captured unit on the confirmation", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    await w.find("#unitNumber").setValue("19A");
-    await submit(w);
-    await flushPromises();
-    expect(w.text()).toContain("Application received");
-    expect(w.text()).toContain("19A");
-  });
-
-  // Binding requirement: leaving Unit Owner while on the unit step must not
-  // strand the applicant there — it must snap back to the account details.
-  it("returns to step 1 when the role changes away from Unit Owner on the unit step", async () => {
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w);
-    await flushPromises();
-    expect(w.find("#unitNumber").exists()).toBe(true);
-
-    const tenantButton = w.findAll(".roles button").find((b) => b.text().includes("Lessee"));
-    await tenantButton.trigger("click");
-    await flushPromises();
-
-    expect(w.find("#unitNumber").exists()).toBe(false);
-    expect(w.find("#name").exists()).toBe(true);
-    expect(w.find("#name").element.value).toBe("Ana Reyes");
-  });
-
-  // Race: the role buttons aren't gated by `submitting`, so a lessor can
-  // switch to Tenant while the estates() fetch triggered by "Continue" is
-  // still pending. The step must not advance to the lessor-only unit form
-  // for what is, by the time the fetch settles, a declared Tenant.
-  it("does not land a Tenant on the unit step if the role changes while estates() is pending", async () => {
-    let resolveEstates;
-    publicRefs.estates.mockImplementationOnce(
-      () => new Promise((resolve) => { resolveEstates = resolve; })
-    );
-
-    const w = await mountSignupAs("LESSOR");
-    await fillValid(w);
-    await submit(w); // enters enterUnitStep(); suspends on the pending estates() fetch
-
-    const tenantButton = w.findAll(".roles button").find((b) => b.text().includes("Lessee"));
-    await tenantButton.trigger("click"); // role flips to TENANT while the fetch is still in flight
-
-    resolveEstates([{ id: "e1", name: "Capitol Commons" }]);
-    await flushPromises();
-
-    expect(w.find("#unitNumber").exists()).toBe(false);
-    expect(w.find("#name").exists()).toBe(true);
   });
 
   // The spec's Decisions table retires the account-first lessor path: a
