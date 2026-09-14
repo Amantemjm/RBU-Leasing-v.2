@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   login, register, signup, me, users, editUser, removeUser,
-  pendingAccounts, approve, reject,
+  pendingAccounts, approve, reject, revise,
 } from "../controllers/authController.js";
 import { verifyJwt, requireRole } from "../middleware/auth.js";
 
@@ -14,6 +14,7 @@ router.post("/register", verifyJwt, requireRole("ADMIN"), register);
 router.get("/pending", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), pendingAccounts);
 router.patch("/pending/:id/approve", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), approve);
 router.patch("/pending/:id/reject", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), reject);
+router.patch("/pending/:id/revise", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), revise);
 router.get("/users", verifyJwt, requireRole("ADMIN"), users);
 router.patch("/users/:id", verifyJwt, requireRole("ADMIN"), editUser);
 router.delete("/users/:id", verifyJwt, requireRole("ADMIN"), removeUser);

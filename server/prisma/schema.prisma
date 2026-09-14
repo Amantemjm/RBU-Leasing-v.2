@@ -12,6 +12,7 @@ datasource db {
 // created from the Users screen are APPROVED outright.
 enum AccountStatus {
   PENDING
+  FOR_REVISION
   APPROVED
   REJECTED
 }

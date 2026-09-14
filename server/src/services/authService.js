@@ -53,8 +53,8 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
-    // Only active, approved accounts belong in the system Users list. Pending
-    // applications live in Account Approvals; rejected ones are deleted outright.
+    // Only active, approved accounts belong in the system Users list. Pending,
+    // for-revision, and rejected applications all live in Account Approvals.
     where: { status: "APPROVED" },
     orderBy: { createdAt: "desc" },
     select: {
@@ -209,10 +209,15 @@ async function buildPendingUnit(tx, ownerId, pending) {
   };
 }
 
+// A decision is only open while the applicant has not been finally judged.
+// FOR_REVISION is included so an officer can reject an application they had
+// previously sent back.
+const DECIDABLE = ["PENDING", "FOR_REVISION"];
+
 export async function approveAccount(id, approver) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
-  if (user.status !== "PENDING") {
+  if (!DECIDABLE.includes(user.status)) {
     throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
   }
   const decidedBy = await approverName(approver);
@@ -244,20 +249,44 @@ export async function approveAccount(id, approver) {
   });
 }
 
-// Rejecting an application deletes the account outright. It never lingers among
-// system users, and removing the row frees the username so the applicant can
-// re-apply later. No linked UnitOwner/Tenant exists yet (those are created only
-// on approval), so the delete is self-contained. `reason` is required by the
-// operator's confirmation flow but not persisted, since no record is kept.
 export async function rejectAccount(id, approver, reason) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
-  if (user.status !== "PENDING") {
+  if (!DECIDABLE.includes(user.status)) {
     throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
   }
-  void reason;
-  await prisma.user.delete({ where: { id } });
-  return { id: user.id, name: user.name, email: user.email, status: "REJECTED" };
+  // The row is kept rather than deleted: the applicant signs in to a read-only
+  // status page to be told why, which a deleted row cannot do.
+  const updated = await prisma.user.update({
+    where: { id },
+    data: {
+      status: "REJECTED",
+      rejectionReason: reason,
+      approvedById: approver.userId,
+      approvedByName: await approverName(approver),
+      decidedAt: new Date(),
+    },
+  });
+  return { id: updated.id, name: updated.name, email: updated.email, status: updated.status, reason };
+}
+
+export async function reviseAccount(id, approver, remarks) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundError("account not found");
+  if (!DECIDABLE.includes(user.status)) {
+    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
+  }
+  const updated = await prisma.user.update({
+    where: { id },
+    data: {
+      status: "FOR_REVISION",
+      rejectionReason: remarks, // one column carries the remarks for both
+      approvedById: approver.userId,
+      approvedByName: await approverName(approver),
+      decidedAt: new Date(),
+    },
+  });
+  return { id: updated.id, name: updated.name, email: updated.email, status: updated.status, remarks };
 }
 
 export async function loginUser({ email, password }) {

@@ -1,8 +1,10 @@
 import {
   loginUser, registerUser, signupPortalUser, listUsers, updateUser, deleteUser,
-  listPendingAccounts, approveAccount, rejectAccount,
+  listPendingAccounts, approveAccount, rejectAccount, reviseAccount,
 } from "../services/authService.js";
-import { registerSchema, signupSchema, updateUserSchema, rejectAccountSchema } from "../validation/user.js";
+import {
+  registerSchema, signupSchema, updateUserSchema, rejectAccountSchema, reviseAccountSchema,
+} from "../validation/user.js";
 
 export async function login(req, res, next) {
   try {
@@ -45,6 +47,13 @@ export async function reject(req, res, next) {
   try {
     const { reason } = rejectAccountSchema.parse(req.body);
     res.json(await rejectAccount(req.params.id, req.user, reason));
+  } catch (err) { next(err); }
+}
+
+export async function revise(req, res, next) {
+  try {
+    const { remarks } = reviseAccountSchema.parse(req.body);
+    res.json(await reviseAccount(req.params.id, req.user, remarks));
   } catch (err) { next(err); }
 }
 

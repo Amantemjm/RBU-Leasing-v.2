@@ -265,12 +265,14 @@ describe("Approving an account", () => {
     await request(app).patch(`/api/auth/pending/${user.id}/reject`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "not verified" });
     expect(await prisma.unit.count()).toBe(before);
-    expect(await prisma.user.findUnique({ where: { id: user.id } })).toBeNull();
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("REJECTED");
+    expect(after.unitOwnerId).toBeNull();
   });
 });
 
 describe("Rejecting an account", () => {
-  it("deletes the account and creates no linked record", async () => {
+  it("keeps the account with a reason and creates no linked record", async () => {
     await signup();
     const u = await pendingUser();
     const res = await request(app).patch(`/api/auth/pending/${u.id}/reject`)
@@ -278,10 +280,11 @@ describe("Rejecting an account", () => {
       .send({ reason: "Could not verify identity" });
     expect(res.status).toBe(200);
 
-    // Rejecting deletes the account outright — no retained REJECTED record,
-    // which also frees the username for re-application.
+    // The row survives so the applicant can be told why. Their username stays
+    // taken — a genuine re-application needs an officer to reopen the account.
     const after = await pendingUser();
-    expect(after).toBeNull();
+    expect(after.status).toBe("REJECTED");
+    expect(after.rejectionReason).toBe("Could not verify identity");
     expect(await prisma.tenant.count()).toBe(0);
   });
 
@@ -303,6 +306,41 @@ describe("Rejecting an account", () => {
     const res = await request(app).patch(`/api/auth/pending/${u.id}/reject`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({});
     expect(res.status).toBe(400);
+  });
+});
+
+describe("For Revision", () => {
+  it("keeps the row, records remarks, and leaves the unit unmaterialised", async () => {
+    await signup();
+    const u = await pendingUser();
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ remarks: "Tower does not match the unit number" });
+    expect(res.status).toBe(200);
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(after.status).toBe("FOR_REVISION");
+    expect(after.rejectionReason).toBe("Tower does not match the unit number");
+    expect(after.unitOwnerId).toBeNull();
+    expect(await prisma.unit.count({ where: { unitNumber: "19A" } })).toBe(0);
+  });
+
+  it("refuses empty remarks", async () => {
+    await signup();
+    const u = await pendingUser();
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "" });
+    expect(res.status).toBe(400);
+  });
+
+  it("can still be approved after a revision round", async () => {
+    await signup();
+    const u = await pendingUser();
+    await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "fix the floor" });
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send();
+    expect(res.status).toBe(200);
   });
 });
 

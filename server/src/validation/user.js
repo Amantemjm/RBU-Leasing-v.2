@@ -40,6 +40,12 @@ export const rejectAccountSchema = z.object({
   reason: z.string().min(1, "A reason is required"),
 });
 
+export const reviseAccountSchema = z.object({
+  // Required: "For Revision" with no explanation is the failure mode this
+  // status exists to prevent — the applicant would not know what to change.
+  remarks: z.string().min(1, "Remarks are required"),
+});
+
 export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().min(3).optional(),
