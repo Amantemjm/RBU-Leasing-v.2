@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 import { createInquiry } from "../lib/inquiries.js";
 import { publicUnits } from "../lib/resource.js";
 import { INQUIRER_TYPES, INQUIRER_LABEL, INQUIRY_TYPES } from "../lib/inquiryOptions.js";
+import InquiryShell from "./InquiryShell.vue";
 
 // The same house / building pair the landing page uses for the two roles, so a
 // visitor meets one visual language across the public pages. Held as data
@@ -12,7 +13,6 @@ const ROLE_ICON = {
   LESSEE: ["M3 21h18M5 21V8l7-4 7 4v13", "M9.5 21v-5h5v5", "M9 11h.01M15 11h.01"],
   LESSOR: ["M3 21h18M6 21V7l6-4 6 4v14", "M10 9h4M10 13h4M10 17h4"],
 };
-import InquiryShell from "./InquiryShell.vue";
 
 const CONSENT_TEXT =
   "I consent to Ortigas and Company, Limited Partnership (OCLP), its divisions, and their " +
@@ -22,6 +22,11 @@ const CONSENT_TEXT =
 const route = useRoute();
 
 const VALID_TYPES = ["LESSOR", "LESSEE"];
+// Display order only. The prospective tenant is the common case and the role
+// every unit-page link presets, so it leads. Derived from the shared list so a
+// role added there still renders — shared/inquiryTypes.js must not be reordered
+// for a client layout preference; the server reads it as a zod enum.
+const ROLE_ORDER = ["LESSEE", ...INQUIRER_TYPES.filter((t) => t !== "LESSEE")];
 const selectedType = VALID_TYPES.includes(route.query.as) ? route.query.as : null;
 const unitId = route.query.unit || null;
 const unitContext = ref(null);
@@ -63,7 +68,12 @@ function chooseRole(type) {
 // (Skipped on initial mount — roleOpen's starting value isn't a user action.)
 watch(roleOpen, async (open) => {
   await nextTick();
-  if (open) roleGroupRef.value?.querySelector("button")?.focus();
+  // The selected role, not merely the first button — pressing Change should
+  // land on where you already are.
+  if (open) {
+    const g = roleGroupRef.value;
+    (g?.querySelector('[aria-pressed="true"]') || g?.querySelector("button"))?.focus();
+  }
   else changeBtnRef.value?.focus();
 });
 
@@ -128,9 +138,9 @@ async function submit() {
         </div>
         <div v-else class="field">
           <span class="label">I am a <span class="req">*</span></span>
-          <div class="seg seg--role" role="group" aria-label="Who is inquiring" ref="roleGroupRef">
+          <div class="seg seg--role" role="group" aria-label="I am a" ref="roleGroupRef">
             <button
-              v-for="t in INQUIRER_TYPES"
+              v-for="t in ROLE_ORDER"
               :key="t"
               type="button"
               class="seg__opt"

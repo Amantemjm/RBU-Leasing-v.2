@@ -61,6 +61,7 @@ describe("InquiryView (Quick Inquiry form)", () => {
     expect(w.text()).toContain("Inquiring as");
     expect(w.text()).toContain("Lessor (Unit Owner)");
     expect(w.find(".seg--role").exists()).toBe(false);
+    expect(w.find("#inquirerType").exists()).toBe(false); // no separate role field
   });
 
   // A bare /inquiry used to redirect to "/", which now asks a different
@@ -76,6 +77,9 @@ describe("InquiryView (Quick Inquiry form)", () => {
     expect(w.find("form").exists()).toBe(true);
     // "/" resolves to a distinct stub in the test router, so this fails if
     // anything ever redirects away from the form instead of asking inline.
+    // Awaited deliberately: a router.replace() in onMounted only lands a
+    // macrotask later, so a synchronous read here would pass either way.
+    await flushPromises();
     expect(router.currentRoute.value.path).toBe("/inquiry");
   });
 
@@ -267,12 +271,14 @@ describe("InquiryView (Quick Inquiry form)", () => {
 
   // Keyboard/screen-reader users must not lose focus to <body> when the
   // inline disclosure opens or closes.
-  it("moves focus into the role choice on Change, and back to Change once chosen", async () => {
+  it("moves focus to the current role on Change, and back to Change once chosen", async () => {
     const w = await mountView("LESSEE", { attachTo: document.body });
     try {
       await w.find(".asrole__change").trigger("click");
-      const firstRoleBtn = w.findAll(".seg--role .seg__opt")[0];
-      expect(document.activeElement).toBe(firstRoleBtn.element);
+      // The role already chosen, named explicitly — asserting index 0 would
+      // pass by coincidence and stop testing anything if the order changed.
+      const lessee = w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessee"));
+      expect(document.activeElement).toBe(lessee.element);
 
       const lessor = w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor"));
       await lessor.trigger("click");
