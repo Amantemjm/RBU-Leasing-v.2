@@ -1,9 +1,9 @@
 import { Router } from "express";
 import {
   login, register, signup, me, users, editUser, removeUser,
-  pendingAccounts, approve, reject,
+  pendingAccounts, approve, reject, revise, application, resubmit,
 } from "../controllers/authController.js";
-import { verifyJwt, requireRole } from "../middleware/auth.js";
+import { verifyJwt, verifyJwtAllowPending, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 router.post("/login", login);
@@ -14,8 +14,12 @@ router.post("/register", verifyJwt, requireRole("ADMIN"), register);
 router.get("/pending", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), pendingAccounts);
 router.patch("/pending/:id/approve", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), approve);
 router.patch("/pending/:id/reject", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), reject);
+router.patch("/pending/:id/revise", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), revise);
 router.get("/users", verifyJwt, requireRole("ADMIN"), users);
 router.patch("/users/:id", verifyJwt, requireRole("ADMIN"), editUser);
 router.delete("/users/:id", verifyJwt, requireRole("ADMIN"), removeUser);
 router.get("/me", verifyJwt, me);
+// The only two routes a non-approved account may reach.
+router.get("/application", verifyJwtAllowPending, application);
+router.patch("/application", verifyJwtAllowPending, resubmit);
 export default router;

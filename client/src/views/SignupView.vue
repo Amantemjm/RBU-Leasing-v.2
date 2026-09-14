@@ -1,61 +1,28 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "../lib/api.js";
-import { publicRefs } from "../lib/resource.js";
 import PublicShell from "../components/PublicShell.vue";
 // The brand lockup comes from the shell's header; the card used to repeat it.
 
 // Preselect the role from ?as= (LESSOR → Unit Owner, LESSEE → Tenant); the
 // toggle stays user-editable. Defaults to Tenant.
 const route = useRoute();
+const router = useRouter();
 const role = ref(route.query.as === "LESSOR" ? "UNIT_OWNER" : "TENANT");
+
+// The unit-first wizard is now the only lessor path — the moment the toggle
+// is switched to Unit Owner, leave this page for it rather than continuing
+// down the retired account-first flow (with its "Skip for now" affordance).
+// A ?as=LESSOR preselection is handled at the router level (see router/index.js),
+// so this only fires on an in-page toggle, never on that initial value.
+watch(role, (r) => { if (r === "UNIT_OWNER") router.replace("/register-unit"); });
 const name = ref("");
 const username = ref("");
 const contactEmail = ref("");
 const password = ref("");
 const confirm = ref("");
 const consent = ref(false);
-
-// A lessor is asked for their first unit after the account details — the
-// landing card promised "List your unit", and a unit cannot exist until the
-// account is approved, so it rides along on the application.
-const UNIT_TYPES = ["Studio", "1 Bedroom", "2 Bedrooms", "3 Bedrooms", "3 Bedrooms Bi-level", "Penthouse"];
-const isLessor = computed(() => role.value === "UNIT_OWNER");
-const step = ref(1);
-const unit = ref({ estateId: "", towerId: "", unitNumber: "", floor: "", slotNo: "", type: "", baseRent: "" });
-const estateOptions = ref([]);
-const towerOptions = ref([]);
-const savedUnit = ref(null); // what was actually submitted, for the confirmation
-
-// Changing the role on step 1 must not strand a tenant on the lessor step.
-watch(role, () => { if (!isLessor.value) step.value = 1; });
-watch(() => unit.value.unitNumber, () => delete errors.value.unitNumber);
-
-// Guarded like sendApplication so a double click on "Continue" can't fire the
-// estates fetch twice. step only flips once the fetch settles, so the submit
-// button's label (still "Continue" the whole time) never claims to be
-// submitting for a step that only advances, and re-entering the step always
-// starts with a clean unit-number error rather than one left over from a
-// previous visit.
-async function enterUnitStep() {
-  if (submitting.value) return;
-  delete errors.value.unitNumber;
-  submitting.value = true;
-  try {
-    estateOptions.value = await publicRefs.estates();
-    // The role can change while this fetch is in flight (the role buttons
-    // aren't gated by `submitting`) — re-check before advancing so a switch
-    // to Tenant during the await can't still land on the lessor-only step.
-    if (isLessor.value) step.value = 2;
-  } finally {
-    submitting.value = false;
-  }
-}
-async function onEstateChange() {
-  unit.value.towerId = "";
-  towerOptions.value = unit.value.estateId ? await publicRefs.towers(unit.value.estateId) : [];
-}
 
 const showPassword = ref(false);
 const showConfirm = ref(false);
@@ -65,14 +32,7 @@ const formError = ref("");
 // Per-field messages: one lumped error could not say which field was wrong.
 const errors = ref({});
 
-// Step 1's "Continue" only advances the lessor to the unit step — it never
-// hits the network to submit anything — so it must never claim "Submitting…"
-// even while enterUnitStep's own guard has `submitting` set.
-const submitLabel = computed(() => {
-  if (step.value === 1 && isLessor.value) return "Continue";
-  if (submitting.value) return "Submitting…";
-  return step.value === 2 ? "Submit application" : "Create account";
-});
+const submitLabel = computed(() => (submitting.value ? "Submitting…" : "Create account"));
 
 // There is no password-reset flow in this system, so a typo here locks the
 // applicant out permanently. Hence both the confirm field and the eye toggles.
@@ -114,24 +74,11 @@ function validate() {
 
 async function submit() {
   formError.value = "";
-  if (step.value === 1) {
-    if (!validate()) return;
-    if (isLessor.value) return enterUnitStep();
-    return sendApplication(null);
-  }
-  if (!unit.value.unitNumber.trim()) {
-    errors.value = { ...errors.value, unitNumber: "Unit number is required." };
-    return;
-  }
-  const u = { unitNumber: unit.value.unitNumber.trim() };
-  for (const k of ["estateId", "towerId", "floor", "slotNo", "type"]) {
-    if (unit.value[k]) u[k] = String(unit.value[k]).trim();
-  }
-  if (unit.value.baseRent !== "") u.baseRent = Number(unit.value.baseRent);
-  return sendApplication(u);
+  if (!validate()) return;
+  return sendApplication();
 }
 
-async function sendApplication(unitPayload) {
+async function sendApplication() {
   submitting.value = true;
   try {
     const payload = {
@@ -142,9 +89,7 @@ async function sendApplication(unitPayload) {
       role: role.value,
       consent: true,
     };
-    if (unitPayload) payload.unit = unitPayload;
     await api.post("/auth/signup", payload);
-    savedUnit.value = unitPayload;
     submitted.value = true;
   } catch (e) {
     formError.value = e.response?.data?.error || "Could not submit your application.";
@@ -171,10 +116,6 @@ async function sendApplication(unitPayload) {
             approve it shortly. You will not be able to sign in until it is approved.
           </p>
           <p class="done__note">We will reach you at <strong>{{ contactEmail.trim() }}</strong>.</p>
-          <p v-if="savedUnit" class="done__note">
-            We have your unit <strong>{{ savedUnit.unitNumber }}</strong> on file. It will appear under
-            My Units once your account is approved.
-          </p>
           <RouterLink class="done__link" to="/login">Back to sign in</RouterLink>
         </div>
 
@@ -193,7 +134,7 @@ async function sendApplication(unitPayload) {
           </div>
 
           <form @submit.prevent="submit" novalidate>
-            <div v-if="step === 1" class="step1">
+            <div class="step1">
             <div class="fld">
               <input id="name" v-model="name" type="text" placeholder="Full name" autocomplete="name" />
               <p v-if="errors.name" class="fld__err">{{ errors.name }}</p>
@@ -272,62 +213,6 @@ async function sendApplication(unitPayload) {
             <p v-if="errors.consent" class="fld__err">{{ errors.consent }}</p>
             </div>
 
-            <!-- Belt-and-braces: even if some future path sets `step` to 2,
-                 this markup must still never render for a declared Tenant. -->
-            <div v-if="step === 2 && isLessor" class="unit">
-              <h2 class="unit__h">Your unit</h2>
-              <p class="unit__lede">Tell us about the unit you would like to list. You can change any of this later.</p>
-
-              <div class="field">
-                <label for="estateId">Estate</label>
-                <select id="estateId" v-model="unit.estateId" @change="onEstateChange">
-                  <option value="">Select…</option>
-                  <option v-for="e in estateOptions" :key="e.id" :value="e.id">{{ e.name }}</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label for="towerId">Tower</label>
-                <select id="towerId" v-model="unit.towerId" :disabled="!unit.estateId">
-                  <option value="">Select…</option>
-                  <option v-for="t in towerOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label for="unitNumber">Unit number <span class="req">*</span></label>
-                <input id="unitNumber" type="text" v-model="unit.unitNumber" placeholder="e.g. 19A" />
-                <p v-if="errors.unitNumber" class="err">{{ errors.unitNumber }}</p>
-              </div>
-
-              <div class="field">
-                <label for="floor">Floor / level</label>
-                <input id="floor" type="text" v-model="unit.floor" placeholder="e.g. 19" />
-              </div>
-
-              <div class="field">
-                <label for="type">Unit type</label>
-                <input id="type" type="text" v-model="unit.type" list="signupUnitTypes" placeholder="e.g. 1 Bedroom" />
-                <datalist id="signupUnitTypes">
-                  <option v-for="t in UNIT_TYPES" :key="t" :value="t"></option>
-                </datalist>
-              </div>
-
-              <div class="field">
-                <label for="baseRent">Monthly rent</label>
-                <input id="baseRent" type="number" min="0" step="500" v-model="unit.baseRent" placeholder="e.g. 25000" />
-              </div>
-
-              <div class="field">
-                <label for="slotNo">Parking slot no.</label>
-                <input id="slotNo" type="text" v-model="unit.slotNo" placeholder="e.g. B5-15" />
-              </div>
-
-              <button type="button" class="unit__skip" @click="sendApplication(null)">
-                Skip for now — I'll add it after approval
-              </button>
-            </div>
-
             <button type="submit" :disabled="submitting">{{ submitLabel }}</button>
             <p v-if="formError" class="error">{{ formError }}</p>
             <p class="approve-note">Accounts are reviewed by the leasing team before they can be used.</p>
@@ -392,31 +277,11 @@ async function sendApplication(unitPayload) {
 
 .approve-note { margin: 0.6rem 0 0; font-size: 0.74rem; color: var(--faint); text-align: center; }
 
-/* The step-1 wrapper only exists to gate the account fields behind v-if; it
-   must not itself become a flex item, or the fields inside it lose the
-   0.9rem gap that `.auth form` applies to its direct children. */
+/* This wrapper exists only so the account fields aren't direct children of
+   .auth form (see below); it must not itself become a flex item, or the
+   fields inside it lose the 0.9rem gap that `.auth form` applies to its
+   direct children. */
 .step1 { display: contents; }
-
-.unit__h { margin: 0 0 0.35rem; font-size: 1.05rem; }
-.unit__lede { margin: 0 0 1.1rem; font-size: 0.88rem; color: var(--muted); }
-.unit__skip {
-  background: none; border: none; padding: 0; margin-top: 0.5rem; font: inherit; font-size: 0.85rem;
-  color: var(--accent-text); text-decoration: underline; cursor: pointer;
-}
-
-/* This page renders outside `.app-main`, so the staff-facing `.field` rules
-   don't reach it — mirror InquiryView's own field styling instead. Plain
-   `<input>`s already pick up `.auth input` above; `<select>` needs its own. */
-.unit .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; }
-.unit .field label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted); }
-.unit .req { color: var(--danger); }
-.unit .field select {
-  font-family: inherit; font-size: 1rem; color: var(--text); background: var(--paper);
-  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0.85rem 0.9rem; width: 100%;
-}
-.unit .field select:focus { outline: none; border-color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-050); }
-.unit .field select:disabled { opacity: 0.55; cursor: not-allowed; }
-.unit .err { margin: 0.15rem 0 0; font-size: 0.76rem; color: var(--danger); }
 
 .done { text-align: center; }
 .done__body { color: var(--muted); font-size: 0.9rem; line-height: 1.6; margin: 0.5rem 0 0.75rem; }

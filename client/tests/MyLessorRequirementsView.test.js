@@ -17,6 +17,17 @@ import { lessorRequirements } from "../src/lib/resource.js";
 
 describe("MyLessorRequirementsView", () => {
   beforeEach(() => { lessorRequirements.mine.mockClear(); lessorRequirements.uploadMine.mockClear(); });
+
+  // OnboardingProgress is otherwise only mounted in the wizard and the
+  // application-status page, so steps 4 and 5 are never shown to anyone once
+  // approved. Being on this page IS step 4 — no transaction-stage lookup needed.
+  it("shows the onboarding stepper at the Requirements step", async () => {
+    const w = mount(MyLessorRequirementsView);
+    await flushPromises();
+    const step = w.get('[data-step="requirements"]');
+    expect(step.attributes("aria-current")).toBe("step");
+  });
+
   it("renders the checklist with statuses and the rejection remark", async () => {
     const w = mount(MyLessorRequirementsView);
     await flushPromises();

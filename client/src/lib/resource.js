@@ -90,6 +90,7 @@ export const pendingAccounts = {
   list: () => api.get("/auth/pending").then((r) => r.data),
   approve: (id) => api.patch(`/auth/pending/${id}/approve`).then((r) => r.data),
   reject: (id, reason) => api.patch(`/auth/pending/${id}/reject`, { reason }).then((r) => r.data),
+  revise: (id, remarks) => api.patch(`/auth/pending/${id}/revise`, { remarks }).then((r) => r.data),
 };
 
 export function listUsers() {
@@ -176,4 +177,11 @@ export const publicUnits = {
 export const publicRefs = {
   estates: () => api.get("/public/estates").then((r) => r.data),
   towers: (estateId) => api.get("/public/towers", { params: { estateId } }).then((r) => r.data),
+};
+
+// A non-approved account's session is restricted to these two routes on the
+// server. This page is the only thing such a session can reach.
+export const application = {
+  get: () => api.get("/auth/application").then((r) => r.data),
+  resubmit: (unit) => api.patch("/auth/application", { unit }).then((r) => r.data),
 };

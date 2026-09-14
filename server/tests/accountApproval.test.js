@@ -41,12 +41,15 @@ describe("Portal signup requires approval", () => {
     expect(u.contactEmail).toBe("ana@example.com");
   });
 
-  it("blocks login while pending, with its own message", async () => {
+  it("lets a pending applicant sign in to a restricted session", async () => {
     await signup();
     const res = await request(app).post("/api/auth/login")
       .send({ email: applicant.email, password: applicant.password });
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("ACCOUNT_PENDING");
+    // Signing in is the only way to tell an applicant where they stand —
+    // there is no outbound email. The token is restricted; restrictedSession
+    // .test.js covers what it cannot reach.
+    expect(res.status).toBe(200);
+    expect(res.body.user.status).toBe("PENDING");
   });
 
   it("still rejects a wrong password on a pending account as invalid credentials", async () => {
@@ -178,6 +181,18 @@ describe("Approving an account", () => {
     expect(res.status).toBe(403);
   });
 
+  // The conflict message is shown verbatim in the officer's modal — it must
+  // read as a proper status label, not the raw lowercased enum.
+  it("describes an already-decided account with its proper label, not a raw enum", async () => {
+    await signup();
+    const u = await pendingUser();
+    const auth = { Authorization: `Bearer ${tokens.admin()}` };
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`).set(auth);
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`).set(auth);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("account is already Approved");
+  });
+
   // Approval is where a vetted party enters the business records, so it is also
   // where the unit they described becomes real — in the same transaction, so a
   // half-approved lessor with no unit cannot exist.
@@ -204,9 +219,10 @@ describe("Approving an account", () => {
     expect(unit.unitNumber).toBe("19A");
     expect(unit.towerId).toBe(tower.id);
     expect(Number(unit.baseRent)).toBe(25000);
-    // DRAFT, never APPROVED: the schema default is APPROVED, which would skip
-    // review entirely. The lessor completes it and submits it themselves.
-    expect(unit.approvalStatus).toBe("DRAFT");
+    // APPROVED, not DRAFT: the officer just reviewed these details as half of
+    // this same approval decision, so DRAFT would ask a second time for
+    // something already approved.
+    expect(unit.approvalStatus).toBe("APPROVED");
   });
 
   it("defaults a skipped rent to zero, since baseRent is required on Unit", async () => {
@@ -265,12 +281,72 @@ describe("Approving an account", () => {
     await request(app).patch(`/api/auth/pending/${user.id}/reject`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "not verified" });
     expect(await prisma.unit.count()).toBe(before);
-    expect(await prisma.user.findUnique({ where: { id: user.id } })).toBeNull();
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("REJECTED");
+    expect(after.unitOwnerId).toBeNull();
+  });
+});
+
+describe("Approval materialises a reviewed unit", () => {
+  // Default applicant.role is TENANT, so a unit only materialises when the
+  // signup is a lessor with a described unit — follow the same override the
+  // other lessor tests in this file use rather than a new fixture.
+  const lessorSignup = () => signup({
+    email: "lessor.materialise", role: "UNIT_OWNER", name: "Lessor Materialise",
+    contactEmail: "lessor.materialise@example.com", unit: { unitNumber: "19A" },
+  });
+
+  // ensureForUnit falls back to the approver as the transaction's assigned
+  // officer when the new owner has none yet, and assignedOfficerId is
+  // FK-constrained to User — tokens.admin()'s "test-admin" is not a real row,
+  // so these tests (unlike the others in this file) need a resolvable admin.
+  async function realAdminAuth() {
+    const admin = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
+    return `Bearer ${issueToken({ id: admin.id, role: "ADMIN" })}`;
+  }
+
+  it("creates the unit APPROVED, not DRAFT", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.materialise");
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", await realAdminAuth()).send();
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    // The officer reviewed these details as part of this same decision, so
+    // DRAFT would ask a second time for something already approved.
+    expect(unit.approvalStatus).toBe("APPROVED");
+  });
+
+  it("opens the onboarding transaction at SEND_REQUIREMENTS", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.materialise");
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", await realAdminAuth()).send();
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    const txn = await prisma.leasingTransaction.findFirst({ where: { unitId: unit.id } });
+    expect(txn).toBeTruthy();
+    expect(txn.stage).toBe("SEND_REQUIREMENTS");
+    expect(txn.stageData.INQUIRY.status).toBe("Skipped");
+  });
+
+  it("still approves when no unit was described", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "No Unit", email: "nounit@x.com", contactEmail: "nounit@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+      },
+    });
+    const res = await request(app).patch(`/api/auth/pending/${user.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send();
+    expect(res.status).toBe(200);
   });
 });
 
 describe("Rejecting an account", () => {
-  it("deletes the account and creates no linked record", async () => {
+  it("keeps the account with a reason and creates no linked record", async () => {
     await signup();
     const u = await pendingUser();
     const res = await request(app).patch(`/api/auth/pending/${u.id}/reject`)
@@ -278,23 +354,24 @@ describe("Rejecting an account", () => {
       .send({ reason: "Could not verify identity" });
     expect(res.status).toBe(200);
 
-    // Rejecting deletes the account outright — no retained REJECTED record,
-    // which also frees the username for re-application.
+    // The row survives so the applicant can be told why. Their username stays
+    // taken — a genuine re-application needs an officer to reopen the account.
     const after = await pendingUser();
-    expect(after).toBeNull();
+    expect(after.status).toBe("REJECTED");
+    expect(after.rejectionReason).toBe("Could not verify identity");
     expect(await prisma.tenant.count()).toBe(0);
   });
 
-  it("blocks login after rejection like any other unknown account", async () => {
+  it("lets a rejected applicant sign in to be told why", async () => {
     await signup();
     const u = await pendingUser();
     await request(app).patch(`/api/auth/pending/${u.id}/reject`)
-      .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "Duplicate account" });
-    // The account row is gone, so login fails as ordinary invalid credentials —
-    // there is no special "account rejected" message anymore.
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "Could not verify identity" });
+
     const res = await request(app).post("/api/auth/login")
       .send({ email: applicant.email, password: applicant.password });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    expect(res.body.user.status).toBe("REJECTED");
   });
 
   it("requires a reason", async () => {
@@ -303,6 +380,67 @@ describe("Rejecting an account", () => {
     const res = await request(app).patch(`/api/auth/pending/${u.id}/reject`)
       .set("Authorization", `Bearer ${tokens.admin()}`).send({});
     expect(res.status).toBe(400);
+  });
+});
+
+describe("For Revision", () => {
+  // For Revision only makes sense for a lessor — the thing being revised IS
+  // the unit they described. These success-path tests use a lessor signup
+  // (rather than the default TENANT applicant) so they still exercise a
+  // reachable case once revise is refused for a lessee below.
+  const lessorSignup = () => signup({
+    email: "lessor.revise", role: "UNIT_OWNER", name: "Lessor Revise",
+    contactEmail: "lessor.revise@example.com", unit: { unitNumber: "19A" },
+  });
+
+  it("keeps the row, records remarks, and leaves the unit unmaterialised", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ remarks: "Tower does not match the unit number" });
+    expect(res.status).toBe(200);
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(after.status).toBe("FOR_REVISION");
+    expect(after.rejectionReason).toBe("Tower does not match the unit number");
+    expect(after.unitOwnerId).toBeNull();
+    expect(await prisma.unit.count({ where: { unitNumber: "19A" } })).toBe(0);
+  });
+
+  it("refuses empty remarks", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "" });
+    expect(res.status).toBe(400);
+  });
+
+  it("can still be approved after a revision round", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.revise");
+    await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ remarks: "fix the floor" });
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send();
+    expect(res.status).toBe(200);
+  });
+
+  // Finding 1 of the merge-gate review: a lessee has no unit to revise, so
+  // For Revision must be refused at the service, not merely hidden by the
+  // client — otherwise a direct API call can strand a TENANT in a status
+  // whose only exit demands a unit number they do not have.
+  it("refuses to send a lessee application back for revision", async () => {
+    await signup(); // default applicant is a TENANT
+    const u = await pendingUser();
+    const res = await request(app).patch(`/api/auth/pending/${u.id}/revise`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ remarks: "please add more detail" });
+    expect(res.status).toBe(409);
+
+    // Refused, not silently ignored: the account must still be PENDING.
+    const after = await pendingUser();
+    expect(after.status).toBe("PENDING");
   });
 });
 

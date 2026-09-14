@@ -7,6 +7,7 @@ import AvailableUnitsView from "../views/AvailableUnitsView.vue";
 import UnitDetailPublicView from "../views/UnitDetailPublicView.vue";
 import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
+import RegisterUnitPublicView from "../views/RegisterUnitPublicView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
 import DashboardMetricView from "../views/DashboardMetricView.vue";
 import BrowseUnitsView from "../views/BrowseUnitsView.vue";
@@ -30,6 +31,7 @@ import LessorInfoSheetsView from "../views/LessorInfoSheetsView.vue";
 import LesseeInfoSheetsView from "../views/LesseeInfoSheetsView.vue";
 import MyLessorRequirementsView from "../views/MyLessorRequirementsView.vue";
 import LessorProfileView from "../views/LessorProfileView.vue";
+import ApplicationStatusView from "../views/ApplicationStatusView.vue";
 // Lazy-loaded: pull in the PDF.js live preview, keeping it out of the main bundle.
 const OwnerInfoSheetView = () => import("../views/OwnerInfoSheetView.vue");
 const TenantInfoSheetView = () => import("../views/TenantInfoSheetView.vue");
@@ -57,12 +59,21 @@ const routes = [
   { path: "/units-for-lease", redirect: "/available-units" }, // legacy list path → browse page
   { path: "/units-for-lease/:id", component: UnitDetailPublicView, meta: { ownsThemeToggle: true } },
   { path: "/login", component: LoginView, meta: { ownsThemeToggle: true } },
-  { path: "/signup", component: SignupView, meta: { ownsThemeToggle: true } }, // public self-registration (lessor/lessee)
+  {
+    path: "/signup",
+    component: SignupView,
+    meta: { ownsThemeToggle: true },
+    // The lessor path now starts with the unit, not the account.
+    beforeEnter: (to) => (to.query.as === "LESSOR" ? "/register-unit" : true),
+  }, // public self-registration (lessee); lessor entry redirects to the unit-first wizard
+  { path: "/register-unit", component: RegisterUnitPublicView, meta: { ownsThemeToggle: true } }, // public lessor wizard: unit first, then account
   {
     path: "/app",
     component: AppLayout,
     meta: { requiresAuth: true },
     children: [
+      // Reachable by a non-approved account, and the only thing it can reach.
+      { path: "application", component: ApplicationStatusView, meta: { roles: ["UNIT_OWNER", "TENANT"], allowPending: true } },
       // Staff
       { path: "", component: ExecutiveDashboardView, meta: { roles: STAFF } },
       // The page behind a dashboard tile: the same figure, itemised.
@@ -122,6 +133,11 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.isAuthenticated) return "/login";
   if (!auth.isAuthenticated) return;
+  // A restricted session gets one page. This is convenience, not security —
+  // the server refuses the routes regardless.
+  if (auth.isAuthenticated && !auth.isApproved) {
+    return to.meta.allowPending ? undefined : "/app/application";
+  }
   const appHome = auth.isOwner ? "/app/my-units" : auth.isTenant ? "/app/my-lease" : "/app";
   // "/" is always the public Inquiry landing — even for signed-in users.
   if (to.path === "/app" && appHome !== "/app") return appHome; // owners/tenants -> their portal

@@ -19,6 +19,13 @@ const rejecting = ref(null);
 const reason = ref("");
 const rejectError = ref("");
 
+// For Revision sends the application back to the applicant with remarks so
+// they can correct and resubmit it. Remarks are required — without them the
+// applicant is left guessing at what to fix.
+const revising = ref(null);
+const remarks = ref("");
+const reviseError = ref("");
+
 async function load() {
   loading.value = true;
   listError.value = "";
@@ -66,6 +73,27 @@ async function confirmReject() {
     busy[row.id] = false;
   }
 }
+
+function openRevise(row) {
+  revising.value = row;
+  remarks.value = "";
+  reviseError.value = "";
+}
+
+async function confirmRevise() {
+  if (!remarks.value.trim()) { reviseError.value = "Remarks are required."; return; }
+  const row = revising.value;
+  busy[row.id] = true;
+  try {
+    await pendingAccounts.revise(row.id, remarks.value.trim());
+    revising.value = null;
+    await load();
+  } catch (e) {
+    reviseError.value = e.response?.data?.error || "Could not send this account back for revision.";
+  } finally {
+    busy[row.id] = false;
+  }
+}
 </script>
 
 <template>
@@ -105,6 +133,10 @@ async function confirmReject() {
           <td>{{ formatDate(r.createdAt) }}</td>
           <td class="row-actions">
             <button type="button" class="primary" :disabled="busy[r.id]" @click="approve(r)">Approve</button>
+            <!-- Only a UNIT_OWNER application can resubmit without a unit — see
+                 resubmitApplication. A TENANT sent back here would have no way
+                 to satisfy the resubmission schema and would be stranded. -->
+            <button v-if="r.role === 'UNIT_OWNER'" type="button" class="ghost" :disabled="busy[r.id]" @click="openRevise(r)">For Revision</button>
             <button type="button" class="danger" :disabled="busy[r.id]" @click="openReject(r)">Reject</button>
           </td>
         </tr>
@@ -114,7 +146,7 @@ async function confirmReject() {
     <div v-if="rejecting" class="modal-backdrop" @click.self="rejecting = null">
       <div class="modal" role="dialog" aria-modal="true" aria-label="Reject account">
         <h2>Reject {{ rejecting.name }}</h2>
-        <p class="muted small">This permanently removes the request; the username is freed so they can apply again later.</p>
+        <p class="muted small">The application is kept on file with this reason so the applicant can be told why. Their username stays taken — this cannot be undone from here.</p>
         <div class="field">
           <label for="reason">Reason</label>
           <input id="reason" type="text" v-model="reason" placeholder="e.g. Could not verify identity" />
@@ -123,6 +155,22 @@ async function confirmReject() {
         <div class="modal-actions">
           <button type="button" class="ghost" @click="rejecting = null">Cancel</button>
           <button type="button" class="primary" :disabled="busy[rejecting.id]" @click="confirmReject">Reject account</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="revising" class="modal-backdrop" @click.self="revising = null">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Send back for revision">
+        <h2>Send {{ revising.name }} back for revision</h2>
+        <p class="muted small">They'll see these remarks and can correct and resubmit their application.</p>
+        <div class="field">
+          <label for="revise-remarks">Remarks</label>
+          <input id="revise-remarks" data-test="revise-remarks" type="text" v-model="remarks" placeholder="e.g. Tower does not match the unit on file" />
+        </div>
+        <p v-if="reviseError" class="error">{{ reviseError }}</p>
+        <div class="modal-actions">
+          <button type="button" class="ghost" @click="revising = null">Cancel</button>
+          <button type="button" class="primary" data-test="revise-confirm" :disabled="busy[revising.id]" @click="confirmRevise">Send for revision</button>
         </div>
       </div>
     </div>

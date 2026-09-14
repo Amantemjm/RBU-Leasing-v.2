@@ -2,9 +2,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import {
-  InvalidReferenceError, NotFoundError, ConflictError,
-  AccountPendingError, AccountRejectedError,
+  InvalidReferenceError, NotFoundError, ConflictError, ValidationError,
 } from "../lib/errors.js";
+import { ensureForUnit } from "./leasingTransactionService.js";
 
 // The seeded super admin cannot be deleted or demoted from ADMIN.
 export const SUPER_ADMIN_EMAIL = "Admin";
@@ -17,9 +17,9 @@ export async function verifyPassword(plain, hash) {
   return bcrypt.compare(plain, hash);
 }
 
-export function issueToken({ id, role, unitOwnerId = null, tenantId = null }) {
+export function issueToken({ id, role, unitOwnerId = null, tenantId = null, status = "APPROVED" }) {
   return jwt.sign(
-    { userId: id, role, unitOwnerId: unitOwnerId ?? null, tenantId: tenantId ?? null },
+    { userId: id, role, unitOwnerId: unitOwnerId ?? null, tenantId: tenantId ?? null, status },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
   );
@@ -53,8 +53,10 @@ export async function registerUser({ name, email, password, role, unitOwnerId, t
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
-    // Only active, approved accounts belong in the system Users list. Pending
-    // applications live in Account Approvals; rejected ones are deleted outright.
+    // Only active, approved accounts belong in the system Users list. The
+    // Account Approvals queue is PENDING-only — a for-revision or rejected
+    // application lives in neither list; the applicant reads it from their
+    // own application-status page instead.
     where: { status: "APPROVED" },
     orderBy: { createdAt: "desc" },
     select: {
@@ -185,10 +187,6 @@ async function approverName(approver) {
 // The unit a lessor described at signup, turned into a real row now that they
 // have an owner record to hang it on.
 //
-// DRAFT is set explicitly: the schema default is APPROVED, which would put a
-// self-registered unit straight into the portfolio without review. The lessor
-// completes anything they skipped from My Units and submits it themselves.
-//
 // A tower deleted between signup and approval is dropped rather than fatal —
 // reference data changing must never leave an applicant unapprovable.
 async function buildPendingUnit(tx, ownerId, pending) {
@@ -205,19 +203,48 @@ async function buildPendingUnit(tx, ownerId, pending) {
     ...(pending.type ? { type: pending.type } : {}),
     // baseRent is a required Decimal while the signup field is optional.
     baseRent: pending.baseRent ?? 0,
-    approvalStatus: "DRAFT",
+    // Approved outright: this unit's details were just reviewed as half of the
+    // application decision. DRAFT means "the lessor is still describing it",
+    // which is no longer true by the time this runs.
+    approvalStatus: "APPROVED",
   };
 }
 
-export async function approveAccount(id, approver) {
+// A decision is only open while the applicant has not been finally judged.
+// FOR_REVISION is included so an officer can reject an application they had
+// previously sent back.
+const DECIDABLE = ["PENDING", "FOR_REVISION"];
+
+// The user-facing labels for account status — must match STATUS_LABEL in
+// ApplicationStatusView.vue. Used to keep a raw enum value (PENDING,
+// FOR_REVISION, ...) out of any message shown to a person.
+const STATUS_LABEL = {
+  PENDING: "Pending Review",
+  FOR_REVISION: "For Revision",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+// Looks up the account and enforces that it is still open for a decision.
+// Shared by approveAccount/rejectAccount/reviseAccount so the not-found and
+// decidability checks stay in one place.
+async function findDecidableAccount(id) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError("account not found");
-  if (user.status !== "PENDING") {
-    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
+  if (!DECIDABLE.includes(user.status)) {
+    // This message is shown verbatim in the officer's modal, so it must read
+    // as a proper label — not the raw lowercased enum (e.g. "for_revision").
+    throw new ConflictError(`account is already ${STATUS_LABEL[user.status] || user.status}`);
   }
+  return user;
+}
+
+export async function approveAccount(id, approver) {
+  const user = await findDecidableAccount(id);
   const decidedBy = await approverName(approver);
 
-  return prisma.$transaction(async (tx) => {
+  let createdUnit = null;
+  const result = await prisma.$transaction(async (tx) => {
     const data = {
       status: "APPROVED",
       approvedById: approver.userId,
@@ -229,7 +256,10 @@ export async function approveAccount(id, approver) {
       const owner = await tx.unitOwner.create({ data: { name: user.name, email: user.contactEmail } });
       data.unitOwnerId = owner.id;
       if (user.pendingUnit) {
-        await tx.unit.create({ data: await buildPendingUnit(tx, owner.id, user.pendingUnit) });
+        createdUnit = await tx.unit.create({
+          data: await buildPendingUnit(tx, owner.id, user.pendingUnit),
+          include: { owner: true },
+        });
         data.pendingUnit = null; // consumed
       }
     } else if (user.role === "TENANT") {
@@ -242,22 +272,105 @@ export async function approveAccount(id, approver) {
       status: updated.status, unitOwnerId: updated.unitOwnerId, tenantId: updated.tenantId,
     };
   });
+
+  // Outside the transaction and deliberately not fatal. An approved account
+  // whose transaction failed to open is recoverable; an approval that
+  // half-applied is not. Mirrors approveUnit's handling of the same call.
+  if (createdUnit) {
+    try {
+      await ensureForUnit(createdUnit, approver);
+    } catch (err) {
+      console.error(`Could not open onboarding transaction for unit ${createdUnit.id}:`, err);
+    }
+  }
+
+  return result;
 }
 
-// Rejecting an application deletes the account outright. It never lingers among
-// system users, and removing the row frees the username so the applicant can
-// re-apply later. No linked UnitOwner/Tenant exists yet (those are created only
-// on approval), so the delete is self-contained. `reason` is required by the
-// operator's confirmation flow but not persisted, since no record is kept.
 export async function rejectAccount(id, approver, reason) {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new NotFoundError("account not found");
-  if (user.status !== "PENDING") {
-    throw new ConflictError(`account is already ${user.status.toLowerCase()}`);
+  const user = await findDecidableAccount(id);
+  // The row is kept rather than deleted: the applicant signs in to a read-only
+  // status page to be told why, which a deleted row cannot do.
+  const updated = await prisma.user.update({
+    where: { id },
+    data: {
+      status: "REJECTED",
+      rejectionReason: reason,
+      approvedById: approver.userId,
+      approvedByName: await approverName(approver),
+      decidedAt: new Date(),
+    },
+  });
+  return { id: updated.id, name: updated.name, email: updated.email, status: updated.status, reason };
+}
+
+export async function reviseAccount(id, approver, remarks) {
+  const user = await findDecidableAccount(id);
+  // For Revision only means something for a lessor: the thing being revised
+  // IS the unit they described. A lessee has nothing to revise, so refuse
+  // here rather than merely not offering the button — otherwise a direct API
+  // call can strand a TENANT in a status whose only exit demands a unit
+  // number they do not have.
+  if (user.role !== "UNIT_OWNER") {
+    throw new ConflictError("a lessee application has no unit to revise — approve or reject it instead");
   }
-  void reason;
-  await prisma.user.delete({ where: { id } });
-  return { id: user.id, name: user.name, email: user.email, status: "REJECTED" };
+  const updated = await prisma.user.update({
+    where: { id },
+    data: {
+      status: "FOR_REVISION",
+      rejectionReason: remarks, // one column carries the remarks for both
+      approvedById: approver.userId,
+      approvedByName: await approverName(approver),
+      decidedAt: new Date(),
+    },
+  });
+  return { id: updated.id, name: updated.name, email: updated.email, status: updated.status, remarks };
+}
+
+const APPLICATION_SELECT = {
+  id: true, name: true, email: true, contactEmail: true, role: true,
+  status: true, rejectionReason: true, decidedAt: true, pendingUnit: true, createdAt: true,
+};
+
+function asApplication(user) {
+  const { rejectionReason, ...rest } = user;
+  // One column carries both a rejection reason and revision remarks; the client
+  // reads one field and decides what to call it from the status.
+  return { ...rest, remarks: rejectionReason };
+}
+
+export async function getApplication(userId) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: APPLICATION_SELECT });
+  if (!user) throw new NotFoundError("account not found");
+  return asApplication(user);
+}
+
+export async function resubmitApplication(userId, unit) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError("account not found");
+  if (user.status !== "FOR_REVISION") {
+    throw new ConflictError("this application is not open for revision");
+  }
+
+  // No unit in the body: fine for a TENANT (never has one) and for a
+  // UNIT_OWNER who never described one (the old account-first path allowed
+  // skipping it) — resubmit as-is. But a lessor who already HAS a
+  // pendingUnit must not be able to blank it out just by omitting it.
+  if (!unit && user.role === "UNIT_OWNER" && user.pendingUnit) {
+    throw new ValidationError("a unit is required to resubmit this application");
+  }
+
+  const data = { status: "PENDING", rejectionReason: null };
+  // Only set when supplied — the unit has already been through
+  // pendingUnitSchema, so no key outside the whitelist can be here.
+  if (unit) data.pendingUnit = unit;
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data,
+    select: APPLICATION_SELECT,
+  });
+  return asApplication(updated);
 }
 
 export async function loginUser({ email, password }) {
@@ -265,18 +378,19 @@ export async function loginUser({ email, password }) {
   if (!user) throw new Error("INVALID_CREDENTIALS");
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw new Error("INVALID_CREDENTIALS");
-  // Checked only after the password verifies, so the status of an account is
-  // not disclosed to someone guessing credentials.
-  if (user.status === "PENDING") throw new AccountPendingError();
-  if (user.status === "REJECTED") throw new AccountRejectedError();
+  // Every status may sign in. A non-approved account receives a restricted
+  // token that verifyJwt refuses everywhere except the application-status
+  // routes — the status page is the only way to tell an applicant where they
+  // stand, because the system has no outbound email.
   const token = issueToken({
-    id: user.id, role: user.role, unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+    id: user.id, role: user.role, unitOwnerId: user.unitOwnerId,
+    tenantId: user.tenantId, status: user.status,
   });
   return {
     token,
     user: {
       id: user.id, name: user.name, email: user.email, role: user.role,
-      unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+      unitOwnerId: user.unitOwnerId, tenantId: user.tenantId, status: user.status,
     },
   };
 }
