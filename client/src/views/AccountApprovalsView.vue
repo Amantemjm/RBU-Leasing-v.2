@@ -133,7 +133,10 @@ async function confirmRevise() {
           <td>{{ formatDate(r.createdAt) }}</td>
           <td class="row-actions">
             <button type="button" class="primary" :disabled="busy[r.id]" @click="approve(r)">Approve</button>
-            <button type="button" class="ghost" :disabled="busy[r.id]" @click="openRevise(r)">For Revision</button>
+            <!-- Only a UNIT_OWNER application can resubmit without a unit — see
+                 resubmitApplication. A TENANT sent back here would have no way
+                 to satisfy the resubmission schema and would be stranded. -->
+            <button v-if="r.role === 'UNIT_OWNER'" type="button" class="ghost" :disabled="busy[r.id]" @click="openRevise(r)">For Revision</button>
             <button type="button" class="danger" :disabled="busy[r.id]" @click="openReject(r)">Reject</button>
           </td>
         </tr>

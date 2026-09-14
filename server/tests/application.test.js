@@ -100,3 +100,76 @@ describe("Application status", () => {
     expect(res.status).toBe(401);
   });
 });
+
+// A lessee application never carries a pendingUnit, and the old schema
+// required `unit` unconditionally — so a lessee sent For Revision had no way
+// to satisfy the resubmission schema and was permanently stranded.
+describe("Resubmitting without a unit", () => {
+  async function tenantApplicant(status = "FOR_REVISION", rejectionReason = "please confirm") {
+    const user = await prisma.user.create({
+      data: {
+        name: "Lessee Applicant", email: "lessee.applicant@x.com", contactEmail: "lessee@x.com",
+        role: "TENANT", status, rejectionReason,
+        passwordHash: await hashPassword("secret123"), passwordPlain: "secret123",
+        // A tenant application never carries a unit at all.
+      },
+    });
+    const res = await request(app).post("/api/auth/login").send({ email: user.email, password: "secret123" });
+    return { user, token: res.body.token };
+  }
+
+  it("lets a For Revision lessee resubmit with no unit in the body", async () => {
+    const { user, token } = await tenantApplicant();
+    const res = await request(app).patch("/api/auth/application")
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("PENDING");
+
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("PENDING");
+    expect(after.pendingUnit).toBeNull();
+    expect(after.rejectionReason).toBeNull();
+  });
+
+  it("refuses to blank a lessor's existing unit by omitting it", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Lessor Applicant", email: "lessor.applicant@x.com", contactEmail: "lessor@x.com",
+        role: "UNIT_OWNER", status: "FOR_REVISION", rejectionReason: "wrong floor",
+        passwordHash: await hashPassword("secret123"), passwordPlain: "secret123",
+        pendingUnit: { unitNumber: "19A", floor: "19" },
+      },
+    });
+    const login = await request(app).post("/api/auth/login").send({ email: user.email, password: "secret123" });
+    const res = await request(app).patch("/api/auth/application")
+      .set("Authorization", `Bearer ${login.body.token}`)
+      .send({});
+    expect(res.status).toBe(400);
+
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("FOR_REVISION");
+    expect(after.pendingUnit.unitNumber).toBe("19A");
+  });
+
+  it("lets a lessor who never described a unit resubmit with none, still with none", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "No Unit Lessor", email: "no.unit.lessor@x.com", contactEmail: "nounit@x.com",
+        role: "UNIT_OWNER", status: "FOR_REVISION", rejectionReason: "please add details",
+        passwordHash: await hashPassword("secret123"), passwordPlain: "secret123",
+        // Skipped the unit step entirely, like the old account-first path allowed.
+      },
+    });
+    const login = await request(app).post("/api/auth/login").send({ email: user.email, password: "secret123" });
+    const res = await request(app).patch("/api/auth/application")
+      .set("Authorization", `Bearer ${login.body.token}`)
+      .send({});
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("PENDING");
+
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("PENDING");
+    expect(after.pendingUnit).toBeNull();
+  });
+});

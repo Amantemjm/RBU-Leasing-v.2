@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import {
-  InvalidReferenceError, NotFoundError, ConflictError,
+  InvalidReferenceError, NotFoundError, ConflictError, ValidationError,
 } from "../lib/errors.js";
 import { ensureForUnit } from "./leasingTransactionService.js";
 
@@ -329,11 +329,23 @@ export async function resubmitApplication(userId, unit) {
   if (user.status !== "FOR_REVISION") {
     throw new ConflictError("this application is not open for revision");
   }
+
+  // No unit in the body: fine for a TENANT (never has one) and for a
+  // UNIT_OWNER who never described one (the old account-first path allowed
+  // skipping it) — resubmit as-is. But a lessor who already HAS a
+  // pendingUnit must not be able to blank it out just by omitting it.
+  if (!unit && user.role === "UNIT_OWNER" && user.pendingUnit) {
+    throw new ValidationError("a unit is required to resubmit this application");
+  }
+
+  const data = { status: "PENDING", rejectionReason: null };
+  // Only set when supplied — the unit has already been through
+  // pendingUnitSchema, so no key outside the whitelist can be here.
+  if (unit) data.pendingUnit = unit;
+
   const updated = await prisma.user.update({
     where: { id: userId },
-    // Only these three fields. The unit has already been through
-    // pendingUnitSchema, so no key outside the whitelist can be here.
-    data: { pendingUnit: unit, status: "PENDING", rejectionReason: null },
+    data,
     select: APPLICATION_SELECT,
   });
   return asApplication(updated);

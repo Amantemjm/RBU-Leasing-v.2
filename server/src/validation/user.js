@@ -49,8 +49,13 @@ export const reviseAccountSchema = z.object({
 // Resubmission from the application status page. `.strip()` on pendingUnitSchema
 // drops unknown unit keys; naming `unit` as the only field here is what stops a
 // restricted session setting role, status or unitOwnerId on itself.
+//
+// `unit` is optional: a TENANT application never has one to resubmit, and a
+// UNIT_OWNER who never described one (the old account-first path allowed
+// skipping it) must still be able to resubmit as-is. authService.resubmitApplication
+// is what refuses to let a lessor blank out a unit they already have.
 export const resubmitSchema = z.object({
-  unit: pendingUnitSchema,
+  unit: pendingUnitSchema.optional(),
 });
 
 export const updateUserSchema = z.object({

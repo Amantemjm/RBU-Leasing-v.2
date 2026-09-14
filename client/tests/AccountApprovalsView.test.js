@@ -133,6 +133,31 @@ describe("AccountApprovalsView", () => {
     expect(pendingAccounts.revise).toHaveBeenCalledWith("u1", "Tower does not match");
   });
 
+  // A TENANT application has no pendingUnit, and the only escape hatch
+  // (resubmission) requires a unit from a UNIT_OWNER only — offering For
+  // Revision on a lessee row would send them somewhere they can't get out of.
+  it("does not offer For Revision on a lessee row, only approve and reject", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "t1", name: "Tenant Applicant", email: "tenant1", role: "TENANT",
+        createdAt: new Date().toISOString(), pendingUnit: null },
+    ]);
+    const w = await mountView();
+    const row = w.findAll("tbody tr")[0];
+    const labels = row.findAll("button").map((b) => b.text());
+    expect(labels).toEqual(["Approve", "Reject"]);
+  });
+
+  it("still offers For Revision on a lessor row", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "o1", name: "Owner Applicant", email: "owner1", role: "UNIT_OWNER",
+        createdAt: new Date().toISOString(), pendingUnit: { unitNumber: "19A" } },
+    ]);
+    const w = await mountView();
+    const row = w.findAll("tbody tr")[0];
+    const labels = row.findAll("button").map((b) => b.text());
+    expect(labels).toEqual(["Approve", "For Revision", "Reject"]);
+  });
+
   it("will not send an empty revision remark", async () => {
     pendingAccounts.list.mockResolvedValue([
       { id: "u1", name: "Jane", email: "jane", role: "UNIT_OWNER",
