@@ -24,7 +24,7 @@ import PublicShell from "../components/PublicShell.vue";
             <span class="choice__d">Find and rent a residence or office</span>
             <span class="choice__go">Get started <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
           </RouterLink>
-          <RouterLink to="/signup?as=LESSOR" class="choice">
+          <RouterLink to="/register-unit" class="choice">
             <span class="choice__ic" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14" /><path d="M10 9h4M10 13h4M10 17h4" /></svg>
             </span>

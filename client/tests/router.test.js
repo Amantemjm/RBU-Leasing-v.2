@@ -49,6 +49,16 @@ describe("router", () => {
     expect(router.currentRoute.value.path).toBe("/app/my-lease");
   });
 
+  it("redirects the old lessor signup link to the wizard", async () => {
+    await router.push("/signup?as=LESSOR");
+    expect(router.currentRoute.value.path).toBe("/register-unit");
+  });
+
+  it("leaves the lessee signup path alone", async () => {
+    await router.push("/signup");
+    expect(router.currentRoute.value.path).toBe("/signup");
+  });
+
   it("lets staff reach staff routes", async () => {
     useAuthStore().setSession({ token: "t", user: { role: "VIEWER" } });
     await router.push("/app/owners");

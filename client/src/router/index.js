@@ -7,6 +7,7 @@ import AvailableUnitsView from "../views/AvailableUnitsView.vue";
 import UnitDetailPublicView from "../views/UnitDetailPublicView.vue";
 import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
+import RegisterUnitPublicView from "../views/RegisterUnitPublicView.vue";
 import ExecutiveDashboardView from "../views/ExecutiveDashboardView.vue";
 import DashboardMetricView from "../views/DashboardMetricView.vue";
 import BrowseUnitsView from "../views/BrowseUnitsView.vue";
@@ -57,7 +58,14 @@ const routes = [
   { path: "/units-for-lease", redirect: "/available-units" }, // legacy list path → browse page
   { path: "/units-for-lease/:id", component: UnitDetailPublicView, meta: { ownsThemeToggle: true } },
   { path: "/login", component: LoginView, meta: { ownsThemeToggle: true } },
-  { path: "/signup", component: SignupView, meta: { ownsThemeToggle: true } }, // public self-registration (lessor/lessee)
+  {
+    path: "/signup",
+    component: SignupView,
+    meta: { ownsThemeToggle: true },
+    // The lessor path now starts with the unit, not the account.
+    beforeEnter: (to) => (to.query.as === "LESSOR" ? "/register-unit" : true),
+  }, // public self-registration (lessee); lessor entry redirects to the unit-first wizard
+  { path: "/register-unit", component: RegisterUnitPublicView, meta: { ownsThemeToggle: true } }, // public lessor wizard: unit first, then account
   {
     path: "/app",
     component: AppLayout,
