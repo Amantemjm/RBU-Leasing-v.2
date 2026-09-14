@@ -4,7 +4,7 @@
 // ever learns their status, reads an officer's remarks, and — on For
 // Revision — corrects the unit that came back.
 import { reactive, ref, onMounted, computed } from "vue";
-import { application } from "../lib/resource.js";
+import { application, publicRefs } from "../lib/resource.js";
 import OnboardingProgress from "../components/OnboardingProgress.vue";
 
 // The server renames the rejectionReason column to `remarks` on the way out —
@@ -17,10 +17,9 @@ const STATUS_LABEL = {
   REJECTED: "Rejected",
 };
 
-// Everything the server will accept back in `unit`. The form below only lets
-// the applicant edit unitNumber/floor/type/baseRent/slotNo; estateId and
-// towerId (if the application carries any) are passed through unchanged so a
-// resubmit never silently drops them.
+// Everything the server will accept back in `unit`. The form below lets the
+// applicant edit every one of these; the merge with pendingUnit still guards
+// against dropping anything the form doesn't recognize.
 const UNIT_FIELDS = ["estateId", "towerId", "unitNumber", "floor", "slotNo", "type", "baseRent"];
 
 const app = ref(null);
@@ -28,14 +27,18 @@ const loading = ref(true);
 const loadError = ref("");
 const submitting = ref(false);
 const formError = ref("");
+const estateOptions = ref([]);
+const towerOptions = ref([]);
 
-const form = reactive({ unitNumber: "", floor: "", slotNo: "", type: "", baseRent: "" });
+const form = reactive({ estateId: "", towerId: "", unitNumber: "", floor: "", slotNo: "", type: "", baseRent: "" });
 
 const status = computed(() => app.value?.status || "");
 const label = computed(() => STATUS_LABEL[status.value] || status.value);
 const statuses = computed(() => ({ review: label.value }));
 
 function populateForm(unit) {
+  form.estateId = unit?.estateId || "";
+  form.towerId = unit?.towerId || "";
   form.unitNumber = unit?.unitNumber || "";
   form.floor = unit?.floor || "";
   form.slotNo = unit?.slotNo || "";
@@ -48,7 +51,13 @@ async function load() {
   loadError.value = "";
   try {
     app.value = await application.get();
-    if (app.value.status === "FOR_REVISION") populateForm(app.value.pendingUnit);
+    if (app.value.status === "FOR_REVISION") {
+      populateForm(app.value.pendingUnit);
+      estateOptions.value = await publicRefs.estates();
+      // The saved unit can already carry an estateId — without this, the
+      // tower list stays empty and the saved tower renders as unselected.
+      if (form.estateId) towerOptions.value = await publicRefs.towers(form.estateId);
+    }
   } catch (e) {
     loadError.value = e.response?.data?.error || "Could not load your application.";
   } finally {
@@ -56,6 +65,11 @@ async function load() {
   }
 }
 onMounted(load);
+
+async function onEstateChange() {
+  form.towerId = "";
+  towerOptions.value = form.estateId ? await publicRefs.towers(form.estateId) : [];
+}
 
 async function resubmit() {
   formError.value = "";
@@ -117,6 +131,20 @@ async function resubmit() {
         <fieldset class="fset">
           <legend class="fset__title">Correct the unit</legend>
           <div class="fset__grid">
+            <div class="field">
+              <label for="estateId">Estate</label>
+              <select id="estateId" v-model="form.estateId" @change="onEstateChange">
+                <option value="">Select…</option>
+                <option v-for="e in estateOptions" :key="e.id" :value="e.id">{{ e.name }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="towerId">Tower</label>
+              <select id="towerId" v-model="form.towerId" :disabled="!form.estateId">
+                <option value="">{{ form.estateId ? "Select…" : "Select an estate first" }}</option>
+                <option v-for="t in towerOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
+              </select>
+            </div>
             <div class="field">
               <label for="unitNumber">Unit number <span class="req">*</span></label>
               <input id="unitNumber" type="text" v-model="form.unitNumber" placeholder="e.g. 19A" />

@@ -4,7 +4,14 @@ import ApplicationStatusView from "../src/views/ApplicationStatusView.vue";
 
 const get = vi.fn();
 const resubmit = vi.fn(() => Promise.resolve({ status: "PENDING" }));
-vi.mock("../src/lib/resource.js", () => ({ application: { get: (...a) => get(...a), resubmit: (...a) => resubmit(...a) } }));
+const estates = vi.fn(() => Promise.resolve([{ id: "e1", name: "Capitol Commons" }, { id: "e2", name: "Frontera" }]));
+const towers = vi.fn((estateId) =>
+  Promise.resolve(estateId === "e1" ? [{ id: "t1", name: "Empress" }] : [{ id: "t2", name: "Verona" }])
+);
+vi.mock("../src/lib/resource.js", () => ({
+  application: { get: (...a) => get(...a), resubmit: (...a) => resubmit(...a) },
+  publicRefs: { estates: (...a) => estates(...a), towers: (...a) => towers(...a) },
+}));
 
 const stubs = { RouterLink: { template: "<a><slot /></a>" } };
 const mountView = () => mount(ApplicationStatusView, { global: { stubs } });
@@ -37,6 +44,45 @@ describe("Application status page", () => {
     await w.get("form").trigger("submit");
     await flushPromises();
     expect(resubmit).toHaveBeenCalledWith(expect.objectContaining({ unitNumber: "20B" }));
+  });
+
+  it("preserves pending unit fields the form edit does not touch on resubmit", async () => {
+    get.mockResolvedValue({
+      status: "FOR_REVISION",
+      pendingUnit: { unitNumber: "19A", slotNo: "B5-15", estateId: "e1", towerId: "t1" },
+      remarks: "wrong",
+    });
+    const w = mountView();
+    await flushPromises();
+    await w.get("#unitNumber").setValue("20B");
+    await w.get("form").trigger("submit");
+    await flushPromises();
+    expect(resubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ unitNumber: "20B", slotNo: "B5-15", estateId: "e1", towerId: "t1" })
+    );
+  });
+
+  it("lets the applicant change the estate and tower, and resubmits the new values", async () => {
+    get.mockResolvedValue({
+      status: "FOR_REVISION",
+      pendingUnit: { unitNumber: "19A", estateId: "e1", towerId: "t1" },
+      remarks: "Tower does not match",
+    });
+    const w = mountView();
+    await flushPromises();
+    expect(towers).toHaveBeenCalledWith("e1");
+    expect(w.get("#estateId").element.value).toBe("e1");
+    expect(w.get("#towerId").element.value).toBe("t1");
+
+    await w.get("#estateId").setValue("e2");
+    await flushPromises();
+    expect(w.get("#towerId").element.value).toBe("");
+
+    await w.get("#towerId").setValue("t2");
+    await w.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(resubmit).toHaveBeenCalledWith(expect.objectContaining({ estateId: "e2", towerId: "t2" }));
   });
 
   it("shows the reason and no form when rejected", async () => {

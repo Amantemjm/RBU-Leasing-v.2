@@ -49,6 +49,18 @@ describe("Public registration wizard", () => {
     expect(sessionStorage.getItem("rbu.lessorApplication")).toContain("19A");
   });
 
+  it("restores the tower list when a saved draft already has an estate", async () => {
+    sessionStorage.setItem(
+      "rbu.lessorApplication",
+      JSON.stringify({ unit: { estateId: "e1", towerId: "t1", unitNumber: "19A" } })
+    );
+    const { publicRefs } = await import("../src/lib/resource.js");
+    const w = mountView();
+    await flushPromises();
+    expect(publicRefs.towers).toHaveBeenCalledWith("e1");
+    expect(w.get("#towerId").element.value).toBe("t1");
+  });
+
   it("submits the unit and the account in one request", async () => {
     const { api } = await import("../src/lib/api.js");
     const w = mountView();

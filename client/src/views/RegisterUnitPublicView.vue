@@ -40,6 +40,9 @@ onMounted(async () => {
     if (saved?.unit) unit.value = { ...unit.value, ...saved.unit };
   } catch { /* a corrupt draft is not worth failing the page over */ }
   estateOptions.value = await publicRefs.estates();
+  // A restored draft can already carry an estateId — without this, the tower
+  // list stays empty and the saved tower renders as an unselected blank.
+  if (unit.value.estateId) towerOptions.value = await publicRefs.towers(unit.value.estateId);
 });
 
 async function onEstateChange() {
