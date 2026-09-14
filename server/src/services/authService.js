@@ -288,6 +288,40 @@ export async function reviseAccount(id, approver, remarks) {
   return { id: updated.id, name: updated.name, email: updated.email, status: updated.status, remarks };
 }
 
+const APPLICATION_SELECT = {
+  id: true, name: true, email: true, contactEmail: true, role: true,
+  status: true, rejectionReason: true, decidedAt: true, pendingUnit: true, createdAt: true,
+};
+
+function asApplication(user) {
+  const { rejectionReason, ...rest } = user;
+  // One column carries both a rejection reason and revision remarks; the client
+  // reads one field and decides what to call it from the status.
+  return { ...rest, remarks: rejectionReason };
+}
+
+export async function getApplication(userId) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: APPLICATION_SELECT });
+  if (!user) throw new NotFoundError("account not found");
+  return asApplication(user);
+}
+
+export async function resubmitApplication(userId, unit) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError("account not found");
+  if (user.status !== "FOR_REVISION") {
+    throw new ConflictError("this application is not open for revision");
+  }
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    // Only these three fields. The unit has already been through
+    // pendingUnitSchema, so no key outside the whitelist can be here.
+    data: { pendingUnit: unit, status: "PENDING", rejectionReason: null },
+    select: APPLICATION_SELECT,
+  });
+  return asApplication(updated);
+}
+
 export async function loginUser({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("INVALID_CREDENTIALS");

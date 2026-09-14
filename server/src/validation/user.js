@@ -46,6 +46,13 @@ export const reviseAccountSchema = z.object({
   remarks: z.string().min(1, "Remarks are required"),
 });
 
+// Resubmission from the application status page. `.strip()` on pendingUnitSchema
+// drops unknown unit keys; naming `unit` as the only field here is what stops a
+// restricted session setting role, status or unitOwnerId on itself.
+export const resubmitSchema = z.object({
+  unit: pendingUnitSchema,
+});
+
 export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().min(3).optional(),
