@@ -207,9 +207,10 @@ describe("Approving an account", () => {
     expect(unit.unitNumber).toBe("19A");
     expect(unit.towerId).toBe(tower.id);
     expect(Number(unit.baseRent)).toBe(25000);
-    // DRAFT, never APPROVED: the schema default is APPROVED, which would skip
-    // review entirely. The lessor completes it and submits it themselves.
-    expect(unit.approvalStatus).toBe("DRAFT");
+    // APPROVED, not DRAFT: the officer just reviewed these details as half of
+    // this same approval decision, so DRAFT would ask a second time for
+    // something already approved.
+    expect(unit.approvalStatus).toBe("APPROVED");
   });
 
   it("defaults a skipped rent to zero, since baseRent is required on Unit", async () => {
@@ -271,6 +272,64 @@ describe("Approving an account", () => {
     const after = await prisma.user.findUnique({ where: { id: user.id } });
     expect(after.status).toBe("REJECTED");
     expect(after.unitOwnerId).toBeNull();
+  });
+});
+
+describe("Approval materialises a reviewed unit", () => {
+  // Default applicant.role is TENANT, so a unit only materialises when the
+  // signup is a lessor with a described unit — follow the same override the
+  // other lessor tests in this file use rather than a new fixture.
+  const lessorSignup = () => signup({
+    email: "lessor.materialise", role: "UNIT_OWNER", name: "Lessor Materialise",
+    contactEmail: "lessor.materialise@example.com", unit: { unitNumber: "19A" },
+  });
+
+  // ensureForUnit falls back to the approver as the transaction's assigned
+  // officer when the new owner has none yet, and assignedOfficerId is
+  // FK-constrained to User — tokens.admin()'s "test-admin" is not a real row,
+  // so these tests (unlike the others in this file) need a resolvable admin.
+  async function realAdminAuth() {
+    const admin = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
+    return `Bearer ${issueToken({ id: admin.id, role: "ADMIN" })}`;
+  }
+
+  it("creates the unit APPROVED, not DRAFT", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.materialise");
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", await realAdminAuth()).send();
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    // The officer reviewed these details as part of this same decision, so
+    // DRAFT would ask a second time for something already approved.
+    expect(unit.approvalStatus).toBe("APPROVED");
+  });
+
+  it("opens the onboarding transaction at SEND_REQUIREMENTS", async () => {
+    await lessorSignup();
+    const u = await pendingUser("lessor.materialise");
+    await request(app).patch(`/api/auth/pending/${u.id}/approve`)
+      .set("Authorization", await realAdminAuth()).send();
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    const txn = await prisma.leasingTransaction.findFirst({ where: { unitId: unit.id } });
+    expect(txn).toBeTruthy();
+    expect(txn.stage).toBe("SEND_REQUIREMENTS");
+    expect(txn.stageData.INQUIRY.status).toBe("Skipped");
+  });
+
+  it("still approves when no unit was described", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "No Unit", email: "nounit@x.com", contactEmail: "nounit@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+      },
+    });
+    const res = await request(app).patch(`/api/auth/pending/${user.id}/approve`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send();
+    expect(res.status).toBe(200);
   });
 });
 

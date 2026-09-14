@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import {
   InvalidReferenceError, NotFoundError, ConflictError,
 } from "../lib/errors.js";
+import { ensureForUnit } from "./leasingTransactionService.js";
 
 // The seeded super admin cannot be deleted or demoted from ADMIN.
 export const SUPER_ADMIN_EMAIL = "Admin";
@@ -184,10 +185,6 @@ async function approverName(approver) {
 // The unit a lessor described at signup, turned into a real row now that they
 // have an owner record to hang it on.
 //
-// DRAFT is set explicitly: the schema default is APPROVED, which would put a
-// self-registered unit straight into the portfolio without review. The lessor
-// completes anything they skipped from My Units and submits it themselves.
-//
 // A tower deleted between signup and approval is dropped rather than fatal —
 // reference data changing must never leave an applicant unapprovable.
 async function buildPendingUnit(tx, ownerId, pending) {
@@ -204,7 +201,10 @@ async function buildPendingUnit(tx, ownerId, pending) {
     ...(pending.type ? { type: pending.type } : {}),
     // baseRent is a required Decimal while the signup field is optional.
     baseRent: pending.baseRent ?? 0,
-    approvalStatus: "DRAFT",
+    // Approved outright: this unit's details were just reviewed as half of the
+    // application decision. DRAFT means "the lessor is still describing it",
+    // which is no longer true by the time this runs.
+    approvalStatus: "APPROVED",
   };
 }
 
@@ -229,7 +229,8 @@ export async function approveAccount(id, approver) {
   const user = await findDecidableAccount(id);
   const decidedBy = await approverName(approver);
 
-  return prisma.$transaction(async (tx) => {
+  let createdUnit = null;
+  const result = await prisma.$transaction(async (tx) => {
     const data = {
       status: "APPROVED",
       approvedById: approver.userId,
@@ -241,7 +242,10 @@ export async function approveAccount(id, approver) {
       const owner = await tx.unitOwner.create({ data: { name: user.name, email: user.contactEmail } });
       data.unitOwnerId = owner.id;
       if (user.pendingUnit) {
-        await tx.unit.create({ data: await buildPendingUnit(tx, owner.id, user.pendingUnit) });
+        createdUnit = await tx.unit.create({
+          data: await buildPendingUnit(tx, owner.id, user.pendingUnit),
+          include: { owner: true },
+        });
         data.pendingUnit = null; // consumed
       }
     } else if (user.role === "TENANT") {
@@ -254,6 +258,19 @@ export async function approveAccount(id, approver) {
       status: updated.status, unitOwnerId: updated.unitOwnerId, tenantId: updated.tenantId,
     };
   });
+
+  // Outside the transaction and deliberately not fatal. An approved account
+  // whose transaction failed to open is recoverable; an approval that
+  // half-applied is not. Mirrors approveUnit's handling of the same call.
+  if (createdUnit) {
+    try {
+      await ensureForUnit(createdUnit, approver);
+    } catch (err) {
+      console.error(`Could not open onboarding transaction for unit ${createdUnit.id}:`, err);
+    }
+  }
+
+  return result;
 }
 
 export async function rejectAccount(id, approver, reason) {
