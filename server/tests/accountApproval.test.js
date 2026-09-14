@@ -41,12 +41,15 @@ describe("Portal signup requires approval", () => {
     expect(u.contactEmail).toBe("ana@example.com");
   });
 
-  it("blocks login while pending, with its own message", async () => {
+  it("lets a pending applicant sign in to a restricted session", async () => {
     await signup();
     const res = await request(app).post("/api/auth/login")
       .send({ email: applicant.email, password: applicant.password });
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("ACCOUNT_PENDING");
+    // Signing in is the only way to tell an applicant where they stand —
+    // there is no outbound email. The token is restricted; restrictedSession
+    // .test.js covers what it cannot reach.
+    expect(res.status).toBe(200);
+    expect(res.body.user.status).toBe("PENDING");
   });
 
   it("still rejects a wrong password on a pending account as invalid credentials", async () => {
@@ -288,16 +291,16 @@ describe("Rejecting an account", () => {
     expect(await prisma.tenant.count()).toBe(0);
   });
 
-  it("blocks login after rejection like any other unknown account", async () => {
+  it("lets a rejected applicant sign in to be told why", async () => {
     await signup();
     const u = await pendingUser();
     await request(app).patch(`/api/auth/pending/${u.id}/reject`)
-      .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "Duplicate account" });
-    // The account row is gone, so login fails as ordinary invalid credentials —
-    // there is no special "account rejected" message anymore.
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "Could not verify identity" });
+
     const res = await request(app).post("/api/auth/login")
       .send({ email: applicant.email, password: applicant.password });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    expect(res.body.user.status).toBe("REJECTED");
   });
 
   it("requires a reason", async () => {

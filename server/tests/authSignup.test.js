@@ -47,13 +47,19 @@ describe("POST /api/auth/signup — public self-registration", () => {
     expect(await prisma.unitOwner.findFirst({ where: { email: "lessor.signup@x.com" } })).toBeNull();
   });
 
-  it("does NOT let the new account log in until it is approved", async () => {
+  it("lets the new account log in, but only to a restricted session", async () => {
     await request(app).post("/api/auth/signup")
       .send({ ...base, name: "New Lessee", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com", role: "TENANT" });
     const login = await request(app).post("/api/auth/login")
       .send({ email: "lessee.signup@x.com", password: base.password });
-    expect(login.status).toBe(403);
-    expect(login.body.code).toBe("ACCOUNT_PENDING");
+    expect(login.status).toBe(200);
+    expect(login.body.user.status).toBe("PENDING");
+
+    // The gate moved from the door to the rooms: the session exists but
+    // verifyJwt refuses every route except the application-status ones.
+    const blocked = await request(app).get("/api/units")
+      .set("Authorization", `Bearer ${login.body.token}`);
+    expect(blocked.status).toBe(403);
   });
 
   it("rejects a duplicate username/email (409)", async () => {

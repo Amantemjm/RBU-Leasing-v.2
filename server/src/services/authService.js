@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import {
   InvalidReferenceError, NotFoundError, ConflictError,
-  AccountPendingError, AccountRejectedError,
 } from "../lib/errors.js";
 
 // The seeded super admin cannot be deleted or demoted from ADMIN.
@@ -17,9 +16,9 @@ export async function verifyPassword(plain, hash) {
   return bcrypt.compare(plain, hash);
 }
 
-export function issueToken({ id, role, unitOwnerId = null, tenantId = null }) {
+export function issueToken({ id, role, unitOwnerId = null, tenantId = null, status = "APPROVED" }) {
   return jwt.sign(
-    { userId: id, role, unitOwnerId: unitOwnerId ?? null, tenantId: tenantId ?? null },
+    { userId: id, role, unitOwnerId: unitOwnerId ?? null, tenantId: tenantId ?? null, status },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
   );
@@ -294,18 +293,19 @@ export async function loginUser({ email, password }) {
   if (!user) throw new Error("INVALID_CREDENTIALS");
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw new Error("INVALID_CREDENTIALS");
-  // Checked only after the password verifies, so the status of an account is
-  // not disclosed to someone guessing credentials.
-  if (user.status === "PENDING") throw new AccountPendingError();
-  if (user.status === "REJECTED") throw new AccountRejectedError();
+  // Every status may sign in. A non-approved account receives a restricted
+  // token that verifyJwt refuses everywhere except the application-status
+  // routes — the status page is the only way to tell an applicant where they
+  // stand, because the system has no outbound email.
   const token = issueToken({
-    id: user.id, role: user.role, unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+    id: user.id, role: user.role, unitOwnerId: user.unitOwnerId,
+    tenantId: user.tenantId, status: user.status,
   });
   return {
     token,
     user: {
       id: user.id, name: user.name, email: user.email, role: user.role,
-      unitOwnerId: user.unitOwnerId, tenantId: user.tenantId,
+      unitOwnerId: user.unitOwnerId, tenantId: user.tenantId, status: user.status,
     },
   };
 }
