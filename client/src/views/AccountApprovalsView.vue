@@ -88,7 +88,7 @@ async function confirmReject() {
 
     <table v-else class="grid">
       <thead>
-        <tr><th>Name</th><th>Username</th><th>Email</th><th>Applying as</th><th>Requested</th><th></th></tr>
+        <tr><th>Name</th><th>Username</th><th>Email</th><th>Applying as</th><th>Unit</th><th>Requested</th><th></th></tr>
       </thead>
       <tbody>
         <tr v-for="r in rows" :key="r.id">
@@ -96,6 +96,12 @@ async function confirmReject() {
           <td>{{ r.email }}</td>
           <td><a v-if="r.contactEmail" :href="`mailto:${r.contactEmail}`">{{ r.contactEmail }}</a><span v-else class="muted">—</span></td>
           <td><span class="role-tag">{{ roleLabel(r.role) }}</span></td>
+          <td>
+            <span v-if="r.pendingUnit" class="pending-unit">
+              {{ r.pendingUnit.unitNumber }}
+            </span>
+            <span v-else class="muted">—</span>
+          </td>
           <td>{{ formatDate(r.createdAt) }}</td>
           <td class="row-actions">
             <button type="button" class="primary" :disabled="busy[r.id]" @click="approve(r)">Approve</button>
@@ -138,6 +144,7 @@ async function confirmReject() {
   padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
   background: var(--accent-050); color: var(--accent-text);
 }
+.pending-unit { font-weight: 600; }
 .row-actions { white-space: nowrap; }
 .approve { color: var(--good); }
 </style>

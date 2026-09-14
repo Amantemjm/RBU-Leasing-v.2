@@ -10,6 +10,19 @@ export const registerSchema = z.object({
   tenantId: z.string().nullish(),
 });
 
+// The unit a lessor may describe while applying. Whitelisted explicitly: this
+// arrives from an unauthenticated endpoint, so anything not named here — an
+// ownerId, an approvalStatus — must never reach the database.
+export const pendingUnitSchema = z.object({
+  estateId: z.string().min(1).optional(),
+  towerId: z.string().min(1).optional(),
+  unitNumber: z.string().min(1, "Unit number is required"),
+  floor: z.string().optional(),
+  slotNo: z.string().optional(),
+  type: z.string().optional(),
+  baseRent: z.coerce.number().min(0).optional(),
+}).strip();
+
 // Public self-registration — lessors/lessees only.
 export const signupSchema = z.object({
   name: z.string().min(1),
@@ -20,6 +33,7 @@ export const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["UNIT_OWNER", "TENANT"]),
   consent: z.literal(true),
+  unit: pendingUnitSchema.optional(),
 });
 
 export const rejectAccountSchema = z.object({

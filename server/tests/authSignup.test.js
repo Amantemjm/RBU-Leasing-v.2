@@ -2,9 +2,12 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
+import { factory } from "./helpers.js";
 
 const app = createApp();
 const EMAILS = ["lessee.signup@x.com", "lessor.signup@x.com"];
+const ESTATE_NAME = "AuthSignup Test Estate";
+const TOWER_NAME = "AuthSignup Test Tower";
 
 async function cleanup() {
   for (const e of EMAILS) {
@@ -13,6 +16,10 @@ async function cleanup() {
   }
   await prisma.tenant.deleteMany({ where: { email: { in: EMAILS } } });
   await prisma.unitOwner.deleteMany({ where: { email: { in: EMAILS } } });
+  // Towers reference estates (Tower.estateId is required) and units reference
+  // towers, so delete towers before the estate that owns them.
+  await prisma.tower.deleteMany({ where: { name: TOWER_NAME } });
+  await prisma.estate.deleteMany({ where: { name: ESTATE_NAME } });
 }
 beforeEach(cleanup);
 afterAll(cleanup);
@@ -60,5 +67,71 @@ describe("POST /api/auth/signup — public self-registration", () => {
     const res = await request(app).post("/api/auth/signup")
       .send({ ...base, name: "X", email: "lessor.signup@x.com", contactEmail: "x@x.com", role: "ADMIN" });
     expect(res.status).toBe(400);
+  });
+
+  // A lessor who clicked "List your unit" describes it while applying. It cannot
+  // be a Unit row yet — Unit.ownerId is required and no UnitOwner exists until
+  // approval — so it rides along on the application.
+  it("stores a lessor's unit with the application", async () => {
+    const estate = await factory.estate({ name: ESTATE_NAME });
+    const tower = await factory.tower(estate.id, { name: TOWER_NAME });
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
+      role: "UNIT_OWNER",
+      unit: { estateId: estate.id, towerId: tower.id, unitNumber: "19A", floor: "19", type: "1 Bedroom", baseRent: 25000 },
+    });
+    expect(res.status).toBe(201);
+    const user = await prisma.user.findUnique({ where: { email: "lessor.signup@x.com" } });
+    expect(user.pendingUnit).toMatchObject({ unitNumber: "19A", floor: "19", type: "1 Bedroom", baseRent: 25000 });
+    expect(user.pendingUnit.towerId).toBe(tower.id);
+    // Still an application: no owner, no unit.
+    expect(await prisma.unitOwner.findFirst({ where: { email: "lessor.signup@x.com" } })).toBeNull();
+  });
+
+  it("drops fields outside the whitelist rather than storing them", async () => {
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
+      role: "UNIT_OWNER",
+      unit: { unitNumber: "19A", approvalStatus: "APPROVED", ownerId: "sneaky", status: "LEASED" },
+    });
+    expect(res.status).toBe(201);
+    const user = await prisma.user.findUnique({ where: { email: "lessor.signup@x.com" } });
+    expect(Object.keys(user.pendingUnit).sort()).toEqual(["unitNumber"]);
+  });
+
+  it("refuses a unit with no unit number", async () => {
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
+      role: "UNIT_OWNER", unit: { floor: "19" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("refuses a unit whose estate or tower does not exist", async () => {
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
+      role: "UNIT_OWNER", unit: { unitNumber: "19A", towerId: "does-not-exist" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("leaves pendingUnit null when the lessor skips the step", async () => {
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessor", email: "lessor.signup@x.com", contactEmail: "lessor.signup@x.com",
+      role: "UNIT_OWNER",
+    });
+    expect(res.status).toBe(201);
+    const user = await prisma.user.findUnique({ where: { email: "lessor.signup@x.com" } });
+    expect(user.pendingUnit).toBeNull();
+  });
+
+  it("never stores a unit for a tenant application", async () => {
+    const res = await request(app).post("/api/auth/signup").send({
+      ...base, name: "New Lessee", email: "lessee.signup@x.com", contactEmail: "lessee.signup@x.com",
+      role: "TENANT", unit: { unitNumber: "19A" },
+    });
+    expect(res.status).toBe(201);
+    const user = await prisma.user.findUnique({ where: { email: "lessee.signup@x.com" } });
+    expect(user.pendingUnit).toBeNull();
   });
 });

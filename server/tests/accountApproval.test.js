@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import { resetCrudTables, tokens } from "./helpers.js";
+import { resetCrudTables, tokens, factory } from "./helpers.js";
 import { prisma } from "../src/lib/prisma.js";
 import { issueToken, SUPER_ADMIN_EMAIL } from "../src/services/authService.js";
 
@@ -176,6 +176,96 @@ describe("Approving an account", () => {
     const res = await request(app).patch(`/api/auth/pending/${u.id}/approve`)
       .set("Authorization", `Bearer ${tokens.viewer()}`);
     expect(res.status).toBe(403);
+  });
+
+  // Approval is where a vetted party enters the business records, so it is also
+  // where the unit they described becomes real — in the same transaction, so a
+  // half-approved lessor with no unit cannot exist.
+  it("creates the owner and the unit together and clears the pending unit", async () => {
+    const estate = await factory.estate();
+    const tower = await factory.tower(estate.id);
+    const user = await prisma.user.create({
+      data: {
+        name: "Pending Lessor", email: "pending.lessor@x.com", contactEmail: "pending.lessor@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+        pendingUnit: { estateId: estate.id, towerId: tower.id, unitNumber: "19A", floor: "19", type: "1 Bedroom", baseRent: 25000 },
+      },
+    });
+
+    const res = await request(app).patch(`/api/auth/pending/${user.id}/approve`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(res.status).toBe(200);
+
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.status).toBe("APPROVED");
+    expect(after.pendingUnit).toBeNull();
+    expect(after.unitOwnerId).toBeTruthy();
+
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    expect(unit.unitNumber).toBe("19A");
+    expect(unit.towerId).toBe(tower.id);
+    expect(Number(unit.baseRent)).toBe(25000);
+    // DRAFT, never APPROVED: the schema default is APPROVED, which would skip
+    // review entirely. The lessor completes it and submits it themselves.
+    expect(unit.approvalStatus).toBe("DRAFT");
+  });
+
+  it("defaults a skipped rent to zero, since baseRent is required on Unit", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Pending Lessor", email: "pending.lessor@x.com", contactEmail: "pending.lessor@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+        pendingUnit: { unitNumber: "19A" },
+      },
+    });
+    await request(app).patch(`/api/auth/pending/${user.id}/approve`).set("Authorization", `Bearer ${tokens.admin()}`);
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    expect(Number(unit.baseRent)).toBe(0);
+  });
+
+  // Reference data changing must never make an applicant unapprovable.
+  it("still approves when the recorded tower has since been deleted", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Pending Lessor", email: "pending.lessor@x.com", contactEmail: "pending.lessor@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+        pendingUnit: { unitNumber: "19A", towerId: "deleted-tower-id" },
+      },
+    });
+    const res = await request(app).patch(`/api/auth/pending/${user.id}/approve`).set("Authorization", `Bearer ${tokens.admin()}`);
+    expect(res.status).toBe(200);
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    const unit = await prisma.unit.findFirst({ where: { ownerId: after.unitOwnerId } });
+    expect(unit.unitNumber).toBe("19A");
+    expect(unit.towerId).toBeNull();
+  });
+
+  it("creates no unit when the applicant skipped the step", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Pending Lessor", email: "pending.lessor@x.com", contactEmail: "pending.lessor@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+      },
+    });
+    await request(app).patch(`/api/auth/pending/${user.id}/approve`).set("Authorization", `Bearer ${tokens.admin()}`);
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.unitOwnerId).toBeTruthy();
+    expect(await prisma.unit.count({ where: { ownerId: after.unitOwnerId } })).toBe(0);
+  });
+
+  it("creates no unit when the application is rejected", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Pending Lessor", email: "pending.lessor@x.com", contactEmail: "pending.lessor@x.com",
+        role: "UNIT_OWNER", status: "PENDING", passwordHash: "x", passwordPlain: "x",
+        pendingUnit: { unitNumber: "19A" },
+      },
+    });
+    const before = await prisma.unit.count();
+    await request(app).patch(`/api/auth/pending/${user.id}/reject`)
+      .set("Authorization", `Bearer ${tokens.admin()}`).send({ reason: "not verified" });
+    expect(await prisma.unit.count()).toBe(before);
+    expect(await prisma.user.findUnique({ where: { id: user.id } })).toBeNull();
   });
 });
 

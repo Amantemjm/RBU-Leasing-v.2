@@ -1,0 +1,5 @@
+
+# Timestamped env backups — these hold live database passwords in plaintext
+# and this repository is public. Never publishable, in any form.
+.env.bak.*
+.env.test.bak.*
