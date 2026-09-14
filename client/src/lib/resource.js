@@ -90,6 +90,7 @@ export const pendingAccounts = {
   list: () => api.get("/auth/pending").then((r) => r.data),
   approve: (id) => api.patch(`/auth/pending/${id}/approve`).then((r) => r.data),
   reject: (id, reason) => api.patch(`/auth/pending/${id}/reject`, { reason }).then((r) => r.data),
+  revise: (id, remarks) => api.patch(`/auth/pending/${id}/revise`, { remarks }).then((r) => r.data),
 };
 
 export function listUsers() {

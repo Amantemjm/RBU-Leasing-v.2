@@ -12,6 +12,7 @@ vi.mock("../src/lib/resource.js", () => ({
     list: vi.fn(() => Promise.resolve(ROWS)),
     approve: vi.fn(() => Promise.resolve({})),
     reject: vi.fn(() => Promise.resolve({})),
+    revise: vi.fn(() => Promise.resolve({})),
   },
 }));
 
@@ -32,6 +33,7 @@ describe("AccountApprovalsView", () => {
     pendingAccounts.list.mockClear();
     pendingAccounts.approve.mockClear();
     pendingAccounts.reject.mockClear();
+    pendingAccounts.revise.mockClear();
     pendingAccounts.list.mockResolvedValue(ROWS);
   });
 
@@ -105,5 +107,41 @@ describe("AccountApprovalsView", () => {
     const rows = w.findAll("tbody tr");
     expect(rows[0].text()).toContain("19A");
     expect(rows[1].find(".pending-unit").exists()).toBe(false);
+  });
+
+  // For Revision sends an application back to the applicant with remarks,
+  // rather than rejecting it outright.
+  it("offers a For Revision action beside approve and reject", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "u1", name: "Jane", email: "jane", role: "UNIT_OWNER",
+        createdAt: new Date().toISOString(), pendingUnit: { unitNumber: "19A" } },
+    ]);
+    const w = await mountView();
+    expect(w.text()).toContain("For Revision");
+  });
+
+  it("sends the remarks with the revision", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "u1", name: "Jane", email: "jane", role: "UNIT_OWNER",
+        createdAt: new Date().toISOString(), pendingUnit: { unitNumber: "19A" } },
+    ]);
+    const w = await mountView();
+    await btnIn(w.findAll("tbody tr")[0], "For Revision").trigger("click");
+    await w.get('[data-test="revise-remarks"]').setValue("Tower does not match");
+    await w.get('[data-test="revise-confirm"]').trigger("click");
+    await flushPromises();
+    expect(pendingAccounts.revise).toHaveBeenCalledWith("u1", "Tower does not match");
+  });
+
+  it("will not send an empty revision remark", async () => {
+    pendingAccounts.list.mockResolvedValue([
+      { id: "u1", name: "Jane", email: "jane", role: "UNIT_OWNER",
+        createdAt: new Date().toISOString(), pendingUnit: { unitNumber: "19A" } },
+    ]);
+    const w = await mountView();
+    await btnIn(w.findAll("tbody tr")[0], "For Revision").trigger("click");
+    await w.get('[data-test="revise-confirm"]').trigger("click");
+    await flushPromises();
+    expect(pendingAccounts.revise).not.toHaveBeenCalled();
   });
 });
