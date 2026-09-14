@@ -87,8 +87,16 @@ export function createApp() {
         if (filePath.endsWith("index.html")) res.setHeader("Cache-Control", "no-store");
       },
     }));
+    // A request for a build artefact that no longer exists must fail as a
+    // missing file. Falling back to index.html answers it with HTML and a 200,
+    // which the browser then tries to execute as JavaScript — the app dies
+    // silently on a blank page and the network tab shows nothing but successes.
+    // That is exactly what a client holding a previous build's cached index.html
+    // asks for, so this is the difference between "your cache is stale" and an
+    // afternoon of debugging.
     app.use((req, res, next) => {
       if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+      if (req.path.startsWith("/assets/")) return next();
       res.setHeader("Cache-Control", "no-store");
       res.sendFile(path.join(dist, "index.html"));
     });
