@@ -165,8 +165,16 @@ for (const [user, pw, name] of [["lessee.garcia", "Lessee2026!", "Ana Garcia"], 
 
 section("PENDING APPLICANT");
 const rosa = await login("lessee.pending", "Lessee2026!");
-if (rosa.status === 403) ok("Rosa Mendoza is still blocked from signing in", `403 "${rosa.body.error}"`);
-else bad("pending account should be refused", `${rosa.status}`);
+// A waiting applicant is no longer refused outright — they get a RESTRICTED
+// session so they can read their own application status and resubmit. The
+// restriction is the part worth checking: that token must reach nothing else.
+if (rosa.status === 200 && rosa.body.token) ok("Rosa Mendoza gets a restricted session", `200, account ${rosa.body.user?.status}`);
+else bad("a pending account should receive a restricted session", `${rosa.status}`);
+for (const [label, path] of [["the owners list", "/owners"], ["the account queue", "/auth/pending"]]) {
+  const r = await raw("GET", path, rosa.body?.token);
+  if (r.status === 403) ok(`  and that token is refused on ${label}`, "403");
+  else bad(`a restricted token should be refused on ${label}`, `${r.status}`);
+}
 
 // ─────────────────────────────────────────────────────────────────── summary
 section("SUMMARY");
