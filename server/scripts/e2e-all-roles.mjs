@@ -110,7 +110,13 @@ const converted = convCheck.find((i) => i.email === `maria.${S}@example.com`);
 if (converted?.status === "CONVERTED") ok("Matching inquiry auto-converted on signup", `convertedUserId set`);
 else bad("Inquiry should be CONVERTED after matching signup", `status=${converted?.status}`);
 
-await expectStatus("Login before approval is refused", 403, "POST", "/auth/login", { body: lessorCred });
+// A waiting applicant is no longer refused at the door: they get a RESTRICTED
+// session so they can read their own application status and resubmit. What
+// matters is that the restriction holds everywhere else.
+const preLogin = await raw("POST", "/auth/login", { body: lessorCred });
+if (preLogin.status === 200 && preLogin.data.token) ok("Login before approval yields a restricted session", `account ${preLogin.data.user?.status}`);
+else bad("A pending login should return a restricted session", `${preLogin.status}`);
+await expectStatus("  and that token reaches nothing else", 403, "GET", "/leasing-transactions", { token: preLogin.data?.token });
 await expectStatus("A staff role cannot be self-assigned at signup", 400, "POST", "/auth/signup", {
   body: { name: "Sneaky", email: `sneak.${S}`, password: "sneaky12345", contactEmail: `s.${S}@x.com`, consent: true, role: "ADMIN" },
 });
@@ -157,10 +163,15 @@ await api("PATCH", `/auth/pending/${pRej.id}/reject`, { token: adminToken, body:
 const afterRej = await api("GET", "/auth/pending", { token: adminToken });
 if (!afterRej.find((u) => u.email === rejCred.email)) ok("Rejection removes the applicant from the queue");
 else bad("Rejected applicant still queued");
-// Documented gap: the row is deleted and the reason discarded, so the username frees up.
+// The rejected row is kept now, deliberately: the applicant signs in to a
+// read-only status page to be told why, which a deleted row could not do. The
+// corollary is that the username stays taken.
+const rejLogin = await raw("POST", "/auth/login", { body: rejCred });
+if (rejLogin.status === 200 && rejLogin.data.user?.status === "REJECTED") ok("Rejected applicant can sign in to be told why", "status page reachable");
+else bad("A rejected applicant should reach their status page", `${rejLogin.status}`);
 const reuse = await raw("POST", "/auth/signup", { body: { name: "Rita Again", ...rejCred, contactEmail: `r2.${S}@x.com`, consent: true, role: "TENANT" } });
-if (reuse.status < 400) ok("Rejected username is freed for re-application", "(reason is not retained — known gap G-03)");
-else bad("Rejected username should be reusable", `${reuse.status}`);
+if (reuse.status === 409) ok("Rejected username stays taken, since the record is kept", "409");
+else bad("Re-applying over a kept rejection should conflict", `${reuse.status}`);
 
 step("Admin-only surfaces");
 const users = await api("GET", "/auth/users", { token: adminToken });
