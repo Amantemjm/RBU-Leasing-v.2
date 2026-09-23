@@ -122,10 +122,11 @@ async function submit() {
       <form v-else key="form" @submit.prevent="submit" novalidate>
         <p v-if="showUnitContext" class="unit-context">
           Inquiring about
-          <strong>Unit {{ unitContext.details?.unitNumber || "" }}</strong>
-          <template v-if="unitContext.details?.propertyName || unitContext.headline">
-            — {{ unitContext.details?.propertyName || unitContext.headline }}
-          </template>
+          <!-- The public payload has no unit number: getPublic deliberately
+               selects only id/type/status/approvalStatus/tower, so a listing is
+               identified by its headline. Asking for details.unitNumber here
+               rendered a bare "Unit —" to every visitor. -->
+          <strong>{{ unitContext.headline || unitContext.location || "this unit" }}</strong>
         </p>
 
         <!-- Who is inquiring. Collapsed to a confirmation once we know, since

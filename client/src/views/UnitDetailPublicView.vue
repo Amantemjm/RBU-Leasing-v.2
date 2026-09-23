@@ -52,7 +52,7 @@ function goTo(i) {
 
 const d = computed(() => unit.value?.details || {});
 const has = (k) => d.value[k] != null && d.value[k] !== "";
-const title = computed(() => unit.value?.headline || unit.value?.details?.propertyName || "Unit");
+const title = computed(() => unit.value?.headline || "Unit");
 const price = computed(() => (has("rentalRate") ? `PHP ${Number(d.value.rentalRate).toLocaleString("en-PH")}` : null));
 const typeChip = computed(() => unit.value?.type || d.value.unitType || null);
 const inquiryLink = computed(() => `/inquiry?as=LESSEE&unit=${unit.value?.unitId ?? route.params.id}`);

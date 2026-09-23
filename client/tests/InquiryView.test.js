@@ -7,7 +7,23 @@ vi.mock("../src/lib/inquiries.js", () => ({
   createInquiry: vi.fn(() => Promise.resolve({ id: "i1", status: "NEW" })),
 }));
 vi.mock("../src/lib/resource.js", () => ({
-  publicUnits: { get: vi.fn(() => Promise.resolve({ unitId: "u1", headline: "Elegant 2BR", details: { unitNumber: "12A", propertyName: "Empress at Capitol Commons" } })) },
+  // Mirrors what GET /api/public/units/:id actually returns. It carries no
+  // unitNumber and no propertyName; inventing them here is what let a banner
+  // reading "Unit —" ship while these tests stayed green.
+  publicUnits: {
+    get: vi.fn(() => Promise.resolve({
+      unitId: "u1",
+      headline: "Elegant 2BR",
+      type: "2 Bedrooms",
+      location: "Empress, Capitol Commons",
+      details: {
+        unitType: "2 Bedrooms", floorArea: 66, bedrooms: 2, bathrooms: 2,
+        rentalRate: 45000, amenities: ["Pool", "Gym"],
+        description: "Corner unit.", availabilityStatus: "Available",
+      },
+      photos: [], photoIds: [], coverPhotoId: null,
+    })),
+  },
 }));
 
 import InquiryView from "../src/views/InquiryView.vue";
@@ -178,7 +194,7 @@ describe("InquiryView (Quick Inquiry form)", () => {
 
   it("shows the unit banner and sends unitId when arriving from a unit page", async () => {
     const w = await mountWithUnit();
-    expect(w.text()).toContain("12A");
+    expect(w.text()).toContain("Elegant 2BR");
     // fill the required fields the form still needs
     await w.find("#fullName").setValue("Ana Reyes");
     await w.find("#email").setValue("ana@example.com");
@@ -229,15 +245,15 @@ describe("InquiryView (Quick Inquiry form)", () => {
   // the contract — coming back must restore it, banner and payload alike.
   it("restores the unit banner and unitId after switching to Lessor and back", async () => {
     const w = await mountWithUnit();
-    expect(w.text()).toContain("12A");
+    expect(w.text()).toContain("Elegant 2BR");
 
     await w.find(".asrole__change").trigger("click");
     await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessor")).trigger("click");
-    expect(w.text()).not.toContain("12A");
+    expect(w.text()).not.toContain("Elegant 2BR");
 
     await w.find(".asrole__change").trigger("click");
     await w.findAll(".seg--role .seg__opt").find((b) => b.text().includes("Lessee")).trigger("click");
-    expect(w.text()).toContain("12A");
+    expect(w.text()).toContain("Elegant 2BR");
 
     await w.find("#fullName").setValue("Ana Reyes");
     await w.find("#email").setValue("ana@example.com");
