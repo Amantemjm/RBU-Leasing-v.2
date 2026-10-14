@@ -96,3 +96,78 @@ describe("Inquiry acceptance routes through Unit Viewing", () => {
     expect(ok.body.stage).toBe("SEND_REQUIREMENTS");
   });
 });
+
+describe("Viewing handshake", () => {
+  beforeEach(async () => { await resetCrudTables(); });
+
+  async function txnAtViewing() {
+    const owner = await factory.owner({ name: "Owner Co" });
+    const t = await prisma.leasingTransaction.create({ data: {
+      reference: "RBU-2026-910001", stage: "UNIT_VIEWING", status: "Pending",
+      stageData: { UNIT_VIEWING: { status: "Pending", startedAt: new Date().toISOString() } },
+      unitOwnerId: owner.id,
+    } });
+    return { t, ownerId: owner.id };
+  }
+  const officer = () => ({ Authorization: `Bearer ${tokens.officer()}` });
+  const lessor = (id) => ({ Authorization: `Bearer ${tokens.owner(id)}` });
+
+  it("officer proposes → Proposed by staff; lessor confirms → Confirmed", async () => {
+    const { t, ownerId } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`)
+      .set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z", location: "Lobby" });
+    expect(prop.status).toBe(201);
+    expect(prop.body.status).toBe("Proposed");
+    expect(prop.body.proposedByRole).toBe("LEASING_OFFICER");
+
+    // The proposer cannot confirm their own proposal.
+    const selfConfirm = await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(officer()).send({});
+    expect(selfConfirm.status).toBe(409);
+
+    const conf = await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(lessor(ownerId)).send({});
+    expect(conf.status).toBe(200);
+    expect(conf.body.status).toBe("Confirmed");
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Confirmed");
+  });
+
+  it("lessor proposes another time → Proposed by owner; officer confirms", async () => {
+    const { t, ownerId } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`)
+      .set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z" });
+    const counter = await request(app).patch(`/api/appointments/${prop.body.id}/propose`)
+      .set(lessor(ownerId)).send({ scheduledAt: "2026-10-21T06:00:00.000Z" });
+    expect(counter.status).toBe(200);
+    expect(counter.body.status).toBe("Proposed");
+    expect(counter.body.proposedByRole).toBe("UNIT_OWNER");
+    // Now the lessor cannot confirm their own counter; the officer can.
+    expect((await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(lessor(ownerId)).send({})).status).toBe(409);
+    expect((await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(officer()).send({})).status).toBe(200);
+  });
+
+  it("completing with Interested lets the transaction advance", async () => {
+    const { t, ownerId } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`).set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z" });
+    await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(lessor(ownerId)).send({});
+    const done = await request(app).patch(`/api/appointments/${prop.body.id}/complete`).set(officer()).send({ outcome: "Interested" });
+    expect(done.status).toBe(200);
+    const txn = await prisma.leasingTransaction.findUnique({ where: { id: t.id } });
+    expect(txn.status).toBe("Interested");
+    const adv = await request(app).patch(`/api/leasing-transactions/${t.id}/advance`).set(officer()).send({});
+    expect(adv.body.stage).toBe("SEND_REQUIREMENTS");
+  });
+
+  it("a stranger owner cannot confirm another owner's viewing", async () => {
+    const { t } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`).set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z" });
+    const res = await request(app).patch(`/api/appointments/${prop.body.id}/confirm`).set(lessor("someone-else")).send({});
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects a viewing outcome outside the curated set (400)", async () => {
+    const { t } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`).set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z" });
+    const res = await request(app).patch(`/api/appointments/${prop.body.id}/complete`).set(officer()).send({ outcome: "Passed" });
+    expect(res.status).toBe(400);
+  });
+});
