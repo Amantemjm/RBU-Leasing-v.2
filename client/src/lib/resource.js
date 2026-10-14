@@ -107,6 +107,8 @@ export const appointments = {
   forTransaction: (txnId) => api.get(`/appointments/transaction/${txnId}`).then((r) => r.data),
   mine: () => api.get("/appointments/mine").then((r) => r.data),
   schedule: (txnId, stage, body) => api.post(`/appointments/transaction/${txnId}/${stage}`, body).then((r) => r.data),
+  confirm: (id) => api.patch(`/appointments/${id}/confirm`).then((r) => r.data),
+  propose: (id, body) => api.patch(`/appointments/${id}/propose`, body).then((r) => r.data),
   reschedule: (id, body) => api.patch(`/appointments/${id}/reschedule`, body).then((r) => r.data),
   complete: (id, body) => api.patch(`/appointments/${id}/complete`, body).then((r) => r.data),
   cancel: (id, body) => api.patch(`/appointments/${id}/cancel`, body).then((r) => r.data),
