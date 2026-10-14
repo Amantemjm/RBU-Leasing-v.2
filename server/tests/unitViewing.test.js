@@ -170,4 +170,14 @@ describe("Viewing handshake", () => {
     const res = await request(app).patch(`/api/appointments/${prop.body.id}/complete`).set(officer()).send({ outcome: "Passed" });
     expect(res.status).toBe(400);
   });
+
+  it("blocks reschedule on a viewing — must use propose instead (409)", async () => {
+    const { t } = await txnAtViewing();
+    const prop = await request(app).post(`/api/appointments/transaction/${t.id}/UNIT_VIEWING`)
+      .set(officer()).send({ scheduledAt: "2026-10-20T04:00:00.000Z" });
+    expect(prop.status).toBe(201);
+    const res = await request(app).patch(`/api/appointments/${prop.body.id}/reschedule`)
+      .set(officer()).send({ scheduledAt: "2026-10-21T04:00:00.000Z" });
+    expect(res.status).toBe(409);
+  });
 });

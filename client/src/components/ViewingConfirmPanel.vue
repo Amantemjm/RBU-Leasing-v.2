@@ -21,6 +21,7 @@ const awaitingOfficer = computed(() => appt.value?.status === "Proposed" && appt
 const confirmed = computed(() => appt.value?.status === "Confirmed");
 
 async function load() {
+  error.value = "";
   if (!atViewing.value || !props.transaction?.id) { appt.value = null; return; }
   try {
     const rows = await appointments.forTransaction(props.transaction.id);

@@ -266,7 +266,7 @@ function formatTime(iso) {
           </div>
           <div class="actions">
             <button type="button" class="ghost" :disabled="busy" @click="cancelReschedule">Cancel</button>
-            <button type="button" class="primary" :disabled="busy || !scheduledAt" @click="reschedule">Save reschedule</button>
+            <button type="button" class="primary" :disabled="busy || !scheduledAt" @click="reschedule">{{ isViewing ? "Send proposal" : "Save reschedule" }}</button>
           </div>
         </div>
 

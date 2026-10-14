@@ -83,6 +83,7 @@ async function txnOf(appt) {
 
 export async function reschedule(user, id, body) {
   const appt = await loadAppt(id);
+  if (appt.stage === "UNIT_VIEWING") throw new ConflictError("Use propose to change a viewing time");
   if (["Completed", "Cancelled"].includes(appt.status)) throw new ConflictError("This appointment is closed");
   const txn = await txnOf(appt);
   const updated = await prisma.appointment.update({
