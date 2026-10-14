@@ -471,6 +471,10 @@ model Appointment {
   outcome         String?
   reason          String?
   rescheduleCount Int      @default(0)
+  // Officer↔lessor viewing handshake: who made the current proposal
+  // (LEASING_OFFICER/ADMIN vs UNIT_OWNER) and when the other side confirmed.
+  proposedByRole String?
+  confirmedAt    DateTime?
   createdById     String?
   createdByName   String?
   createdAt       DateTime @default(now())
