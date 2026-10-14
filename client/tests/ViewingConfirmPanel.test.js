@@ -47,6 +47,14 @@ describe("ViewingConfirmPanel (lessor)", () => {
     expect(w.findAll("button").find((b) => /^confirm$/i.test(b.text()))).toBeFalsy();
   });
 
+  it("shows the confirmed message and no Confirm button when the appointment is confirmed", async () => {
+    appointments.forTransaction.mockResolvedValue([{ id: "a1", stage: "UNIT_VIEWING", status: "Confirmed", proposedByRole: "LEASING_OFFICER", scheduledAt: "2026-10-20T12:00:00.000Z" }]);
+    const w = mountFor({ id: "t1", stage: "UNIT_VIEWING" });
+    await flushPromises();
+    expect(w.text()).toMatch(/confirmed/i);
+    expect(w.findAll("button").find((b) => /^confirm$/i.test(b.text()))).toBeFalsy();
+  });
+
   it("renders nothing when the transaction is not at the viewing stage", async () => {
     const w = mountFor({ id: "t1", stage: "APPROVAL" });
     await flushPromises();

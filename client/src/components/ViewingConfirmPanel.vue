@@ -28,7 +28,7 @@ async function load() {
   } catch (e) { error.value = e.response?.data?.error || "Could not load the viewing"; }
 }
 onMounted(load);
-watch(() => props.transaction?.id, load);
+watch(() => props.transaction, load);
 
 async function confirm() {
   error.value = ""; busy.value = true;
@@ -45,37 +45,40 @@ async function sendProposal() {
   } catch (e) { error.value = e.response?.data?.error || "Could not propose a time"; }
   finally { busy.value = false; }
 }
+function cancelProposing() { proposing.value = false; scheduledAt.value = ""; }
 function timeOf(iso) { return iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""; }
 </script>
 
 <template>
-  <div v-if="atViewing && appt" class="panel viewing">
+  <div v-if="atViewing && (appt || error)" class="panel viewing">
     <div class="panel__label">Unit viewing</div>
     <p v-if="error" class="error">{{ error }}</p>
 
-    <p class="when">{{ formatDate(appt.scheduledAt) }} · {{ timeOf(appt.scheduledAt) }}</p>
-    <p v-if="appt.location" class="muted">{{ appt.location }}</p>
+    <template v-if="appt">
+      <p class="when">{{ formatDate(appt.scheduledAt) }} · {{ timeOf(appt.scheduledAt) }}</p>
+      <p v-if="appt.location" class="muted">{{ appt.location }}</p>
 
-    <template v-if="confirmed">
-      <p class="ok">Confirmed — we'll see you then.</p>
-    </template>
-    <template v-else-if="awaitingOfficer">
-      <p class="muted">Your proposed time was sent — awaiting the leasing officer's confirmation.</p>
-    </template>
-    <template v-else-if="awaitingLessor">
-      <p class="ask">The leasing officer proposed this time. Confirm it, or propose another.</p>
-      <div v-if="!proposing" class="actions">
-        <button type="button" class="primary" :disabled="busy" @click="confirm">Confirm</button>
-        <button type="button" class="ghost" :disabled="busy" @click="proposing = true">Propose another time</button>
-      </div>
-      <div v-else class="form">
-        <label>New date &amp; time</label>
-        <input type="datetime-local" v-model="scheduledAt" />
-        <div class="actions">
-          <button type="button" class="ghost" :disabled="busy" @click="proposing = false">Cancel</button>
-          <button type="button" class="primary" :disabled="busy || !scheduledAt" @click="sendProposal">Send</button>
+      <template v-if="confirmed">
+        <p class="ok">Confirmed — we'll see you then.</p>
+      </template>
+      <template v-else-if="awaitingOfficer">
+        <p class="muted">Your proposed time was sent — awaiting the leasing officer's confirmation.</p>
+      </template>
+      <template v-else-if="awaitingLessor">
+        <p class="ask">The leasing officer proposed this time. Confirm it, or propose another.</p>
+        <div v-if="!proposing" class="actions">
+          <button type="button" class="primary" :disabled="busy" @click="confirm">Confirm</button>
+          <button type="button" class="ghost" :disabled="busy" @click="proposing = true">Propose another time</button>
         </div>
-      </div>
+        <div v-else class="form">
+          <label>New date &amp; time</label>
+          <input type="datetime-local" v-model="scheduledAt" />
+          <div class="actions">
+            <button type="button" class="ghost" :disabled="busy" @click="cancelProposing">Cancel</button>
+            <button type="button" class="primary" :disabled="busy || !scheduledAt" @click="sendProposal">Send</button>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>
