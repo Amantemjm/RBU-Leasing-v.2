@@ -4,11 +4,12 @@ import {
   pendingAccounts, approve, reject, revise, application, resubmit,
 } from "../controllers/authController.js";
 import { verifyJwt, verifyJwtAllowPending, requireRole } from "../middleware/auth.js";
+import { loginLimiter, signupLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
-router.post("/login", login);
+router.post("/login", loginLimiter, login);
 // Public self-registration for lessors/lessees.
-router.post("/signup", signup);
+router.post("/signup", signupLimiter, signup);
 router.post("/register", verifyJwt, requireRole("ADMIN"), register);
 // Account approval queue — the owner asked for ADMIN or O-Lease.
 router.get("/pending", verifyJwt, requireRole("ADMIN", "LEASING_OFFICER"), pendingAccounts);
