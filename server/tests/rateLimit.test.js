@@ -1,7 +1,10 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import express from "express";
 import request from "supertest";
-import { makeLimiter } from "../src/middleware/rateLimit.js";
+import { makeLimiter, LIMITS } from "../src/middleware/rateLimit.js";
+import { hashPassword } from "../src/services/authService.js";
+import { prisma } from "../src/lib/prisma.js";
+import { resetCrudTables } from "./helpers.js";
 import { createApp } from "../src/app.js";
 
 // The public endpoints — sign-in, sign-up, inquiry — take no token, so nothing
@@ -43,16 +46,64 @@ describe("makeLimiter", () => {
 });
 
 describe("the real public routes", () => {
+  beforeEach(async () => { await resetCrudTables(); });
   afterEach(() => { delete process.env.RATE_LIMIT; });
 
-  it("throttles repeated failed sign-ins", async () => {
+  // Sends n requests and returns their statuses, so a test can say exactly which
+  // ones were allowed and which refused.
+  async function fire(n, send) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push((await send()).status);
+    return out;
+  }
+
+  // The allowances are a decision, not an accident: a typo that sets one to 3
+  // would lock people out, and one set to 3000 would stop nothing.
+  it("keeps the allowances in a sensible range", () => {
+    expect(LIMITS.login).toBeGreaterThanOrEqual(10);
+    expect(LIMITS.login).toBeLessThanOrEqual(50);
+    expect(LIMITS.signup).toBeGreaterThanOrEqual(10);
+    expect(LIMITS.signup).toBeLessThanOrEqual(200);
+    expect(LIMITS.inquiry).toBeGreaterThanOrEqual(20);
+    expect(LIMITS.inquiry).toBeLessThanOrEqual(500);
+  });
+
+  // The whole point of counting only failures: nineteen wrong guesses, then one
+  // real sign-in, must leave the allowance exactly where it was.
+  it("counts failed sign-ins only: a success is free, and the boundary is exact", async () => {
     process.env.RATE_LIMIT = "on";
-    let last;
-    for (let i = 0; i < 25; i++) {
-      last = await request(app).post("/api/auth/login").send({ email: "nobody-here", password: "wrong-password" });
-      if (last.status === 429) break;
-    }
-    expect(last.status).toBe(429);
-    expect(last.body.error).toMatch(/too many/i);
+    await prisma.user.create({
+      data: { name: "Rate Test", email: "rate-limit-user", passwordHash: await hashPassword("correct-pass-1"), role: "LEASING_OFFICER" },
+    });
+    const bad = () => request(app).post("/api/auth/login").send({ email: "nobody-here", password: "wrong-password" });
+    const good = () => request(app).post("/api/auth/login").send({ email: "rate-limit-user", password: "correct-pass-1" });
+
+    const beforeSuccess = await fire(LIMITS.login - 1, bad);
+    expect(beforeSuccess.every((s) => s === 401)).toBe(true);        // not 500, not early 429
+
+    expect((await good()).status).toBe(200);                          // free
+
+    expect((await bad()).status).toBe(401);                           // the last allowed failure
+    const refused = await bad();                                      // one past the allowance
+    expect(refused.status).toBe(429);
+    expect(refused.body.error).toMatch(/too many/i);
+    // and once refused, even the correct password waits
+    expect((await good()).status).toBe(429);
+  });
+
+  it("throttles sign-up at its allowance", async () => {
+    process.env.RATE_LIMIT = "on";
+    const send = () => request(app).post("/api/auth/signup").send({});   // refused by validation, still counted
+    const allowed = await fire(LIMITS.signup, send);
+    expect(allowed.every((s) => s === 400)).toBe(true);
+    expect((await send()).status).toBe(429);
+  });
+
+  it("throttles the public inquiry form at its allowance", async () => {
+    process.env.RATE_LIMIT = "on";
+    const send = () => request(app).post("/api/inquiries").send({});
+    const allowed = await fire(LIMITS.inquiry, send);
+    expect(allowed.every((s) => s === 400)).toBe(true);
+    expect((await send()).status).toBe(429);
   });
 });
