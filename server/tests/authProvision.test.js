@@ -110,6 +110,17 @@ describe("admin provisions owner/tenant accounts", () => {
     expect(login.status).toBe(200);
   });
 
+  // A reset is now the only way to recover access, so a too-short password has to
+  // say why — "Validation failed" alone leaves the admin guessing.
+  it("says how short a rejected password is, not just that validation failed", async () => {
+    const u = await createLogin();
+    const res = await request(app).patch(`/api/auth/users/${u.id}`)
+      .set("Authorization", `Bearer ${tokens.admin()}`)
+      .send({ password: "abc12" });
+    expect(res.status).toBe(400);
+    expect(res.body.details[0]).toMatchObject({ path: "password", message: "Password must be at least 6 characters" });
+  });
+
   it("deletes a login", async () => {
     const u = await createLogin();
     const del = await request(app).delete(`/api/auth/users/${u.id}`).set("Authorization", `Bearer ${tokens.admin()}`);

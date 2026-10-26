@@ -98,6 +98,23 @@ describe("UsersView", () => {
     expect(updateUser).toHaveBeenCalledWith("u2", { name: "Reception", email: "frontdesk", role: "LEASING_OFFICER" });
   });
 
+  // Reset is how access is recovered now, so a rejected password must say why
+  // instead of the bare "Validation failed" the server's envelope carries.
+  it("shows why a reset password was rejected, not just that validation failed", async () => {
+    updateUser.mockRejectedValueOnce({ response: { status: 400, data: {
+      error: "Validation failed",
+      details: [{ path: "password", message: "Password must be at least 6 characters" }],
+    } } });
+    const w = mountView();
+    await flushPromises();
+    const editButtons = w.findAll("button").filter((b) => b.text() === "Edit");
+    await editButtons[1].trigger("click");
+    await w.find("#password").setValue("abc12");
+    await w.find("form").trigger("submit.prevent");
+    await flushPromises();
+    expect(w.find(".modal .error").text()).toBe("Password must be at least 6 characters");
+  });
+
   it("deletes a login after confirmation", async () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     const w = mountView();

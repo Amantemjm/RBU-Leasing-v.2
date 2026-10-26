@@ -62,7 +62,10 @@ async function submit() {
     showForm.value = false;
     await load();
   } catch (e) {
-    error.value = e.response?.data?.error || "Save failed";
+    // A rejected field says why ("at least 6 characters"); the envelope alone
+    // only says "Validation failed".
+    const data = e.response?.data;
+    error.value = data?.details?.[0]?.message || data?.error || "Save failed";
   } finally {
     submitting.value = false;
   }
