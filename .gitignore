@@ -25,3 +25,7 @@ backups/
 *.xlsx
 *.xls
 *.xlsm
+
+# Demo walkthrough documents contain the demo login table; keep them out of the public repo.
+docs/RBU-Leasing-Walkthrough.docx
+docs/role-playbook.html
